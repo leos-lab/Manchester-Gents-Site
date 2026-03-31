@@ -1,0 +1,103 @@
+.wrapper {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 15, 24, 0.8);
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.header p {
+  margin: 0;
+  opacity: 0.72;
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.syncButton {
+  align-self: flex-start;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 212, 96, 0.45);
+  background: rgba(255, 212, 96, 0.16);
+  color: var(--color-gold);
+  padding: 0.6rem 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.syncButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.loading {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.78;
+}
+
+.error {
+  margin: 0;
+  color: #ff9f9f;
+  font-size: 0.82rem;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.section {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 20, 33, 0.65);
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.section h4 {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.section p {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.section li {
+  font-size: 0.82rem;
+  opacity: 0.9;
+  line-height: 1.4;
+  word-break: break-word;
+}

@@ -5,6 +5,7 @@ import AdminEventForm from '@/components/AdminEventForm';
 import AdminAddToEventForm from '@/components/AdminAddToEventForm';
 import EventAttendeeManager from '@/components/EventAttendeeManager';
 import CommunityChatChecklist from '@/components/CommunityChatChecklist';
+import EventAttendeeSyncPanel from '@/components/EventAttendeeSyncPanel';
 import styles from './EventAdminWorkspace.module.css';
 
 const TAB_CONFIG = [
@@ -29,7 +30,8 @@ export default function EventAdminWorkspace({
   event,
   users = [],
   attendees = [],
-  eventAttendees = []
+  eventAttendees = [],
+  isAdmin = false
 }) {
   const [activeTab, setActiveTab] = useState('event');
 
@@ -80,6 +82,11 @@ export default function EventAdminWorkspace({
             )}
             {tab.id === 'community' && (
               <div className={styles.panelBody}>
+                <EventAttendeeSyncPanel
+                  event={event}
+                  attendees={eventAttendees}
+                  isAdmin={isAdmin}
+                />
                 <CommunityChatChecklist
                   attendees={eventAttendees}
                   eventStartTime={event.startTime}

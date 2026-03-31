@@ -104,6 +104,7 @@ export default async function EventAdminPage({ params }) {
           users={users}
           attendees={attendees}
           eventAttendees={event.attendees}
+          isAdmin={session.user.role === 'ADMIN'}
         />
       </main>
       <Footer />

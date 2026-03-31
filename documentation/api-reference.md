@@ -89,6 +89,15 @@ All endpoints live under `app/api`. Requests/Responses use JSON. Errors return `
   - `400` when ids are missing.
   - `500` on unexpected failure.
 
+### `POST /sync-attendees`
+- **Auth:** Admin only.
+- **Payload:** `{ threadId: string, attendees: string[], addMissing: boolean }`.
+- **Behaviour:** Normalises attendee usernames (`trim`, remove leading `@`, lowercase), then proxies the request to the Instagram automation service.
+- **Responses:**
+  - `200` automation JSON payload (includes dry-run fields like `memberCount`, `missingCount`, `missingFromThread`, `resolveErrors`; and add flow fields like `addedUsernames`, `addedUserIds`).
+  - `400` validation errors (`No Instagram thread linked to this event.` or `No attendee usernames available to sync.`).
+  - upstream non-2xx statuses are forwarded with provider error payload when available.
+
 ## Event Signup
 
 ### `POST /api/events/{eventId}/signup`
