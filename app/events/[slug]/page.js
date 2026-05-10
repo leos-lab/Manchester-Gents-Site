@@ -129,8 +129,6 @@ export default async function EventDetailPage({ params }) {
     backgroundColor: event.backgroundColor,
     textColor: event.textColor
   };
-  const eventHasStarted = event.startTime ? new Date(event.startTime) <= new Date() : false;
-
   const sortedAttendees = event.attendees
     .map((signup) => {
       const user = signup.user;
@@ -180,6 +178,7 @@ export default async function EventDetailPage({ params }) {
     });
   const attendeeCount = event.attendees.length;
   const attendeeLabel = attendeeCount === 1 ? '1 attendee' : `${attendeeCount} attendees`;
+  const eventHasStarted = event.startTime ? new Date(event.startTime) <= new Date() : false;
 
   return (
     <div className={styles.page}>
@@ -204,20 +203,15 @@ export default async function EventDetailPage({ params }) {
               />
             </div>
             <aside className={`${styles.eventSidebar} glass-panel`}>
-              {eventHasStarted && event.galleryUrl && (
+              {eventHasStarted && (
                 <div className={styles.sidebarSection}>
                   <span className="heading-font">Event gallery</span>
                   <p className={styles.sidebarCopy}>
                     Relive the night and download your favourite shots from the club photographer.
                   </p>
-                  <a
-                    href={event.galleryUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.galleryLink}
-                  >
-                    View the gallery →
-                  </a>
+                  <Link href={`/events/${event.slug}/photos`} className={styles.galleryLink}>
+                    View photo gallery
+                  </Link>
                 </div>
               )}
               <div className={styles.sidebarSection}>

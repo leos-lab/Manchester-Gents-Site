@@ -1,0 +1,701 @@
+.pageShell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.photosMain {
+  flex: 1;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 1.8rem) clamp(1rem, 5vw, 1.75rem)
+    clamp(3.25rem, 8vw, 5rem);
+}
+
+.galleryPage {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.9rem, 2vw, 1.25rem);
+  color: var(--color-body);
+}
+
+.galleryHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.85rem, 3vw, 1.4rem);
+  padding: clamp(0.85rem, 2vw, 1.1rem) clamp(0.85rem, 2.5vw, 1.25rem);
+  border-radius: 14px;
+  background: rgba(12, 22, 35, 0.58);
+}
+
+.heroCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sectionEyebrow {
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.62;
+}
+
+.heroCopy h1 {
+  max-width: 780px;
+  font-size: clamp(1.55rem, 3.8vw, 2.45rem);
+  line-height: 1;
+}
+
+.galleryStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.galleryStats span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(247, 244, 237, 0.78);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.galleryButtons {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 0.82rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-gold);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.backButton:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.iconButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 10px;
+  color: var(--color-gold);
+  font-size: 0.92rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.iconButton:focus-visible,
+.backButton:focus-visible,
+.photoImageButton:focus-visible,
+.loadMoreButton:focus-visible,
+.modalCloseButton:focus-visible,
+.modalNavButton:focus-visible,
+.circleButton:focus-visible,
+.uploaderActions button:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+.secondaryButton {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.primaryButton {
+  min-width: 50px;
+  background: var(--color-gold);
+  color: var(--color-navy);
+  border-color: rgba(255, 212, 96, 0.75);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--color-amber);
+}
+
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.downloadCount {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(12, 22, 35, 0.96);
+  color: var(--color-gold);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(255, 212, 96, 0.32);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.feedbackMessage {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.feedbacksuccess {
+  background: rgba(209, 250, 229, 0.92);
+  color: #064e3b;
+}
+
+.feedbackerror {
+  background: rgba(254, 226, 226, 0.95);
+  color: #7f1d1d;
+}
+
+.feedbackinfo {
+  background: rgba(219, 234, 254, 0.94);
+  color: #1e3a8a;
+}
+
+.masonryGrid {
+  column-count: 3;
+  column-gap: clamp(0.75rem, 2vw, 1rem);
+}
+
+.photoCard {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 clamp(0.75rem, 2vw, 1rem);
+  break-inside: avoid;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(12, 22, 35, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 34px rgba(7, 13, 24, 0.26);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.photoCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 212, 96, 0.28);
+  box-shadow: 0 24px 44px rgba(7, 13, 24, 0.34);
+}
+
+.checkboxWrapper {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  z-index: 2;
+  display: inline-flex;
+}
+
+.photoCheckbox {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  accent-color: var(--color-gold);
+}
+
+.photoImageButton {
+  width: 100%;
+  min-height: 150px;
+  padding: 0;
+  background: rgba(45, 64, 89, 0.5);
+  display: block;
+  overflow: hidden;
+}
+
+.photoSelected {
+  box-shadow: inset 0 0 0 3px var(--color-gold);
+}
+
+.photoImage {
+  width: 100%;
+  height: auto;
+  min-height: 150px;
+  display: block;
+  object-fit: cover;
+  transition: opacity 0.2s ease, transform 0.24s ease;
+}
+
+.photoImageButton:hover .photoImage {
+  opacity: 0.88;
+  transform: scale(1.015);
+}
+
+.photoMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+}
+
+.photoUploader {
+  min-height: 1rem;
+  color: var(--color-gold);
+  font-size: 0.82rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photoDateTime {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: rgba(247, 244, 237, 0.62);
+  font-size: 0.72rem;
+}
+
+.adminPhotoActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  padding-top: 0.45rem;
+}
+
+.adminPhotoActions button {
+  min-height: 2rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-gold);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.adminPhotoActions button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.adminPhotoActions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.adminPhotoActions .deletePhotoButton {
+  color: #fecaca;
+}
+
+.emptyState,
+.loadMoreButton {
+  align-self: center;
+  padding: 0.9rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(12, 22, 35, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(247, 244, 237, 0.78);
+  font-size: 0.9rem;
+}
+
+.loadMoreButton {
+  color: var(--color-gold);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.loadMoreButton:hover {
+  background: rgba(22, 34, 56, 0.86);
+  border-color: rgba(255, 212, 96, 0.26);
+}
+
+.uploadOverlay,
+.uploaderOverlay,
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 13, 24, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.uploadProgressBox,
+.uploaderModal {
+  width: min(420px, 90vw);
+  border-radius: 20px;
+  background: rgba(12, 22, 35, 0.94);
+  color: var(--color-body);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.42);
+}
+
+.uploadProgressBox {
+  width: min(320px, 90vw);
+  padding: 1.5rem 2rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.uploadBarWrapper {
+  height: 0.65rem;
+  margin-top: 1rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.uploadBar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-gold);
+  transition: width 0.3s ease;
+}
+
+.uploadPercent {
+  margin-top: 0.5rem;
+  color: rgba(247, 244, 237, 0.68);
+}
+
+.uploaderOverlay {
+  z-index: 110;
+}
+
+.uploaderModal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.5rem;
+}
+
+.uploaderModal h2 {
+  margin: 0;
+  color: var(--color-gold);
+  font-size: 1.15rem;
+  letter-spacing: 0;
+}
+
+.uploaderModal p {
+  margin: 0;
+  color: rgba(247, 244, 237, 0.68);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.uploaderModal input {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-body);
+  font-size: 0.95rem;
+}
+
+.uploaderModal input::placeholder {
+  color: rgba(247, 244, 237, 0.5);
+}
+
+.uploaderError {
+  color: #fecaca;
+  font-size: 0.82rem;
+}
+
+.uploaderActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.uploaderActions button {
+  min-width: 88px;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.uploaderActions button:first-of-type {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-body);
+}
+
+.uploaderActions button:last-of-type {
+  background: var(--color-gold);
+  color: var(--color-navy);
+}
+
+.modalOverlay {
+  z-index: 120;
+}
+
+.modalContent {
+  position: relative;
+  width: min(1040px, 92vw);
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalImage {
+  max-width: 100%;
+  max-height: 82vh;
+  border-radius: 12px;
+  object-fit: contain;
+  user-select: none;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.modalCloseButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 14px;
+  background: rgba(12, 22, 35, 0.94);
+  color: var(--color-gold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.modalNavButton {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 58px;
+  border-radius: 14px;
+  background: rgba(12, 22, 35, 0.78);
+  color: var(--color-gold);
+  font-size: 2rem;
+  opacity: 0.82;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.modalNavButton:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(12, 22, 35, 0.96);
+}
+
+.modalNavButton:disabled {
+  cursor: default;
+  opacity: 0.25;
+}
+
+.modalPrevButton {
+  left: 0.5rem;
+}
+
+.modalNextButton {
+  right: 0.5rem;
+}
+
+.modalMeta {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  max-width: min(420px, 62%);
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: rgba(12, 22, 35, 0.9);
+  color: var(--color-body);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.85rem;
+}
+
+.modalMeta p {
+  margin: 0 0 0.25rem;
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+.modalMeta span {
+  color: rgba(247, 244, 237, 0.68);
+}
+
+.modalActions {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.circleButton {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--color-gold);
+  color: var(--color-navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+}
+
+.modalAdminActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modalAdminActions button {
+  min-height: 2.2rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(12, 22, 35, 0.92);
+  color: var(--color-gold);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modalAdminActions button:last-child {
+  color: #fecaca;
+}
+
+.modalAdminActions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (max-width: 900px) {
+  .masonryGrid {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .photosMain {
+    padding-top: 1rem;
+  }
+
+  .galleryHero {
+    align-items: stretch;
+    flex-direction: column;
+    border-radius: 12px;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(1.45rem, 8vw, 2rem);
+  }
+
+  .galleryButtons {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .backButton {
+    flex: 0 0 auto;
+  }
+
+  .iconButton {
+    flex: 0 0 40px;
+    min-width: 0;
+  }
+
+  .downloadCount {
+    top: -5px;
+    right: -5px;
+  }
+
+  .masonryGrid {
+    column-gap: 0.65rem;
+  }
+
+  .photoCard {
+    margin-bottom: 0.65rem;
+    border-radius: 9px;
+  }
+
+  .photoMeta {
+    padding: 0.55rem 0.6rem 0.65rem;
+  }
+
+  .modalContent {
+    width: 96vw;
+    min-height: 0;
+    flex-direction: column;
+    padding: 0.75rem;
+  }
+
+  .modalImage {
+    width: 100%;
+    height: auto;
+  }
+
+  .modalMeta,
+  .modalActions {
+    position: static;
+    max-width: 100%;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .modalActions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modalPrevButton {
+    left: 0.25rem;
+  }
+
+  .modalNextButton {
+    right: 0.25rem;
+  }
+}
