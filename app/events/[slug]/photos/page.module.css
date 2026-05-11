@@ -101,6 +101,34 @@
   border-color: rgba(255, 255, 255, 0.22);
 }
 
+.standardButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 0.82rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 212, 96, 0.28);
+  background: rgba(255, 212, 96, 0.1);
+  color: var(--color-gold);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.standardButton:hover:not(:disabled) {
+  background: rgba(255, 212, 96, 0.16);
+  border-color: rgba(255, 212, 96, 0.42);
+}
+
+.standardButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .iconButton {
   position: relative;
   display: inline-flex;
@@ -118,6 +146,7 @@
 
 .iconButton:focus-visible,
 .backButton:focus-visible,
+.standardButton:focus-visible,
 .photoImageButton:focus-visible,
 .loadMoreButton:focus-visible,
 .modalCloseButton:focus-visible,

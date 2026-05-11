@@ -25,15 +25,18 @@ export default async function Image({ params } = {}) {
         subtitle: true,
         startTime: true,
         location: true,
-        coverImageUrl: true
+        coverImageUrl: true,
+        photosOgTitle: true,
+        photosOgSubtitle: true,
+        photosOgDetail: true
       }
     });
 
-    const title = event?.title || 'Manchester Gents Event';
-    const subtitle = event?.subtitle || 'Club socials for well-dressed gents';
-    const detail = event?.startTime
+    const title = event?.photosOgTitle || event?.title || 'Manchester Gents Event';
+    const subtitle = event?.photosOgSubtitle || event?.subtitle || 'Club socials for well-dressed gents';
+    const detail = event?.photosOgDetail || (event?.startTime
       ? `${format(new Date(event.startTime), 'EEEE d MMM yyyy')} • ${event.location || 'The Lodge, Manchester'}`
-      : event?.location || 'Manchester, United Kingdom';
+      : event?.location || 'Manchester, United Kingdom');
 
     const coverData = await fetchOgImageArrayBuffer(event?.coverImageUrl);
 
@@ -79,7 +82,7 @@ function renderOgCard({ logo, title, subtitle, detail, coverData }) {
               inset: 0,
               width: '1200px',
               height: '630px',
-              objectFit: 'cover',
+              objectFit: 'contain',
               opacity: 0.42
             }}
           />

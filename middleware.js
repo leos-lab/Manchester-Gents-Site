@@ -63,6 +63,7 @@ export async function middleware(req) {
     pathname === '/site.webmanifest' ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
+    pathname.endsWith('/opengraph-image') ||
     /\.[^/]+$/.test(pathname);
 
   if (isPublicPath) {

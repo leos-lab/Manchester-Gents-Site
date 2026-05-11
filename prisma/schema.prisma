@@ -80,6 +80,9 @@ model Event {
   backgroundColor String?
   textColor      String?
   coverImageUrl  String?
+  photosOgTitle  String?
+  photosOgSubtitle String?
+  photosOgDetail String?
   signupDeadline DateTime?
   capacity       Int?
   published      Boolean       @default(true)

@@ -25,6 +25,7 @@ function normalisePhoto(photo) {
   const thumbUrl = asset?.mediumUrl || asset?.displayUrl || asset?.thumbUrl || asset?.url || '';
   const fullUrl = asset?.url || asset?.displayUrl || asset?.mediumUrl || asset?.thumbUrl || '';
   const previewUrl = fullUrl;
+  const coverUrl = asset?.mediumUrl || asset?.displayUrl || asset?.thumbUrl || asset?.url || '';
   const dateSource = photo.takenAt || photo.createdAt;
   const dateTaken = dateSource ? new Date(dateSource) : null;
 
@@ -34,6 +35,7 @@ function normalisePhoto(photo) {
     thumbUrl,
     previewUrl,
     fullUrl,
+    coverUrl,
     uploaderName: photo.uploaderName || '',
     dateTaken:
       dateTaken instanceof Date && !Number.isNaN(dateTaken.getTime()) ? dateTaken : null,
@@ -112,6 +114,7 @@ function PhotoModal({
   showAdminActions,
   busy,
   onSetCover,
+  onUnsetCover,
   onDelete
 }) {
   useEffect(() => {
@@ -176,6 +179,9 @@ function PhotoModal({
             <div className={styles.modalAdminActions}>
               <button type="button" onClick={() => onSetCover(photo)} disabled={busy}>
                 Set cover
+              </button>
+              <button type="button" onClick={onUnsetCover} disabled={busy}>
+                Unset cover
               </button>
               <button type="button" onClick={() => onDelete(photo)} disabled={busy}>
                 Delete
@@ -407,7 +413,7 @@ export default function EventPhotosClient({
   }
 
   async function handleSetCover(photo) {
-    const coverImageUrl = photo.fullUrl || photo.previewUrl || photo.thumbUrl;
+    const coverImageUrl = photo.coverUrl || photo.thumbUrl || photo.previewUrl || photo.fullUrl;
     if (!coverImageUrl || !eventId) return;
 
     setBusyPhotoId(photo.id);
@@ -429,6 +435,33 @@ export default function EventPhotosClient({
       showFeedback('success', 'Cover image updated.');
     } catch (err) {
       showFeedback('error', err.message || 'Could not set cover image.');
+    } finally {
+      setBusyPhotoId('');
+    }
+  }
+
+  async function handleUnsetCover() {
+    if (!eventId) return;
+
+    setBusyPhotoId('cover');
+    try {
+      const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/cover`, {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverImageUrl: null })
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        const authMessage =
+          res.status === 401 || res.status === 403
+            ? 'Log in as a Manchester admin before changing the cover image.'
+            : null;
+        throw new Error(authMessage || json?.error || 'Could not unset cover image.');
+      }
+      showFeedback('success', 'Cover image unset. Photos OG will use the standard background.');
+    } catch (err) {
+      showFeedback('error', err.message || 'Could not unset cover image.');
     } finally {
       setBusyPhotoId('');
     }
@@ -525,6 +558,16 @@ export default function EventPhotosClient({
           <Link href={eventPageHref} className={styles.backButton}>
             Back to event
           </Link>
+          {showAdminActions && (
+            <button
+              type="button"
+              onClick={handleUnsetCover}
+              disabled={busyPhotoId === 'cover'}
+              className={styles.standardButton}
+            >
+              Standard OG
+            </button>
+          )}
           <button
             type="button"
             onClick={openUploaderPrompt}
@@ -685,6 +728,7 @@ export default function EventPhotosClient({
           showAdminActions={showAdminActions}
           busy={busyPhotoId === selectedPhoto.id}
           onSetCover={handleSetCover}
+          onUnsetCover={handleUnsetCover}
           onDelete={handleDeletePhoto}
         />
       )}

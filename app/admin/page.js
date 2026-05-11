@@ -38,6 +38,12 @@ export default async function AdminPage() {
           <span className={styles.cardCta}>Open security →</span>
         </Link>
 
+        <Link href="/admin/og-preview" className={`${styles.card} glass-panel`}>
+          <h2>OG preview</h2>
+          <p>Preview share cards and manage photo gallery OG backgrounds and text.</p>
+          <span className={styles.cardCta}>Preview cards →</span>
+        </Link>
+
         <Link href="/admin/rsvp-reminders" className={`${styles.card} glass-panel`}>
           <h2>RSVP reminders</h2>
           <p>See who hasn’t RSVPed for the next event and DM them a reminder.</p>

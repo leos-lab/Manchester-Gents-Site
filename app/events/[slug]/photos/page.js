@@ -39,6 +39,8 @@ async function getEvent(slug) {
       description: true,
       startTime: true,
       galleryUrl: true,
+      photosOgTitle: true,
+      photosOgSubtitle: true,
       published: true
     }
   });
@@ -51,20 +53,21 @@ export async function generateMetadata({ params }) {
     return { title: 'Gallery not found | Manchester Gents' };
   }
 
+  const title = event.photosOgTitle || `${event.title} photos | Manchester Gents`;
   const description =
-    event.description || 'Photos from a Manchester Gents event at The Lodge.';
+    event.photosOgSubtitle || event.description || 'Photos from a Manchester Gents event at The Lodge.';
 
   return {
-    title: `${event.title} photos | Manchester Gents`,
+    title,
     description,
     openGraph: {
-      title: `${event.title} photos | Manchester Gents`,
+      title,
       description,
       images: [`/events/${params.slug}/opengraph-image`]
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${event.title} photos | Manchester Gents`,
+      title,
       description,
       images: [`/events/${params.slug}/opengraph-image`]
     }

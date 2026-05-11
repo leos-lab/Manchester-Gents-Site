@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const coverSchema = z.object({
-  coverImageUrl: z.string().url()
+  coverImageUrl: z.string().url().nullable()
 });
 
 export async function PATCH(request, { params }) {
@@ -27,7 +27,7 @@ export async function PATCH(request, { params }) {
     return Response.json({ event });
   } catch (error) {
     if (error?.name === 'ZodError') {
-      return Response.json({ error: 'A valid cover image URL is required.' }, { status: 400 });
+      return Response.json({ error: 'A valid cover image URL or null is required.' }, { status: 400 });
     }
     console.error('Update event cover error:', error);
     return Response.json({ error: 'Unable to update event cover.' }, { status: 500 });
