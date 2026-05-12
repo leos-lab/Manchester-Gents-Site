@@ -82,7 +82,7 @@ function renderOgCard({ logo, title, subtitle, detail, coverData }) {
               inset: 0,
               width: '1200px',
               height: '630px',
-              objectFit: 'contain',
+              objectFit: 'fill',
               opacity: 0.42
             }}
           />
