@@ -1,0 +1,36 @@
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 212, 96, 0.24);
+  background: rgba(255, 212, 96, 0.06);
+  box-shadow: 0 0 24px rgba(255, 212, 96, 0.08);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 212, 96, 0.12);
+  color: var(--color-gold);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  align-self: flex-start;
+}
+
+.notice p {
+  margin: 0;
+  line-height: 1.6;
+  color: rgba(247, 244, 237, 0.88);
+}
+
+.notice a {
+  color: var(--color-gold);
+  font-weight: 600;
+}

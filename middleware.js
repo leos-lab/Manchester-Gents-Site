@@ -37,38 +37,56 @@ async function getComingSoonState(req) {
   }
 }
 
-export async function middleware(req) {
-  const comingSoon = await getComingSoonState(req);
-  const hasExpired =
-    comingSoon.disableAtMs !== null && Date.now() >= comingSoon.disableAtMs;
-  const gateActive = comingSoon.enabled && !hasExpired;
+async function getPhotoNoticeState(req) {
+  const fallback = { enabled: true, updatedAtMs: null };
+  try {
+    const statusUrl = req.nextUrl.clone();
+    statusUrl.pathname = '/api/photo-notice';
+    statusUrl.search = '';
+    const res = await fetch(statusUrl.toString(), {
+      cache: 'no-store',
+      headers: { 'x-mg-internal': '1' }
+    });
+    if (!res.ok) {
+      return fallback;
+    }
+    const data = await res.json();
+    return {
+      enabled: typeof data?.enabled === 'boolean' ? data.enabled : fallback.enabled,
+      updatedAtMs: data?.updatedAt ? parseDateToMs(data.updatedAt) : null
+    };
+  } catch (error) {
+    return fallback;
+  }
+}
 
-  if (!gateActive) {
+const STATIC_PUBLIC_PATH =
+  /(^\/_next|^\/icons|^\/images|^\/fonts|^\/favicon\.ico$|^\/manifest\.json$|^\/site\.webmanifest$|^\/robots\.txt$|^\/sitemap\.xml$|\/opengraph-image$|\.[^/]+$)/;
+
+// Paths middleware fetches internally (getComingSoonState/getPhotoNoticeState/session-version).
+// These must bail out before any network call, or a request to one of them re-enters
+// middleware, which fetches them again, recursing exponentially.
+const INTERNAL_STATUS_PATH =
+  /^\/api\/(auth|session-version|coming-soon|photo-notice)(\/|$)/;
+
+export async function middleware(req) {
+  const { pathname, searchParams } = req.nextUrl;
+
+  if (INTERNAL_STATUS_PATH.test(pathname) || STATIC_PUBLIC_PATH.test(pathname)) {
     return NextResponse.next();
   }
 
-  const { pathname, searchParams } = req.nextUrl;
+  const comingSoon = await getComingSoonState(req);
+  const hasExpired =
+    comingSoon.disableAtMs !== null && Date.now() >= comingSoon.disableAtMs;
+  const comingSoonActive = comingSoon.enabled && !hasExpired;
 
-  const isPublicPath =
+  const isComingSoonPublicPath =
     pathname.startsWith('/coming-soon') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/session-version') ||
     pathname.startsWith('/api/coming-soon') ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/icons') ||
-    pathname.startsWith('/images') ||
-    pathname.startsWith('/fonts') ||
-    pathname === '/favicon.ico' ||
-    pathname === '/manifest.json' ||
-    pathname === '/site.webmanifest' ||
-    pathname === '/robots.txt' ||
-    pathname === '/sitemap.xml' ||
-    pathname.endsWith('/opengraph-image') ||
-    /\.[^/]+$/.test(pathname);
-
-  if (isPublicPath) {
-    return NextResponse.next();
-  }
+    STATIC_PUBLIC_PATH.test(pathname);
 
   let currentSessionVersion = null;
   try {
@@ -104,25 +122,51 @@ export async function middleware(req) {
   const validToken = hasValidVersion ? token : null;
 
   const isAdmin = validToken?.role === 'ADMIN';
-  const isAdminLoginPath = pathname.startsWith('/login') || pathname.startsWith('/register');
 
-  if (isAdminLoginPath && (isAdmin || searchParams.has('admin'))) {
-    return NextResponse.next();
+  if (comingSoonActive && !isComingSoonPublicPath) {
+    const isAdminLoginPath = pathname.startsWith('/login') || pathname.startsWith('/register');
+
+    if (isAdminLoginPath && (isAdmin || searchParams.has('admin'))) {
+      return NextResponse.next();
+    }
+
+    if (!isAdmin) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = '/coming-soon';
+      redirectUrl.search = '';
+      if (searchParams.has('admin')) {
+        redirectUrl.searchParams.set('admin', searchParams.get('admin') || '1');
+      }
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
-  if (isAdmin) {
-    return NextResponse.next();
+  const isPhotoNoticePublicPath =
+    pathname.startsWith('/photo-notice') ||
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/coming-soon') ||
+    STATIC_PUBLIC_PATH.test(pathname);
+
+  if (validToken && !isPhotoNoticePublicPath) {
+    const photoNotice = await getPhotoNoticeState(req);
+    if (photoNotice.enabled) {
+      const agreedMs = parseDateToMs(validToken.photoNoticeAgreedAt);
+      const needsAcknowledgment =
+        !agreedMs || (photoNotice.updatedAtMs !== null && agreedMs < photoNotice.updatedAtMs);
+
+      if (needsAcknowledgment) {
+        const redirectUrl = req.nextUrl.clone();
+        redirectUrl.pathname = '/photo-notice';
+        redirectUrl.search = '';
+        redirectUrl.searchParams.set('next', pathname);
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
   }
 
-  const redirectUrl = req.nextUrl.clone();
-  redirectUrl.pathname = '/coming-soon';
-  redirectUrl.search = '';
-
-  if (searchParams.has('admin')) {
-    redirectUrl.searchParams.set('admin', searchParams.get('admin') || '1');
-  }
-
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.next();
 }
 
 export const config = {

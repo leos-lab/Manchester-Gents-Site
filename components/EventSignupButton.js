@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { termsChecklist, photoConsentQuestions } from '@/lib/consentContent';
+import { termsChecklist } from '@/lib/consentContent';
+import PhotographyNotice from './PhotographyNotice';
 
 const TOTAL_STEPS = 3;
 
@@ -12,7 +13,8 @@ export default function EventSignupButton({
   deadline,
   existingSignup,
   consentSnapshot,
-  groupChatLink
+  groupChatLink,
+  photoNoticeEnabled = true
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -66,11 +68,7 @@ export default function EventSignupButton({
     if (!consentSnapshot) {
       return false;
     }
-    const missingTerms = termsChecklist.some((term) => consentSnapshot[term.key] !== true);
-    const incompletePhoto = photoConsentQuestions.some(
-      (question) => typeof consentSnapshot[question.key] !== 'boolean'
-    );
-    return missingTerms || incompletePhoto;
+    return termsChecklist.some((term) => consentSnapshot[term.key] !== true);
   }, [consentSnapshot]);
 
   const consentUpdatedAtText = useMemo(() => {
@@ -277,7 +275,7 @@ export default function EventSignupButton({
             {step === 1 && (
               <>
                 <p className="step-copy">
-                  Here is a quick refresher of the promises and photo preferences on your profile.
+                  Here is a quick refresher of the promises on your profile.
                   Update them anytime from the member profile page.
                 </p>
                 <div className="consent-columns">
@@ -297,24 +295,8 @@ export default function EventSignupButton({
                       })}
                     </ul>
                   </div>
-                  <div className="consent-column">
-                    <span className="section-eyebrow">Photo preferences</span>
-                    <ul className="consent-list">
-                      {photoConsentQuestions.map((question) => {
-                        const value = consentSnapshot?.[question.key];
-                        const display =
-                          value === true ? 'Yes' : value === false ? 'No' : 'Not set';
-                        return (
-                          <li key={question.key} className={value === true || value === false ? 'consent-ok' : 'consent-missing'}>
-                            <span className="consent-label">{question.helper}</span>
-                            <p>{question.label}</p>
-                            <span className="photo-value">{display}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
                 </div>
+                {photoNoticeEnabled && <PhotographyNotice />}
                 {consentUpdatedAtText && (
                   <p className="step-note">Last updated {consentUpdatedAtText}.</p>
                 )}

@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import InvalidateSessionsButton from '@/components/InvalidateSessionsButton';
 import ComingSoonGateCard from '@/components/ComingSoonGateCard';
+import PhotoNoticeGateCard from '@/components/PhotoNoticeGateCard';
 import { getComingSoonConfig } from '@/lib/comingSoonConfig';
+import { getPhotoNoticeConfig } from '@/lib/photoNoticeConfig';
 import styles from './page.module.css';
 
 export const metadata = {
@@ -10,6 +12,7 @@ export const metadata = {
 
 export default async function AdminSecurityPage() {
   const comingSoonConfig = await getComingSoonConfig();
+  const photoNoticeConfig = await getPhotoNoticeConfig();
 
   return (
     <main className={styles.main}>
@@ -44,6 +47,10 @@ export default async function AdminSecurityPage() {
             enabled: comingSoonConfig?.enabled ?? true,
             disableAt: comingSoonConfig?.disableAt ? comingSoonConfig.disableAt.toISOString() : null
           }}
+        />
+
+        <PhotoNoticeGateCard
+          initialConfig={{ enabled: photoNoticeConfig?.enabled ?? true }}
         />
       </section>
     </main>

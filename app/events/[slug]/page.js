@@ -5,6 +5,7 @@ import EventSignupButton from '@/components/EventSignupButton';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { getServerSession } from 'next-auth';
+import { getPhotoNoticeConfig } from '@/lib/photoNoticeConfig';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -85,6 +86,8 @@ export default async function EventDetailPage({ params }) {
   if (!event || !event.published) {
     notFound();
   }
+
+  const photoNoticeConfig = await getPhotoNoticeConfig();
 
   const attendeeConsentRecord = session?.user?.id
     ? await prisma.user.findUnique({
@@ -179,6 +182,10 @@ export default async function EventDetailPage({ params }) {
   const attendeeCount = event.attendees.length;
   const attendeeLabel = attendeeCount === 1 ? '1 attendee' : `${attendeeCount} attendees`;
   const eventHasStarted = event.startTime ? new Date(event.startTime) <= new Date() : false;
+  const signupDeadlinePassed = event.signupDeadline
+    ? new Date(event.signupDeadline) < new Date()
+    : false;
+  const isOpenForRsvp = !eventHasStarted && !signupDeadlinePassed;
 
   return (
     <div className={styles.page}>
@@ -200,6 +207,7 @@ export default async function EventDetailPage({ params }) {
                 existingSignup={existingSignup}
                 consentSnapshot={attendeeConsent}
                 groupChatLink={event.groupChatLink}
+                photoNoticeEnabled={photoNoticeConfig.enabled && isOpenForRsvp}
               />
             </div>
             <aside className={`${styles.eventSidebar} glass-panel`}>
@@ -209,9 +217,18 @@ export default async function EventDetailPage({ params }) {
                   <p className={styles.sidebarCopy}>
                     Relive the night and download your favourite shots from the club photographer.
                   </p>
-                  <Link href={`/events/${event.slug}/photos`} className={styles.galleryLink}>
-                    View photo gallery
-                  </Link>
+                  {session?.user ? (
+                    <Link href={`/events/${event.slug}/photos`} className={styles.galleryLink}>
+                      View photo gallery
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/login?redirect=${encodeURIComponent(`/events/${event.slug}/photos`)}`}
+                      className={styles.galleryLink}
+                    >
+                      Sign in to view photo gallery
+                    </Link>
+                  )}
                 </div>
               )}
               <div className={styles.sidebarSection}>
@@ -219,9 +236,11 @@ export default async function EventDetailPage({ params }) {
                   <span className="heading-font">Guest list</span>
                   <span className={styles.guestCount}>{attendeeLabel}</span>
                 </div>
-                <Link href={`/events/${event.slug}/consent`} className={styles.consentLink}>
-                  Review other attendees&apos; photo consent
-                </Link>
+                {!photoNoticeConfig.enabled && (
+                  <Link href={`/events/${event.slug}/consent`} className={styles.consentLink}>
+                    Review other attendees&apos; photo consent
+                  </Link>
+                )}
                 <ul className={styles.guestList}>
                   {sortedAttendees.map(({ signup, displayName, handle }) => {
                     const showHandle = handle && !handle.startsWith('noinsta_');

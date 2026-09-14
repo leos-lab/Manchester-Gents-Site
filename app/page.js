@@ -27,16 +27,16 @@ async function getHomeData() {
     });
     return {
       nextEvent: events[0] || null,
-      otherEvents: events.slice(1)
+      upcomingEvents: events
     };
   } catch (error) {
     console.error('Failed to load events for home page, rendering fallback state.', error);
-    return { nextEvent: null, otherEvents: [] };
+    return { nextEvent: null, upcomingEvents: [] };
   }
 }
 
 export default async function HomePage() {
-  const { nextEvent, otherEvents } = await getHomeData();
+  const { nextEvent, upcomingEvents } = await getHomeData();
 
   return (
     <div className={styles.page}>
@@ -58,13 +58,13 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className={styles.eventsGrid}>
-            {otherEvents.length === 0 && (
+            {upcomingEvents.length === 0 && (
               <div className={`${styles.emptyState} glass-panel`}>
-                <h3>No other events are open yet.</h3>
+                <h3>No events are open yet.</h3>
                 <p>Keep an eye on your inbox and Instagram for the next drop.</p>
               </div>
             )}
-            {otherEvents.map((event) => (
+            {upcomingEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
           </div>

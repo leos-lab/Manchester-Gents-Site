@@ -26,84 +26,92 @@ model ComingSoonConfig {
   updatedAt DateTime  @updatedAt
 }
 
+model PhotoNoticeConfig {
+  id        Int      @id @default(1)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model User {
-  id              String        @id @default(cuid())
-  email           String        @unique
-  passwordHash    String
-  instagramHandle String        @unique
-  firstName       String?
-  lastName        String?
-  preferredName   String?
-  name            String?
-  fullName        String?
-  shareFirstName  Boolean       @default(false)
-  phoneNumber     String?
-  preferredContactMethod String?
-  profilePhotoUrl String?
+  id                      String               @id @default(cuid())
+  email                   String               @unique
+  passwordHash            String
+  instagramHandle         String               @unique
+  firstName               String?
+  lastName                String?
+  preferredName           String?
+  name                    String?
+  fullName                String?
+  shareFirstName          Boolean              @default(false)
+  phoneNumber             String?
+  preferredContactMethod  String?
+  profilePhotoUrl         String?
   profilePhotoOriginalUrl String?
-  generalPhotoConsent Boolean?   @default(false)
-  groupFaceConsent   Boolean?    @default(false)
-  otherFaceConsent   Boolean?    @default(false)
-  taggingConsent     Boolean?    @default(false)
-  isPlaceholder      Boolean    @default(false)
-  termsConsentCulture Boolean   @default(false)
-  termsSafeSpace      Boolean   @default(false)
-  termsNoHate         Boolean   @default(false)
-  termsPrivacy        Boolean   @default(false)
-  termsGuidelines     Boolean   @default(false)
-  termsAgreed         Boolean   @default(false)
-  termsSignedAt       DateTime?
-  consentUpdatedAt    DateTime?
-  bio             String?
-  role            Role          @default(MEMBER)
-  eventsSignedUp  EventSignup[]
-  passwordResetTokens PasswordResetToken[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  generalPhotoConsent     Boolean?             @default(false)
+  groupFaceConsent        Boolean?             @default(false)
+  otherFaceConsent        Boolean?             @default(false)
+  taggingConsent          Boolean?             @default(false)
+  isPlaceholder           Boolean              @default(false)
+  termsConsentCulture     Boolean              @default(false)
+  termsSafeSpace          Boolean              @default(false)
+  termsNoHate             Boolean              @default(false)
+  termsPrivacy            Boolean              @default(false)
+  termsGuidelines         Boolean              @default(false)
+  termsAgreed             Boolean              @default(false)
+  termsSignedAt           DateTime?
+  consentUpdatedAt        DateTime?
+  photoNoticeAgreedAt     DateTime?
+  bio                     String?
+  role                    Role                 @default(MEMBER)
+  eventsSignedUp          EventSignup[]
+  passwordResetTokens     PasswordResetToken[]
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
 }
 
 model Event {
-  id             String        @id @default(cuid())
-  slug           String        @unique
-  title          String
-  subtitle       String?
-  description    String?
-  location       String?
-  startTime      DateTime
-  endTime        DateTime?
-  groupChatLink  String?
-  threadId       String?      @map("thread_id")
-  galleryUrl     String?    @map("galleryurl")
-  primaryColor   String?
-  secondaryColor String?
-  accentColor    String?
-  backgroundColor String?
-  textColor      String?
-  coverImageUrl  String?
-  photosOgTitle  String?
+  id               String        @id @default(cuid())
+  slug             String        @unique
+  title            String
+  subtitle         String?
+  description      String?
+  location         String?
+  startTime        DateTime
+  endTime          DateTime?
+  groupChatLink    String?
+  threadId         String?       @map("thread_id")
+  galleryUrl       String?       @map("galleryurl")
+  primaryColor     String?
+  secondaryColor   String?
+  accentColor      String?
+  backgroundColor  String?
+  textColor        String?
+  coverImageUrl    String?
+  photosOgTitle    String?
   photosOgSubtitle String?
-  photosOgDetail String?
-  signupDeadline DateTime?
-  capacity       Int?
-  published      Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  attendees      EventSignup[]
+  photosOgDetail   String?
+  signupDeadline   DateTime?
+  capacity         Int?
+  published        Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  attendees        EventSignup[]
 }
 
 model EventSignup {
-  id        String       @id @default(cuid())
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  event     Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId   String
-  status    SignupStatus @default(CONFIRMED)
-  note      String?
-  specialRequests      String?
-  groupChatAdded Boolean @default(false)
+  id                      String       @id @default(cuid())
+  user                    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                  String
+  event                   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId                 String
+  status                  SignupStatus @default(CONFIRMED)
+  note                    String?
+  specialRequests         String?
+  groupChatAdded          Boolean      @default(false)
   actionRequiredMessageId String?
-  chatValidationCode String? @unique
-  createdAt DateTime     @default(now())
+  chatValidationCode      String?      @unique
+  createdAt               DateTime     @default(now())
 }
 
 model GlobalSetting {
@@ -114,13 +122,13 @@ model GlobalSetting {
 }
 
 model PasswordResetToken {
-  id         String   @id @default(cuid())
-  tokenHash  String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime @default(now())
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
   @@index([userId])
 }

@@ -1,7 +1,9 @@
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import prisma from '@/lib/prisma';
-import { notFound } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { notFound, redirect } from 'next/navigation';
 import EventPhotosClient from './EventPhotosClient';
 import styles from './page.module.css';
 
@@ -75,6 +77,11 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function EventPhotosPage({ params }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    redirect(`/login?redirect=${encodeURIComponent(`/events/${params.slug}/photos`)}`);
+  }
+
   const event = await getEvent(params.slug);
 
   if (!event || !event.published) {
