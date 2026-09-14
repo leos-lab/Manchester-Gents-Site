@@ -48,11 +48,7 @@ export async function PATCH(request) {
         termsGuidelines: data.termsGuidelines,
         termsAgreed: true,
         termsSignedAt: consentTimestamp,
-        consentUpdatedAt: consentTimestamp,
-        generalPhotoConsent: data.generalPhotoConsent,
-        groupFaceConsent: data.groupFaceConsent,
-        otherFaceConsent: data.otherFaceConsent,
-        taggingConsent: data.taggingConsent
+        consentUpdatedAt: consentTimestamp
       }
     });
 

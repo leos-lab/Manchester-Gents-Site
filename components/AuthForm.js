@@ -9,8 +9,9 @@ import {
   passwordResetSchema,
   registerSchema as registerValidation
 } from '@/lib/validators';
-import { termsChecklist, photoConsentQuestions } from '@/lib/consentContent';
+import { termsChecklist } from '@/lib/consentContent';
 import ProfilePhotoUploader from './ProfilePhotoUploader';
+import PhotographyNotice from './PhotographyNotice';
 import RadioPill from './RadioPill';
 
 const loginSchema = z.object({
@@ -44,10 +45,7 @@ export function RegisterForm({ redirectTo = '/' }) {
     termsNoHate: false,
     termsPrivacy: false,
     termsGuidelines: false,
-    generalPhotoConsent: null,
-    groupFaceConsent: null,
-    otherFaceConsent: null,
-    taggingConsent: null
+    photoNoticeAgreed: false
   });
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,15 +89,14 @@ export function RegisterForm({ redirectTo = '/' }) {
       return;
     }
 
-    const incompletePhoto = photoConsentQuestions.find((question) => formState[question.key] === null);
-    if (incompletePhoto) {
-      setError('Please choose your preference for each photo consent question.');
-      return;
-    }
-
     const termsAccepted = termsChecklist.every((term) => formState[term.key]);
     if (!termsAccepted) {
       setError('Please agree to every term and condition to continue.');
+      return;
+    }
+
+    if (!formState.photoNoticeAgreed) {
+      setError('Please accept the photography notice to continue.');
       return;
     }
 
@@ -121,10 +118,7 @@ export function RegisterForm({ redirectTo = '/' }) {
       termsNoHate: formState.termsNoHate,
       termsPrivacy: formState.termsPrivacy,
       termsGuidelines: formState.termsGuidelines,
-      generalPhotoConsent: formState.generalPhotoConsent,
-      groupFaceConsent: formState.groupFaceConsent,
-      otherFaceConsent: formState.otherFaceConsent,
-      taggingConsent: formState.taggingConsent
+      photoNoticeAgreed: formState.photoNoticeAgreed
     };
 
     const parsed = registerValidation.safeParse(payload);
@@ -303,31 +297,18 @@ export function RegisterForm({ redirectTo = '/' }) {
         </div>
       </div>
       <div className="form-section">
-        <span className="section-eyebrow">Photo consent</span>
-        <p className="section-copy">
-          Let us know how you would like to appear in stories, recaps, and future features. You can
-          update these at any time from your profile.
-        </p>
-        <div className="photo-grid">
-          {photoConsentQuestions.map((question) => (
-            <div key={question.key} className="photo-card">
-              <span className="photo-helper">{question.helper}</span>
-              <p>{question.label}</p>
-              <div className="radio-group">
-                <RadioPill
-                  label="Yes"
-                  active={formState[question.key] === true}
-                  onClick={handleSelect(question.key, true)}
-                />
-                <RadioPill
-                  label="No"
-                  active={formState[question.key] === false}
-                  onClick={handleSelect(question.key, false)}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <PhotographyNotice />
+        <button
+          type="button"
+          className={`term-card ${formState.photoNoticeAgreed ? 'term-card-active' : ''}`}
+          onClick={handleToggleTerm('photoNoticeAgreed')}
+        >
+          <span className="term-title">Photography notice</span>
+          <p>I have read and accept the photography notice above.</p>
+          <span className="term-indicator">
+            {formState.photoNoticeAgreed ? 'Agreed' : 'Tap to agree'}
+          </span>
+        </button>
       </div>
       <p className="consent-note">
         You can review or update your consents at any time on your member profile.
@@ -423,26 +404,6 @@ export function RegisterForm({ redirectTo = '/' }) {
           letter-spacing: 0.12em;
           text-transform: uppercase;
           opacity: 0.65;
-        }
-        .photo-grid {
-          display: grid;
-          gap: 1rem;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        }
-        .photo-card {
-          border-radius: 16px;
-          padding: 1rem 1.2rem;
-          background: rgba(15, 26, 40, 0.65);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        .photo-helper {
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          font-size: 0.75rem;
-          opacity: 0.7;
         }
         .consent-note {
           margin: 0;

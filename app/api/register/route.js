@@ -98,10 +98,6 @@ export async function POST(request) {
       preferredContactMethod,
       profilePhotoUrl: data.profilePhotoUrl ?? null,
       profilePhotoOriginalUrl: data.profilePhotoOriginalUrl ?? null,
-      generalPhotoConsent: data.generalPhotoConsent,
-      groupFaceConsent: data.groupFaceConsent,
-      otherFaceConsent: data.otherFaceConsent,
-      taggingConsent: data.taggingConsent,
       termsConsentCulture: data.termsConsentCulture,
       termsSafeSpace: data.termsSafeSpace,
       termsNoHate: data.termsNoHate,
@@ -110,6 +106,7 @@ export async function POST(request) {
       termsAgreed: true,
       termsSignedAt: consentTimestamp,
       consentUpdatedAt: consentTimestamp,
+      photoNoticeAgreedAt: consentTimestamp,
       passwordHash,
       isPlaceholder: false,
     };

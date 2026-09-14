@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import RadioPill from './RadioPill';
-import { termsChecklist, photoConsentQuestions } from '@/lib/consentContent';
+import { termsChecklist } from '@/lib/consentContent';
 import { profileUpdateSchema } from '@/lib/validators';
 import ProfilePhotoUploader from './ProfilePhotoUploader';
 
@@ -24,11 +24,7 @@ export default function ProfileForm({ user }) {
     termsSafeSpace: user.termsSafeSpace,
     termsNoHate: user.termsNoHate,
     termsPrivacy: user.termsPrivacy,
-    termsGuidelines: user.termsGuidelines,
-    generalPhotoConsent: user.generalPhotoConsent,
-    groupFaceConsent: user.groupFaceConsent,
-    otherFaceConsent: user.otherFaceConsent,
-    taggingConsent: user.taggingConsent
+    termsGuidelines: user.termsGuidelines
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -73,12 +69,6 @@ export default function ProfileForm({ user }) {
       return;
     }
 
-    const incompletePhoto = photoConsentQuestions.find((question) => typeof formState[question.key] !== 'boolean');
-    if (incompletePhoto) {
-      setError('Please choose an answer for each photo consent item.');
-      return;
-    }
-
     const termsAccepted = termsChecklist.every((term) => formState[term.key]);
     if (!termsAccepted) {
       setError('All Manchester Gents terms must be accepted to save your profile.');
@@ -98,11 +88,7 @@ export default function ProfileForm({ user }) {
       termsSafeSpace: formState.termsSafeSpace,
       termsNoHate: formState.termsNoHate,
       termsPrivacy: formState.termsPrivacy,
-      termsGuidelines: formState.termsGuidelines,
-      generalPhotoConsent: formState.generalPhotoConsent,
-      groupFaceConsent: formState.groupFaceConsent,
-      otherFaceConsent: formState.otherFaceConsent,
-      taggingConsent: formState.taggingConsent
+      termsGuidelines: formState.termsGuidelines
     };
 
     const parsed = profileUpdateSchema.safeParse(payload);
@@ -229,32 +215,6 @@ export default function ProfileForm({ user }) {
           })}
         </div>
       </div>
-      <div className="form-section">
-        <span className="section-eyebrow">Photo preferences</span>
-        <p className="section-copy">
-          Adjust how we feature you in event coverage and social storytelling.
-        </p>
-        <div className="photo-grid">
-          {photoConsentQuestions.map((question) => (
-            <div key={question.key} className="photo-card">
-              <span className="photo-helper">{question.helper}</span>
-              <p>{question.label}</p>
-              <div className="radio-group">
-                <RadioPill
-                  label="Yes"
-                  active={formState[question.key] === true}
-                  onClick={handleSelect(question.key, true)}
-                />
-                <RadioPill
-                  label="No"
-                  active={formState[question.key] === false}
-                  onClick={handleSelect(question.key, false)}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
       {error && <p className="status status-error">{error}</p>}
       {success && <p className="status status-success">Profile updated successfully.</p>}
       <div className="form-footer">
@@ -349,26 +309,6 @@ export default function ProfileForm({ user }) {
           text-transform: uppercase;
           opacity: 0.65;
         }
-        .photo-grid {
-          display: grid;
-          gap: 1rem;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        }
-        .photo-card {
-          border-radius: 16px;
-          padding: 1rem 1.2rem;
-          background: rgba(15, 26, 40, 0.65);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        .photo-helper {
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          font-size: 0.75rem;
-          opacity: 0.7;
-        }
         .status {
           margin: 0;
           font-size: 0.82rem;
@@ -414,8 +354,7 @@ export default function ProfileForm({ user }) {
           .radio-group {
             gap: 0.5rem;
           }
-          .term-card,
-          .photo-card {
+          .term-card {
             padding: 0.9rem 1rem;
           }
           .form-footer {
