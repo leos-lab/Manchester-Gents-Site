@@ -4,9 +4,6 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import ProfileForm from "./ProfileForm";
 import { getDisplayName } from "@/lib/displayName";
-import { photoConsentQuestions } from "@/lib/consentContent";
-
-const statusLabel = (value) => (value ? "Yes" : "No");
 
 export default function ProfileOverview({ user }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -120,17 +117,6 @@ export default function ProfileOverview({ user }) {
           </div>
         </article>
 
-        <article className="info-card glass-panel">
-          <span className="card-eyebrow">Photo & tagging preferences</span>
-          <ul className="status-list">
-            {photoConsentQuestions.map((question) => (
-              <li key={question.key}>
-                <span>{question.helper}</span>
-                <strong>{statusLabel(user[question.key])}</strong>
-              </li>
-            ))}
-          </ul>
-        </article>
       </section>
 
       {isEditing ? (
