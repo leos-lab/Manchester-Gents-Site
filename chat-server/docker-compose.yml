@@ -17,6 +17,16 @@ services:
     restart: unless-stopped
     env_file: .env.uat
     profiles: [uat]
+  # UAT's own Cloudflare tunnel (public hostnames are set in the dashboard).
+  tunnel-uat:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_UAT_TUNNEL_TOKEN}
+    profiles: [uat]
+    depends_on:
+      - chat-uat
   tunnel:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
