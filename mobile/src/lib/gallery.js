@@ -66,7 +66,8 @@ export async function loadPhotos(gallery, page = 1) {
 
 // Members can add photos, like on the website: a short-lived upload token
 // from Pinstripe, then one multipart upload with the member's name attached.
-export async function uploadPhotos(gallery, assets, onProgress) {
+// uploaderName: who the photos are credited to (asked before uploading).
+export async function uploadPhotos(gallery, assets, onProgress, uploaderName) {
   const tokenRes = await fetch(`${gallery.apiBase}/api/public/upload-token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -81,7 +82,7 @@ export async function uploadPhotos(gallery, assets, onProgress) {
       filePart({ uri: asset.uri, mimeType: asset.mimeType || 'image/jpeg', fileName: asset.fileName || `photo-${Date.now()}-${i}.jpg` })
     )
   );
-  form.append('uploaderName', gallery.uploaderName || 'Manchester Gents member');
+  form.append('uploaderName', uploaderName || gallery.uploaderName || 'Manchester Gents member');
   form.append('source', 'app');
   const result = await json(
     await fetch(`${galleryPath(gallery)}/photos/bulk-upload`, {

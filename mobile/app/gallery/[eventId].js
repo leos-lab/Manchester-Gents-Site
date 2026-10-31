@@ -25,6 +25,8 @@ import { Glass } from '../../src/components/Glass';
 import { Icon } from '../../src/components/Icon';
 import { colors, space, WIDE_BREAKPOINT } from '../../src/theme';
 import { BackupImage } from '../../src/components/BackupImage';
+import { UploaderPrompt } from '../../src/components/UploaderPrompt';
+import { useAuth } from '../../src/context/AuthContext';
 
 const GAP = 2;
 
@@ -42,6 +44,8 @@ export default function Gallery() {
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
+  const [pending, setPending] = useState(null); // picked photos awaiting a name
+  const { user } = useAuth();
 
   const columns = width >= WIDE_BREAKPOINT ? 5 : 3;
   // Leave room for the Duo's folded-state rail (see src/lib/layout.js).
@@ -92,9 +96,15 @@ export default function Gallery() {
       exif: false
     });
     if (result.canceled || !result.assets?.length) return;
+    setPending(result.assets); // ask who to credit first (UploaderPrompt)
+  };
+
+  const upload = async (uploaderName) => {
+    const assets = pending;
+    setPending(null);
     setUploading(true);
     try {
-      const outcome = await uploadPhotos(gallery, result.assets);
+      const outcome = await uploadPhotos(gallery, assets, undefined, uploaderName);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       if (outcome.failed?.length) {
         Alert.alert('Some photos didn’t upload', `${outcome.succeeded.length} added, ${outcome.failed.length} failed.`);
@@ -161,6 +171,7 @@ export default function Gallery() {
         }
       />
       <Viewer photos={photos} index={viewerIndex} onClose={() => setViewerIndex(null)} />
+      <UploaderPrompt visible={Boolean(pending)} count={pending?.length || 0} user={user} onUpload={upload} onCancel={() => setPending(null)} />
     </>
   );
 }
