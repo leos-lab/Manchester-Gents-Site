@@ -102,6 +102,9 @@ function NavBarContent() {
             {userRole === "ADMIN" && <ToggleAdminModeButton />}
             {status === "loading" ? null : session ? (
               <>
+                <Link href="/chat" className="nav-secondary">
+                  Chats
+                </Link>
                 <Link href="/dashboard" className="nav-secondary">
                   Dashboard
                 </Link>

@@ -46,7 +46,7 @@ export default async function AdminPage() {
 
         <Link href="/admin/rsvp-reminders" className={`${styles.card} glass-panel`}>
           <h2>RSVP reminders</h2>
-          <p>See who hasn’t RSVPed for the next event and DM them a reminder.</p>
+          <p>See who hasn’t RSVPed for the next event and send them a reminder.</p>
           <span className={styles.cardCta}>Review list →</span>
         </Link>
 

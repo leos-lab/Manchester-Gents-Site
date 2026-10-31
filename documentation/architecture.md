@@ -16,7 +16,7 @@
 | Events | `app/events`, `components/EventSignupButton.js` | Event list/detail, RSVP actions, palette-driven styling. |
 | Dashboard | `app/dashboard/page.js` | Member reservations and recommended events. |
 | Profile | `app/profile/page.js`, `components/ProfileOverview.js`, `components/ProfileForm.js` | Member overview with optional consent editor. |
-| Admin | `app/admin/page.js`, `components/AdminEventForm.js`, `components/EventAdminWorkspace.js`, `components/CommunityChatChecklist.js` | Event creation, tabbed workspace for admin tools, and the post-event community chat checklist (admin-only). |
+| Admin | `app/admin/page.js`, `components/AdminEventForm.js`, `components/EventAdminWorkspace.js` | Event creation, tabbed workspace for admin tools, and the post-event community chat checklist (admin-only). |
 | Admin members | `app/admin/members/page.js` | Member directory with consent summaries and reference photos. |
 | Authentication | `components/AuthForm.js`, `app/login`, `app/register`, `app/api/auth/[...nextauth]` | Registration/login flows. |
 | API routes | `app/api/**/*` | Next.js Route Handlers for registration, login, events CRUD, RSVP operations, consent updates, and private profile photo uploads. |

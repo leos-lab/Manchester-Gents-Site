@@ -26,7 +26,7 @@ Administrators can:
 4. **Member dashboard** summarising reservations and recommended events.
 5. **Profile management** for updating names, private suited photo, consents, and contact info.
 6. **Admin interface** for event creation, palette control, member reviews, and ongoing edits.
-7. **Post-event community chat checklist** so admins can see who still needs adding to the shared Instagram group after each meetup.
+7. **In-app chat**: each event has a group chat for confirmed attendees, members can DM each other, and admins moderate reports at `/admin/chat-reports`.
 
 ## Directory Map (Top Level)
 - `app/` – Next.js App Router pages and layouts.

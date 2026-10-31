@@ -8,13 +8,6 @@ function normalizeHandle(handle) {
   return (handle || "").replace(/^@/, "").trim();
 }
 
-function fillTemplate(template, tokens) {
-  return Object.entries(tokens).reduce((value, [key, replacement]) => {
-    const safe = String(replacement ?? "");
-    return value.replaceAll(`{{${key}}}`, safe);
-  }, template);
-}
-
 export default function AdminRsvpRemindersTable({
   eventId,
   eventSlug,
@@ -23,31 +16,6 @@ export default function AdminRsvpRemindersTable({
   rsvpLink,
   members,
 }) {
-  const [messageTemplate, setMessageTemplate] = useState(() => {
-    const startTime = eventStartTimeIso ? new Date(eventStartTimeIso) : null;
-    const dateLabel = startTime
-      ? startTime.toLocaleString("en-GB", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        })
-      : "";
-
-    return [
-      "Hi {{name}}!",
-      "",
-      "Thank you for being part of Manchester Gents by registering an account with us!",
-      "",
-
-      `Quick reminder to RSVP for ${eventTitle}${
-        dateLabel ? ` (${dateLabel})` : ""
-      }.`,
-      "",
-      "RSVP here:",
-      "{{rsvpLink}}",
-      "",
-      "If you have any questions, please message @manchestergents. 🕴️🐝",
-    ].join("\n");
-  });
 
   const [statusById, setStatusById] = useState(() => ({}));
   const [query, setQuery] = useState("");
@@ -65,53 +33,34 @@ export default function AdminRsvpRemindersTable({
 
   const handleSend = async (member) => {
     const memberId = member.id;
-    const handle = normalizeHandle(member.instagramHandle);
-    if (!handle) {
-      setStatusById((prev) => ({
-        ...prev,
-        [memberId]: { state: "error", message: "Missing Instagram handle." },
-      }));
-      return;
-    }
-
     setStatusById((prev) => ({
       ...prev,
       [memberId]: { state: "sending", message: "Sending…" },
     }));
 
-    const message = fillTemplate(messageTemplate, {
-      name: member.displayName || handle,
-      rsvpLink,
-      eventTitle,
-      eventSlug,
-    });
 
     try {
       const response = await fetch("/api/admin/rsvp-reminders/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: memberId,
-          eventId,
-          message,
-        }),
+        body: JSON.stringify({ userId: memberId, eventId }),
       });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.error || "Unable to send DM.");
+        throw new Error(data.error || "Unable to send reminder.");
       }
 
       setStatusById((prev) => ({
         ...prev,
-        [memberId]: { state: "sent", message: "Sent." },
+        [memberId]: { state: "sent", message: data.via === "push" ? "Sent to the app." : "Emailed." },
       }));
     } catch (error) {
       setStatusById((prev) => ({
         ...prev,
         [memberId]: {
           state: "error",
-          message: error.message || "Unable to send DM.",
+          message: error.message || "Unable to send reminder.",
         },
       }));
     }
@@ -148,19 +97,9 @@ export default function AdminRsvpRemindersTable({
         </div>
       </header>
 
-      <details className={styles.templateDetails}>
-        <summary className={styles.templateSummary}>Message template</summary>
-        <p className={styles.templateHint}>
-          Use placeholders: <code>{"{{name}}"}</code>,{" "}
-          <code>{"{{rsvpLink}}"}</code>.
-        </p>
-        <textarea
-          className={styles.templateTextarea}
-          value={messageTemplate}
-          onChange={(event) => setMessageTemplate(event.target.value)}
-          rows={8}
-        />
-      </details>
+      <p className={styles.templateHint}>
+        Members with the app get a push notification that opens the event. Everyone else gets an email.
+      </p>
 
       {members.length === 0 ? (
         <div className={`${styles.emptyCard} glass-panel`}>
@@ -235,7 +174,7 @@ export default function AdminRsvpRemindersTable({
                             !handle ? "Missing Instagram handle" : undefined
                           }
                         >
-                          {sending ? "Sending…" : sent ? "Sent" : "Send DM"}
+                          {sending ? "Sending…" : sent ? "Sent" : "Send reminder"}
                         </button>
                         {memberStatus?.message && (
                           <span

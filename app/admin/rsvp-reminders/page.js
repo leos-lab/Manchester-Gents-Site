@@ -75,7 +75,7 @@ export default async function AdminRsvpRemindersPage() {
             ← Back to admin
           </Link>
           <h1>RSVP reminders</h1>
-          <p>Review members who haven’t RSVPed for the next event, then send them an Instagram DM.</p>
+          <p>Review members who haven’t RSVPed for the next event, then send them a reminder by push or email.</p>
         </header>
 
         <section className={styles.notice}>
@@ -105,7 +105,7 @@ export default async function AdminRsvpRemindersPage() {
           ← Back to admin
         </Link>
         <h1>RSVP reminders</h1>
-        <p>Review members who haven’t RSVPed for the next event, then send them an Instagram DM.</p>
+        <p>Review members who haven’t RSVPed for the next event, then send them a reminder by push or email.</p>
       </header>
 
       <section className={styles.eventSection}>

@@ -5,7 +5,7 @@ import { registerSchema } from "@/lib/validators";
 import { getDisplayName } from "@/lib/displayName";
 import { sendMakeWebhook, buildMemberSignupPayload } from "@/lib/makeWebhook";
 import { getBaseUrl } from "@/lib/appUrl";
-import { sendInstagramDm } from "@/lib/instagramAutomation";
+import { sendWelcomeEmail } from "@/lib/email";
 import {
   assertRegistrationPhotos,
   claimRegistrationPhotos,
@@ -158,30 +158,12 @@ export async function POST(request) {
       })
     );
 
-    if (user.instagramHandle) {
-      const eventsLink = `${getBaseUrl()}/events/latest`;
-      const welcomeMessage = [
-        `Hi ${displayName}!`,
-        "",
-        "Thank you for creating an account on the Manchester Gents website!",
-        "",
-        "Please continue RSVPing on the website",
-        eventsLink,
-        "",
-        "If you have any quesionts, please feel free to message @manchestergents",
-      ].join("\n");
-      try {
-        const dmResult = await sendInstagramDm({
-          username: user.instagramHandle,
-          message: welcomeMessage,
-        });
-        if (dmResult?.response) {
-          console.log("Welcome DM response:", dmResult.response);
-        }
-      } catch (dmError) {
-        console.error("Welcome DM failed:", dmError?.message || dmError);
-      }
-    }
+    // Welcome email (replaces the old Instagram welcome DM).
+    await sendWelcomeEmail({
+      to: user.email,
+      name: displayName,
+      eventsUrl: `${getBaseUrl()}/events`,
+    }).catch((error) => console.error("Welcome email failed:", error?.message || error));
 
     return Response.json({ user }, { status: 201 });
   } catch (error) {

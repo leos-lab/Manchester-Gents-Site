@@ -71,6 +71,6 @@ apply to open chats immediately:
 
 ## Push from the website
 
-`lib/expoPush.js` sends Expo pushes: RSVP reminders (push first, Instagram DM
-fallback) and a "new event" alert when an admin creates an event. Optional
+`lib/expoPush.js` sends Expo pushes: RSVP reminders (push first, email
+fallback via `lib/email.js`) and a "new event" alert when an admin creates an event. Optional
 `EXPO_ACCESS_TOKEN` if enhanced push security is on in the Expo account.

@@ -57,10 +57,9 @@
 
 ### Event Admin Workspace (`app/events/[slug]/admin/page.js`)
 - Admin-only dashboard per event.
-- Tabbed workspace keeps things desktop-friendly: “Event details”, “Guest list”, and “Community chat”.
+- Tabbed workspace keeps things desktop-friendly: “Event details” and “Guest list”.
 - Event tab houses `AdminEventForm` for tuning copy, palette, timings, and capacity.
 - Guest tab stacks `AdminAddToEventForm` (member/placeholder additions or table paste) with `EventAttendeeManager` (search + removal).
-- Community tab surfaces `CommunityChatChecklist`, highlighting first-timers so admins can add them to the standing Instagram DM after each meetup.
 
 ### Member directory (`app/admin/members/page.js`)
 - Table collapses to cards on mobile; each row links to the member detail view.
@@ -74,8 +73,7 @@
 
 ## Components of Interest
 - **`EventSignupButton`:** Client component managing reservation state, special requests, cancellation confirmations, and error messaging.
-- **`EventAdminWorkspace`:** Tabbed wrapper that switches between event settings, guest list tools, and the community chat checklist.
-- **`CommunityChatChecklist`:** Admin-only helper that filters/sorts attendees, highlights first-timers, and offers quick copy buttons for Instagram handles when inviting members to the community chat.
+- **`EventAdminWorkspace`:** Tabbed wrapper that switches between event settings and guest list tools.
 - **`AuthForm`:** Two exports (RegisterForm, LoginForm) using shared `FormField`.
 - **`ProfileOverview`:** Read-first experience summarising member data/consents and toggling the editor.
 - **`ProfileForm`:** Mirrors registration layout but focuses on editing name privacy, private reference photo, and consent data.
@@ -108,3 +106,9 @@
 - When altering UI flows (e.g., adding new steps, modals, or links), update this file.
 - If PALETTE or component naming changes, reflect adjustments in architecture + data docs.
 - Screenshots (once available) can be stored under `public/` and referenced here for visual guidance.***
+
+## Website v2 (2027)
+
+- **Photo-led:** event cover photos lead everywhere (home hero, event cards, event pages). The home hero cuts three cover photos along the lines of the logo's lapels with gold seams; the Thelorin wordmark crosses the V.
+- **Members-only photos:** gallery photos (from Pinstripe) only appear for signed-in members; signed-out visitors see event covers only.
+- **New pages:** `/chat` (event chats and DMs), `/members` (search; defaults to people you've been to socials with), `/members/:id` (profile: photo, events attended, Instagram, Message).

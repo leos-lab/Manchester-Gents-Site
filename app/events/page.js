@@ -37,71 +37,50 @@ export const metadata = {
 
 export default async function EventsPage() {
   const { upcoming, past } = await getEventsByGrouping();
+  const [next, ...later] = upcoming;
 
   return (
     <div className={styles.page}>
       <NavBar />
-      <main className={styles.eventsMain}>
-        <header className={`${styles.eventsHero} glass-panel`}>
-          <span className={styles.sectionEyebrow}>Our socials</span>
-          <h1>Relaxed evenings at The Lodge</h1>
+      <main className={styles.v2Main}>
+        <header className={styles.v2Header}>
+          <h1 className="heading-font">Events</h1>
           <p>
-            Explore upcoming meetups for suited gents in Manchester. Each social is informal — just
-            drinks, conversation, and the option to keep the night going afterwards.
+            Relaxed evenings at The Lodge. Drinks, conversation, and the option to keep the night going
+            afterwards. We keep each guest list small so everyone gets time to talk.
           </p>
         </header>
-        <section className={styles.eventsGroup}>
-          <header className={styles.groupHeader}>
-            <span className={styles.sectionEyebrow}>Future experiences</span>
-            <h2>Upcoming events</h2>
-            <p>
-              Secure your RSVP while spaces remain. We keep the guest list intentionally small so
-              everyone gets time to talk.
+
+        <section aria-labelledby="upcoming" className={styles.v2Section}>
+          <h2 id="upcoming" className={styles.v2Title}>Coming up</h2>
+          {next ? (
+            <>
+              <EventCard event={next} variant="feature" />
+              {later.length ? (
+                <div className={styles.v2Grid}>
+                  {later.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className={styles.v2Empty}>
+              No dates are open yet. Members hear first when the next social is announced.
             </p>
-          </header>
-          <div className={`${styles.eventsList} glass-panel`}>
-            {upcoming.length === 0 ? (
-              <div className={`${styles.noEvents} glass-panel`}>
-                <h3>No upcoming socials just yet</h3>
-                <p>Check back soon or follow us on Instagram for the next Lodge meetup.</p>
-              </div>
-            ) : (
-              upcoming.map((event, index) => (
-                <article
-                  key={event.id}
-                  className={index === 0 ? styles.featuredCardWrapper : styles.eventCardWrapper}
-                >
-                  <EventCard event={event} variant={index === 0 ? 'hero' : 'condensed'} />
-                </article>
-              ))
-            )}
-          </div>
+          )}
         </section>
 
-        <section className={styles.eventsGroup}>
-          <header className={styles.groupHeader}>
-            <span className={styles.sectionEyebrow}>Previous gatherings</span>
-            <h2>Past events</h2>
-            <p>
-              A look at where we have been lately. Tap any gathering to revisit the details and keep
-              an eye on what resonates with the community.
-            </p>
-          </header>
-          <div className={`${styles.eventsList} glass-panel`}>
-            {past.length === 0 ? (
-              <div className={`${styles.noEvents} glass-panel`}>
-                <h3>No socials announced yet</h3>
-                <p>Check back soon or follow us on Instagram for the next Lodge meetup.</p>
-              </div>
-            ) : (
-              past.map((event) => (
-                <article key={event.id} className={styles.eventCardWrapper}>
-                  <EventCard event={event} variant="condensed" />
-                </article>
-              ))
-            )}
-          </div>
-        </section>
+        {past.length ? (
+          <section aria-labelledby="past" className={styles.v2Section}>
+            <h2 id="past" className={styles.v2Title}>Past socials</h2>
+            <div className={`${styles.v2Grid} ${styles.v2GridPast}`}>
+              {past.map((event) => (
+                <EventCard key={event.id} event={event} variant="condensed" />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
       <Footer />
     </div>

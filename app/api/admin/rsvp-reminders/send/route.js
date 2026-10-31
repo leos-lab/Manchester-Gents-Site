@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { getBaseUrl } from "@/lib/appUrl";
-import { sendInstagramDm } from "@/lib/instagramAutomation";
+import { sendRsvpReminderEmail } from "@/lib/email";
 import { pushToUsers, hasPushToken } from "@/lib/expoPush";
 
 export const dynamic = "force-dynamic";
@@ -19,32 +19,6 @@ function getFriendlyFirstName(member) {
   const first = member.firstName?.trim();
   if (first) return first;
   return normalizeHandle(member.instagramHandle) || "there";
-}
-
-function buildDefaultReminderMessage({
-  memberName,
-  eventTitle,
-  eventStartTime,
-  rsvpLink,
-}) {
-  const dateLabel = eventStartTime
-    ? format(new Date(eventStartTime), "EEE d MMM yyyy • h:mmaaa")
-    : "";
-
-  return [
-    `Hi ${memberName}!`,
-    "",
-    "Thank you for being part of Manchester Gents by registering an account with us!",
-    "",
-    `Quick reminder to RSVP for ${eventTitle}${
-      dateLabel ? ` (${dateLabel})` : ""
-    }.`,
-    "",
-    "RSVP here:",
-    rsvpLink,
-    "",
-    "If you have any questions, please message @manchestergents. 🕴️🐝",
-  ].join("\n");
 }
 
 export async function POST(request) {
@@ -65,8 +39,6 @@ export async function POST(request) {
 
   const userId = typeof payload?.userId === "string" ? payload.userId : "";
   const eventId = typeof payload?.eventId === "string" ? payload.eventId : "";
-  const messageOverride =
-    typeof payload?.message === "string" ? payload.message : null;
 
   if (!userId || !eventId) {
     return NextResponse.json(
@@ -82,6 +54,7 @@ export async function POST(request) {
         select: {
           id: true,
           instagramHandle: true,
+          email: true,
           firstName: true,
           lastName: true,
           preferredName: true,
@@ -128,27 +101,27 @@ export async function POST(request) {
       }
     }
 
-    const username = normalizeHandle(member.instagramHandle);
-    if (!username) {
+    // Everyone else gets an email (replaces the old Instagram DM).
+    if (!member.email) {
       return NextResponse.json(
-        { error: "Member has no Instagram handle and isn't on the app." },
+        { error: "Member has no email address and isn't on the app." },
         { status: 400 }
       );
     }
-
-    const rsvpLink = `${getBaseUrl()}/events/${event.slug}`;
-    const message =
-      messageOverride?.trim() ||
-      buildDefaultReminderMessage({
-        memberName,
-        eventTitle: event.title,
-        eventStartTime: event.startTime,
-        rsvpLink,
-      });
-
-    await sendInstagramDm({ username, message });
-
-    return NextResponse.json({ ok: true, via: "instagram" });
+    const emailResult = await sendRsvpReminderEmail({
+      to: member.email,
+      name: memberName,
+      eventTitle: event.title,
+      dateLabel: format(new Date(event.startTime), "EEEE d MMMM"),
+      eventUrl: `${getBaseUrl()}/events/${event.slug}`,
+    });
+    if (!emailResult.sent) {
+      return NextResponse.json(
+        { error: "Email isn't set up on the website (SMTP settings missing)." },
+        { status: 503 }
+      );
+    }
+    return NextResponse.json({ ok: true, via: "email" });
   } catch (error) {
     console.error("Admin RSVP reminder send error:", error);
     return NextResponse.json(

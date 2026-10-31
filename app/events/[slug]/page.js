@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import ClientAdminControls from './client-admin-controls';
+import { getGalleryHighlights } from '@/lib/galleryHighlights';
 import styles from './page.module.css';
 
 async function getEvent(slug) {
@@ -20,6 +21,8 @@ async function getEvent(slug) {
         include: {
           user: {
             select: {
+              id: true,
+              avatarUrl: true,
               instagramHandle: true,
               firstName: true,
               lastName: true,
@@ -186,19 +189,34 @@ export default async function EventDetailPage({ params }) {
     ? new Date(event.signupDeadline) < new Date()
     : false;
   const isOpenForRsvp = !eventHasStarted && !signupDeadlinePassed;
+  const isGoing = existingSignup?.status === 'CONFIRMED';
+  const canChat = Boolean(session?.user) && event.chatEnabled && (isGoing || session.user.role === 'ADMIN');
+  // Gallery photos are for signed-in members only.
+  const highlights = session?.user && eventHasStarted ? await getGalleryHighlights(event, 6) : [];
 
   return (
     <div className={styles.page}>
       <NavBar />
+      <section className={styles.cover} aria-labelledby="event-title">
+        {event.coverImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={event.coverImageUrl} alt="" className={styles.coverImage} fetchPriority="high" />
+        ) : (
+          <div className={styles.coverCloth} aria-hidden="true" />
+        )}
+        <div className={styles.coverText}>
+          <h1 id="event-title" className="heading-font">{event.title}</h1>
+          {event.subtitle && <p className={styles.coverSubtitle}>{event.subtitle}</p>}
+          <p className={styles.coverSchedule}>
+            {schedule}
+            {event.location ? <span>{event.location}</span> : null}
+          </p>
+        </div>
+      </section>
       <main className={styles.eventMain}>
         <EventThemeSection palette={palette}>
           <div className={styles.eventGrid}>
             <div className={styles.eventInfo}>
-              <span className={`heading-font ${styles.eventTag}`}>Manchester Gents Presents</span>
-              <h1>{event.title}</h1>
-              {event.subtitle && <p className={styles.eventSubtitle}>{event.subtitle}</p>}
-              <p className={styles.eventSchedule}>{schedule}</p>
-              {event.location && <p className={styles.eventLocation}>{event.location}</p>}
               {event.description && <p className={styles.eventBody}>{event.description}</p>}
               <ClientAdminControls isAdmin={session?.user?.role === 'ADMIN'} slug={event.slug} />
               <EventSignupButton
@@ -209,14 +227,32 @@ export default async function EventDetailPage({ params }) {
                 groupChatLink={event.groupChatLink}
                 photoNoticeEnabled={photoNoticeConfig.enabled && isOpenForRsvp}
               />
+              {canChat && !eventHasStarted ? (
+                <Link href={`/chat?event=${encodeURIComponent(event.id)}`} className={styles.chatLink}>
+                  Open the event chat
+                </Link>
+              ) : null}
             </div>
             <aside className={`${styles.eventSidebar} glass-panel`}>
               {eventHasStarted && (
                 <div className={styles.sidebarSection}>
                   <span className="heading-font">Event gallery</span>
-                  <p className={styles.sidebarCopy}>
-                    Relive the night and download your favourite shots from the club photographer.
-                  </p>
+                  {highlights.length ? (
+                    <ul className={styles.galleryStrip}>
+                      {highlights.map((photo) => (
+                        <li key={photo.id}>
+                          <Link href={`/events/${event.slug}/photos`} aria-label="Open the photo gallery">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={photo.src} alt="" loading="lazy" decoding="async" />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={styles.sidebarCopy}>
+                      Relive the night and download your favourite shots from the club photographer.
+                    </p>
+                  )}
                   {session?.user ? (
                     <Link href={`/events/${event.slug}/photos`} className={styles.galleryLink}>
                       View photo gallery
@@ -243,6 +279,7 @@ export default async function EventDetailPage({ params }) {
                 )}
                 <ul className={styles.guestList}>
                   {sortedAttendees.map(({ signup, displayName, handle }) => {
+                    const avatarUrl = signup.user.avatarUrl;
                     const showHandle = handle && !handle.startsWith('noinsta_');
                     const handleLabel = showHandle ? `@${handle}` : '';
                     const showName = Boolean(session?.user);
@@ -259,9 +296,27 @@ export default async function EventDetailPage({ params }) {
                       }
                       return handleLabel || displayName || 'Member';
                     })();
+                    const avatar = avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarUrl} alt="" className={styles.guestAvatar} loading="lazy" />
+                    ) : (
+                      <span className={styles.guestAvatar} aria-hidden="true">
+                        {(listLabel.replace(/^@/, '')[0] || 'M').toUpperCase()}
+                      </span>
+                    );
                     return (
                       <li key={signup.id}>
-                        {listLabel}
+                        {session?.user ? (
+                          <Link href={`/members/${signup.userId}`} className={styles.guest}>
+                            {avatar}
+                            <span>{listLabel}</span>
+                          </Link>
+                        ) : (
+                          <span className={styles.guest}>
+                            {avatar}
+                            <span>{listLabel}</span>
+                          </span>
+                        )}
                       </li>
                     );
                   })}
