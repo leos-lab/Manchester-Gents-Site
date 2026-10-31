@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/auth';
+import { PINSTRIPE_SITE_SLUG } from '@/lib/pinstripe';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,7 +25,8 @@ export async function DELETE(request, { params }) {
   }
 
   try {
-    const res = await fetch(`${apiBase}/api/photos/${encodeURIComponent(params.photoId)}`, {
+    // ?site: Pinstripe refuses photos from another site (dev/UAT show live's).
+    const res = await fetch(`${apiBase}/api/photos/${encodeURIComponent(params.photoId)}?site=${encodeURIComponent(PINSTRIPE_SITE_SLUG)}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${managementToken}` },
       cache: 'no-store'
@@ -33,7 +35,7 @@ export async function DELETE(request, { params }) {
 
     if (!res.ok || json?.success === false) {
       const upstreamError = json?.error || 'Unable to delete photo.';
-      const isAuthError = res.status === 401 || res.status === 403;
+      const isAuthError = res.status === 401;
       console.error('Pinstripe photo delete failed:', {
         status: res.status,
         apiBase,

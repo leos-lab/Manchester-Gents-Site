@@ -197,9 +197,12 @@ function PhotoModal({
               <button type="button" onClick={onUnsetCover} disabled={busy}>
                 Unset cover
               </button>
-              <button type="button" onClick={() => onDelete(photo)} disabled={busy}>
-                Delete
-              </button>
+              {/* Photos from the live site show on dev/UAT but can't be deleted there. */}
+              {photo.inherited ? null : (
+                <button type="button" onClick={() => onDelete(photo)} disabled={busy}>
+                  Delete
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -601,14 +604,16 @@ export default function EventPhotosClient({
               >
                 Set cover
               </button>
-              <button
-                type="button"
-                onClick={() => handleDeletePhoto(photo)}
-                disabled={busyPhotoId === photo.id}
-                className={styles.deletePhotoButton}
-              >
-                Delete
-              </button>
+              {photo.inherited ? null : (
+                <button
+                  type="button"
+                  onClick={() => handleDeletePhoto(photo)}
+                  disabled={busyPhotoId === photo.id}
+                  className={styles.deletePhotoButton}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           )}
         </div>
