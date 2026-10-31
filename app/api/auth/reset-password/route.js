@@ -59,7 +59,9 @@ export async function POST(request) {
     ]);
     await bumpSessionVersion();
 
-    return Response.json({ success: true });
+    // The reset form signs the member straight in and asks them to check their
+    // details (their email may be why they couldn't reset it themselves).
+    return Response.json({ success: true, identifier: record.user.email || record.user.instagramHandle });
   } catch (error) {
     console.error('Reset password error:', error);
     return Response.json(

@@ -16,13 +16,23 @@ function buildApiUrl(apiBase, path) {
   return `${apiBase}${path}`;
 }
 
+// Swap a broken image to its ImgBB backup (once).
+function swapToBackup(event, backupUrl) {
+  const img = event.currentTarget;
+  if (backupUrl && img.src !== backupUrl) img.src = backupUrl;
+}
+
 function getPhotoAsset(photo) {
   return photo.assets?.[0] || null;
 }
 
+// assets[0] is served by Pinstripe itself (its 400px thumb suits the grid);
+// assets[1] is the ImgBB backup, used if an image fails to load.
 function normalisePhoto(photo) {
   const asset = getPhotoAsset(photo);
-  const thumbUrl = asset?.mediumUrl || asset?.displayUrl || asset?.thumbUrl || asset?.url || '';
+  const backup = photo.assets?.[1] || null;
+  const local = asset?.provider === 'local';
+  const thumbUrl = (local ? asset.thumbUrl : asset?.mediumUrl) || asset?.displayUrl || asset?.thumbUrl || asset?.url || '';
   const fullUrl = asset?.url || asset?.displayUrl || asset?.mediumUrl || asset?.thumbUrl || '';
   const previewUrl = fullUrl;
   const coverUrl = asset?.mediumUrl || asset?.displayUrl || asset?.thumbUrl || asset?.url || '';
@@ -35,6 +45,8 @@ function normalisePhoto(photo) {
     thumbUrl,
     previewUrl,
     fullUrl,
+    backupThumbUrl: backup?.mediumUrl || backup?.displayUrl || backup?.url || '',
+    backupFullUrl: backup?.url || backup?.displayUrl || '',
     coverUrl,
     uploaderName: photo.uploaderName || '',
     dateTaken:
@@ -153,7 +165,7 @@ function PhotoModal({
         >
           <span aria-hidden="true">&lsaquo;</span>
         </button>
-        <img src={photo.previewUrl || photo.fullUrl} alt={photo.originalFilename} className={styles.modalImage} />
+        <img src={photo.previewUrl || photo.fullUrl} alt={photo.originalFilename} className={styles.modalImage} onError={(e) => swapToBackup(e, photo.backupFullUrl)} />
         <button
           type="button"
           className={`${styles.modalNavButton} ${styles.modalNextButton}`}
@@ -671,7 +683,7 @@ export default function EventPhotosClient({
                     onClick={() => (selectedIds.size ? toggleSelect(photo.id) : setSelectedPhoto(photo))}
                     aria-label={`Open ${photo.originalFilename}`}
                   >
-                    <img src={photo.thumbUrl} alt="" className={styles.photoImage} loading="lazy" />
+                    <img src={photo.thumbUrl} alt="" className={styles.photoImage} loading="lazy" onError={(e) => swapToBackup(e, photo.backupThumbUrl)} />
                   </button>
                   <div className={styles.photoMeta}>
                     <div className={styles.photoUploader}>{photo.uploaderName || 'Unknown'}</div>

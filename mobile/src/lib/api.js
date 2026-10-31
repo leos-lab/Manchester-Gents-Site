@@ -107,6 +107,7 @@ export const api = {
       request(`/api/v1/admin/members?q=${enc(q)}${placeholders ? '&placeholders=1' : ''}`),
     member: (id) => request(`/api/v1/admin/members/${enc(id)}`),
     updateMember: (id, fields) => request(`/api/admin/members/${enc(id)}`, { method: 'PATCH', body: fields }),
+    resetLink: (id) => request(`/api/admin/members/${enc(id)}/reset-link`, { method: 'POST' }),
     deleteMember: (id) => request(`/api/admin/members/${enc(id)}`, { method: 'DELETE' }),
     unbanFromChat: (id) => request(`/api/admin/members/${enc(id)}/chat-ban`, { method: 'DELETE' }),
     addPlaceholders: (users) => request('/api/admin/placeholders', { method: 'POST', body: { users } }),

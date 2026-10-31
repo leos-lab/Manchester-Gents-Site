@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { getDisplayName } from '@/lib/displayName';
 import AdminMemberEditor from '@/components/AdminMemberEditor';
+import AdminResetLinkButton from '@/components/AdminResetLinkButton';
 import AdminMemberEventManager from '@/components/AdminMemberEventManager';
 import styles from './member.module.css';
 import { photoSrc } from '@/lib/memberPhotoRef';
@@ -221,6 +222,13 @@ export default async function MemberDetailPage({ params }) {
       <section className={styles.editorSection}>
         <h2>Edit member</h2>
         <AdminMemberEditor member={member} />
+        {!member.isPlaceholder ? (
+          <>
+            <h2>Password</h2>
+            <p>If their reset emails aren’t arriving, make a link and send it to them yourself.</p>
+            <AdminResetLinkButton userId={member.id} />
+          </>
+        ) : null}
       </section>
     </main>
   );

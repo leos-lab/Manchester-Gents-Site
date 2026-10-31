@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { api, privateImage } from '../../../../src/lib/api';
@@ -64,6 +64,20 @@ export default function AdminMember() {
       await reload();
     } catch (e) {
       Alert.alert('Couldn’t unban', e.message);
+    }
+  };
+
+  // A reset link to send by hand (e.g. their email is out of date). After
+  // using it they're signed in and asked to check their details.
+  const shareResetLink = async () => {
+    try {
+      const { url, expiresAt } = await api.admin.resetLink(member.id);
+      const until = new Date(expiresAt).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+      await Share.share({
+        message: `Hi ${member.name.split(' ')[0]}, here’s a link to set a new Manchester Gents password. It works until ${until}: ${url}`
+      });
+    } catch (e) {
+      Alert.alert('Couldn’t make a reset link', e.message);
     }
   };
 
@@ -143,6 +157,9 @@ export default function AdminMember() {
               {member.phoneNumber ? <ListRow symbol="phone" title={member.phoneNumber} onPress={() => Linking.openURL(`tel:${member.phoneNumber.replace(/\s/g, '')}`)} /> : null}
               {member.preferredContactMethod ? <ListRow symbol="text.bubble" title={member.preferredContactMethod} /> : null}
               <ListRow symbol="pencil" title="Edit details" onPress={startEditing} />
+              {!member.isPlaceholder ? (
+                <ListRow symbol="key" title="Send a password reset link" subtitle="Valid for 3 days. Share it by message." onPress={shareResetLink} />
+              ) : null}
             </ListGroup>
           )}
 

@@ -11,7 +11,7 @@ export const metadata = {
   title: 'Profile | Manchester Gents'
 };
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect(`/login?redirect=${encodeURIComponent('/profile')}`);
@@ -65,6 +65,12 @@ export default async function ProfilePage() {
             photo stays private with the team.
           </p>
         </header>
+        {searchParams?.review ? (
+          <div className={styles.reviewNotice} role="status">
+            <strong>Your password has been reset.</strong> Please check your details below are up to date,
+            especially your email address, so password reset emails reach you in future.
+          </div>
+        ) : null}
         <ProfileOverview user={serialisedUser} />
       </main>
       <Footer />

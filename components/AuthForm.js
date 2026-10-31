@@ -715,6 +715,15 @@ export function ResetPasswordForm({ token = '' }) {
       if (!res.ok || !data?.success) {
         throw new Error(data?.error || 'Unable to reset password right now.');
       }
+      // Sign straight in, then ask them to check their details (an out-of-date
+      // email is often why they needed a reset link from an admin).
+      const signedIn = data.identifier
+        ? await signIn('credentials', { identifier: data.identifier, password: parsed.data.password, redirect: false })
+        : null;
+      if (signedIn?.ok) {
+        router.push('/profile?review=1');
+        return;
+      }
       setSuccess('Password updated. You can now sign in.');
       setFormState((prev) => ({ ...prev, password: '', confirmPassword: '' }));
       router.prefetch('/login');

@@ -14,7 +14,6 @@ import {
   useWindowDimensions
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +24,7 @@ import { Button } from '../../src/components/Button';
 import { Glass } from '../../src/components/Glass';
 import { Icon } from '../../src/components/Icon';
 import { colors, space, WIDE_BREAKPOINT } from '../../src/theme';
+import { BackupImage } from '../../src/components/BackupImage';
 
 const GAP = 2;
 
@@ -142,7 +142,7 @@ export default function Gallery() {
         ListHeaderComponent={total ? <Text style={styles.count}>{total} photos</Text> : null}
         renderItem={({ item, index }) => (
           <Pressable onPress={() => setViewerIndex(index)} accessibilityRole="imagebutton" accessibilityLabel={`Photo ${index + 1}${item.uploaderName ? ` by ${item.uploaderName}` : ''}`}>
-            <Image source={{ uri: item.thumb }} style={{ width: tile, height: tile }} contentFit="cover" recyclingKey={item.id} transition={120} />
+            <BackupImage uri={item.thumb} backupUri={item.backupThumb} style={{ width: tile, height: tile }} contentFit="cover" recyclingKey={item.id} transition={120} />
           </Pressable>
         )}
         ListFooterComponent={loading && photos.length ? <ActivityIndicator color={colors.gold} style={styles.more} /> : null}
@@ -208,7 +208,7 @@ function Viewer({ photos, index, onClose }) {
             onMomentumScrollEnd={(e) => setCurrent(Math.round(e.nativeEvent.contentOffset.x / width))}
             renderItem={({ item }) => (
               <Pressable onPress={onClose} style={{ width, height }} accessibilityLabel="Close photo">
-                <Image source={{ uri: item.full }} placeholder={{ uri: item.thumb }} style={{ width, height }} contentFit="contain" transition={150} />
+                <BackupImage uri={item.full} backupUri={item.backupFull} placeholder={{ uri: item.thumb }} style={{ width, height }} contentFit="contain" transition={150} />
               </Pressable>
             )}
           />

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { api } from '../lib/api';
 import { loadPhotos } from '../lib/gallery';
+import { BackupImage } from './BackupImage';
 import { colors, radius, space } from '../theme';
 
 // A row of the event's latest photos that opens the full gallery.
@@ -45,7 +45,7 @@ export function GalleryStrip({ eventId, onOpen }) {
           contentContainerStyle={styles.row}
           renderItem={({ item }) => (
             <Pressable onPress={onOpen} accessibilityRole="imagebutton" accessibilityLabel="Open gallery">
-              <Image source={{ uri: item.thumb }} style={styles.thumb} contentFit="cover" transition={120} />
+              <BackupImage uri={item.thumb} backupUri={item.backupThumb} style={styles.thumb} contentFit="cover" transition={120} />
             </Pressable>
           )}
         />

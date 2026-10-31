@@ -9,12 +9,27 @@ function galleryPath(g) {
   return `${g.apiBase}/api/sites/${encodeURIComponent(g.siteSlug)}/events/${encodeURIComponent(g.eventSlug)}`;
 }
 
+// Grid-sized and full-sized URLs from one asset. Pinstripe's own 400px thumb
+// suits the grid; ImgBB's thumb is a tiny crop, so its medium size is used.
+function urls(a) {
+  if (!a) return { thumb: null, full: null };
+  return {
+    thumb: (a.provider === 'local' ? a.thumbUrl : a.mediumUrl) || a.displayUrl || a.thumbUrl || a.url,
+    full: a.url || a.displayUrl || a.mediumUrl
+  };
+}
+
+// assets[0] is served by Pinstripe itself; assets[1] (ImgBB) is the backup if
+// that can't be reached.
 function normalise(photo) {
-  const a = photo.assets?.[0] || {};
+  const main = urls(photo.assets?.[0]);
+  const backup = urls(photo.assets?.[1]);
   return {
     id: String(photo.id),
-    thumb: a.mediumUrl || a.displayUrl || a.thumbUrl || a.url,
-    full: a.url || a.displayUrl || a.mediumUrl,
+    thumb: main.thumb,
+    full: main.full,
+    backupThumb: backup.thumb,
+    backupFull: backup.full,
     width: photo.width || null,
     height: photo.height || null,
     uploaderName: photo.uploaderName || '',
@@ -79,7 +94,13 @@ export async function savePhotoToLibrary(photo) {
   if (!permission.granted) throw new Error('Allow photo library access in Settings to save photos.');
   const dir = new Directory(Paths.cache, 'mg-photos');
   dir.create({ idempotent: true });
-  const ext = (photo.full.split('?')[0].match(/\.(jpe?g|png|webp|heic|gif)$/i)?.[1] || 'jpg').toLowerCase();
-  const file = await File.downloadFileAsync(photo.full, new File(dir, `${photo.id}.${ext}`), { idempotent: true });
+  const download = (url) => {
+    const ext = (url.split('?')[0].match(/\.(jpe?g|png|webp|heic|gif)$/i)?.[1] || 'jpg').toLowerCase();
+    return File.downloadFileAsync(url, new File(dir, `${photo.id}.${ext}`), { idempotent: true });
+  };
+  const file = await download(photo.full).catch((error) => {
+    if (!photo.backupFull) throw error;
+    return download(photo.backupFull);
+  });
   await MediaLibrary.saveToLibraryAsync(file.uri);
 }
