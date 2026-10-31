@@ -1,10 +1,15 @@
 # Runs on the home server. Cloudflare Tunnel publishes it at chat.<your domain>
 # without opening any ports on your router.
 services:
-  chat:
+  # Dev chat on the dev database: chat-dev.<your domain> in the tunnel, service
+  # http://chat-dev:8080. "chat" stays as an alias while routes move over.
+  chat-dev:
     build: .
     restart: unless-stopped
     env_file: .env
+    networks:
+      default:
+        aliases: [chat]
   # UAT copy on the uat database (chat-uat.<your domain> in the tunnel, service
   # http://chat-uat:8080). Starts only with COMPOSE_PROFILES=uat in .env.
   chat-uat:
@@ -19,4 +24,4 @@ services:
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
-      - chat
+      - chat-dev
