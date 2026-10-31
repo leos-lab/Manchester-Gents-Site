@@ -4,6 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { getViewerSession, savePhotoToLibrary } from '../src/lib/gallery';
 import { BackupImage } from '../src/components/BackupImage';
+import { Glass } from '../src/components/Glass';
 import { colors } from '../src/theme';
 
 // Full-screen photo viewer with native toolbars: Done in the header, Share and
@@ -40,14 +41,14 @@ export default function PhotoViewer() {
         options={{
           title: photos.length ? `${current + 1} of ${photos.length}` : '',
           headerTitle: () => (
-            <View style={styles.title}>
+            <Glass style={styles.title}>
               <Text style={styles.count}>{photos.length ? `${current + 1} of ${photos.length}` : ''}</Text>
               {photo?.uploaderName ? (
                 <Text style={styles.credit} numberOfLines={1}>
                   Shared by {photo.uploaderName}
                 </Text>
               ) : null}
-            </View>
+            </Glass>
           )
         }}
       />
@@ -95,7 +96,7 @@ export default function PhotoViewer() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
-  title: { alignItems: 'center', maxWidth: 260 },
+  title: { alignItems: 'center', maxWidth: 260, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, overflow: 'hidden' },
   count: { color: colors.text, fontSize: 17, fontWeight: '600' },
   credit: { color: colors.textMuted, fontSize: 12 }
 });
