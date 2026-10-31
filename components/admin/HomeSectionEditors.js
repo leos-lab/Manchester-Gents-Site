@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import PhotoPicker from './PhotoPicker';
 import FocusPicker from './FocusPicker';
 import styles from './AdminHomeEditor.module.css';
@@ -74,7 +73,6 @@ export function AppFields({ content, setContent }) {
 }
 
 export function ShowcaseFields({ content, setContent, picker }) {
-  const [focusing, setFocusing] = useState(null); // photo id
   const inShowcase = (id) => content.showcase.some((p) => p.id === id);
   const toggle = (photo) =>
     setContent((c) => ({
@@ -91,34 +89,18 @@ export function ShowcaseFields({ content, setContent, picker }) {
   return (
     <>
       <p className={styles.hint}>Everyone sees these scroll slowly past under the hero, in this order.</p>
-      {focusing && content.showcase.some((p) => p.id === focusing) ? (
-        <div className={styles.heroPreview}>
-          <FocusPicker
-            photo={content.showcase.find((p) => p.id === focusing)}
-            onChange={(focus) =>
-              setContent((c) => ({ ...c, showcase: c.showcase.map((p) => (p.id === focusing ? { ...p, focus } : p)) }))
-            }
-          />
-          <button type="button" onClick={() => setFocusing(null)}>
-            Done
-          </button>
-        </div>
-      ) : null}
       {content.showcase.length ? (
         <ol className={styles.showcase}>
           {content.showcase.map((p, i) => (
             <li key={p.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.src} alt="" style={p.focus ? { objectPosition: `${p.focus.x}% ${p.focus.y}%` } : undefined} />
+              <img src={p.src} alt="" />
               <div>
                 <button type="button" onClick={() => move(i, -1)} disabled={i === 0}>
                   Earlier
                 </button>
                 <button type="button" onClick={() => move(i, 1)} disabled={i === content.showcase.length - 1}>
                   Later
-                </button>
-                <button type="button" onClick={() => setFocusing(p.id)} aria-pressed={focusing === p.id}>
-                  Focus
                 </button>
                 <button type="button" onClick={() => toggle(p)}>
                   Remove

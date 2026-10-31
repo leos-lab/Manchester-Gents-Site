@@ -58,8 +58,7 @@
   color: rgba(247, 244, 237, 0.66);
 }
 
-.heroPreview button,
-.showcase button {
+.heroPreview button {
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -73,25 +72,47 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
 }
 
+/* Each photo with its controls over the bottom edge. */
 .showcase li {
-  display: grid;
-  gap: 0.35rem;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .showcase img {
+  display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 10px;
 }
 
 .showcase li div {
+  position: absolute;
+  inset: auto 0 0 0;
   display: flex;
   gap: 0.3rem;
+  padding: 0.45rem;
+  background: linear-gradient(transparent, rgba(20, 29, 41, 0.92));
+}
+
+.showcase button {
+  flex: 1;
+  padding: 0.3rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(20, 29, 41, 0.75);
+  color: #f7f4ed;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.showcase button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .saveBar {
