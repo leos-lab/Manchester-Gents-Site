@@ -13,7 +13,7 @@ import {
   useWindowDimensions
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { COMPATIBLE_PHOTOS } from '../src/lib/filePart';
+import { COMPATIBLE_PHOTOS } from '../../src/lib/filePart';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

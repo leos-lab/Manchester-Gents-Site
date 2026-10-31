@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { COMPATIBLE_PHOTOS } from '../../src/lib/filePart';
+import { COMPATIBLE_PHOTOS } from '../../../src/lib/filePart';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../src/context/AuthContext';
 import { api, uploadToPinstripe } from '../../../src/lib/api';

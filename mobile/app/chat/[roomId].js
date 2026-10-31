@@ -16,7 +16,7 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-rou
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { COMPATIBLE_PHOTOS } from '../src/lib/filePart';
+import { COMPATIBLE_PHOTOS } from '../../src/lib/filePart';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useChat } from '../../src/context/ChatContext';
