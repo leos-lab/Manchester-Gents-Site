@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import styles from './page.module.css';
 import ProfileOverview from '@/components/ProfileOverview';
+import PublicProfileCard from '@/components/PublicProfileCard';
 
 export const metadata = {
   title: 'Profile | Manchester Gents'
@@ -71,6 +72,7 @@ export default async function ProfilePage({ searchParams }) {
             especially your email address, so password reset emails reach you in future.
           </div>
         ) : null}
+        <PublicProfileCard />
         <ProfileOverview user={serialisedUser} />
       </main>
       <Footer />

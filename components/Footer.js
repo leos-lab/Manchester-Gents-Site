@@ -13,6 +13,7 @@ export default function Footer() {
         <div className={styles.footerLinks}>
           <a href="mailto:hello@manchestergents.com">Contact</a>
           <a href="https://www.instagram.com" rel="noreferrer" target="_blank">Instagram</a>
+          <a href="/guidelines">Community guidelines</a>
           <a href="/privacy">Privacy</a>
         </div>
         <p className={styles.footerCopy}>&copy; {currentYear} Manchester Gents</p>
