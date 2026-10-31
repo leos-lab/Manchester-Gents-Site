@@ -339,6 +339,14 @@ export function createStore(pool) {
       return rows;
     },
 
+    async adminPushTargets() {
+      const { rows } = await pool.query(
+        `SELECT t."token", t."userId" FROM "PushToken" t
+           JOIN "User" u ON u."id" = t."userId" WHERE u."role" = 'ADMIN'`
+      );
+      return rows;
+    },
+
     async deletePushTokens(tokens) {
       if (!tokens.length) return;
       await pool.query(`DELETE FROM "PushToken" WHERE "token" = ANY($1::text[])`, [tokens]);

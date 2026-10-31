@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getRequestUser } from '@/lib/requestUser';
 import { getMemberPhoto, memberPhotoFileUrl } from '@/lib/pinstripeMedia';
 
 export const dynamic = 'force-dynamic';
@@ -9,13 +8,13 @@ export const runtime = 'nodejs';
 // image is fetched from Pinstripe (signed, server-side) and streamed back
 // same-origin, so it also works in the in-browser cropper.
 export async function GET(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return new Response('Not signed in', { status: 401 });
+  const user = await getRequestUser(request); // website session or app token
+  if (!user) return new Response('Not signed in', { status: 401 });
 
   try {
     const photo = await getMemberPhoto(params.photoId);
-    const isOwner = photo.memberRef === session.user.id;
-    if (!isOwner && session.user.role !== 'ADMIN') return new Response('Forbidden', { status: 403 });
+    const isOwner = photo.memberRef === user.id;
+    if (!isOwner && user.role !== 'ADMIN') return new Response('Forbidden', { status: 403 });
 
     const asked = new URL(request.url).searchParams.get('v');
     const variant = ['thumb', 'medium', 'original'].includes(asked) ? asked : 'display';

@@ -1,5 +1,6 @@
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
+import { privacyPolicy } from '@/lib/consentContent';
 import styles from './page.module.css';
 
 export const metadata = {
@@ -11,19 +12,10 @@ export default function PrivacyPage() {
     <div className={styles.page}>
       <NavBar />
       <main className={`${styles.privacyMain} glass-panel`}>
-        <h1>Privacy Policy</h1>
-        <p>
-          Manchester Gents respects your privacy. We use your Instagram username and email address
-          strictly for membership communication, event bookings, and updates about the club.
-        </p>
-        <p>
-          Data is stored securely and only accessible to administrators. You can request the removal
-          of your data or an export of what we hold by emailing hello@manchestergents.com.
-        </p>
-        <p>
-          We never sell or share personal information with third parties. Event partners receive only
-          aggregated, anonymised insights.
-        </p>
+        <h1>{privacyPolicy.title}</h1>
+        {privacyPolicy.paragraphs.map((text) => (
+          <p key={text}>{text}</p>
+        ))}
       </main>
       <Footer />
     </div>

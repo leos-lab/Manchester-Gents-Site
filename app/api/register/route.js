@@ -6,6 +6,7 @@ import { getDisplayName } from "@/lib/displayName";
 import { sendMakeWebhook, buildMemberSignupPayload } from "@/lib/makeWebhook";
 import { getBaseUrl } from "@/lib/appUrl";
 import { sendWelcomeEmail } from "@/lib/email";
+import { notifyAdmins } from "@/lib/adminAlerts";
 import {
   assertRegistrationPhotos,
   claimRegistrationPhotos,
@@ -157,6 +158,12 @@ export async function POST(request) {
         instagramHandle: user.instagramHandle || null,
       })
     );
+
+    await notifyAdmins({
+      title: "New member",
+      body: `${displayName}${user.instagramHandle ? ` (@${user.instagramHandle})` : ""} just joined. Check their photo.`,
+      path: `/admin/member/${user.id}`,
+    });
 
     // Welcome email (replaces the old Instagram welcome DM).
     await sendWelcomeEmail({

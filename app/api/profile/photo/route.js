@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getRequestUser } from '@/lib/requestUser';
 import { uploadMemberPhoto, memberPhotoFileUrl } from '@/lib/pinstripeMedia';
 import { toPinstripeRef } from '@/lib/memberPhotoRef';
 
@@ -15,7 +14,7 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 // preview URL for the form.
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await getRequestUser(request); // website session or app token
     const formData = await request.formData();
     const file = formData.get('file');
 
@@ -31,7 +30,7 @@ export async function POST(request) {
 
     // Signed-in members upload under their own id; sign-up uploads are parked
     // under "registration" and moved to the new member when the account is created.
-    const memberRef = session?.user?.id || 'registration';
+    const memberRef = user?.id || 'registration';
     const photo = await uploadMemberPhoto(memberRef, 'private', {
       buffer: Buffer.from(await file.arrayBuffer()),
       filename: file.name || 'photo.png',

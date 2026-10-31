@@ -269,6 +269,17 @@ export class ChatHub {
     if (!access.canRead) return this.fail(conn, req, 'forbidden', 'Not in this chat.');
     await this.store.report(msg.id, conn.state.user.id, req.reason);
     this.reply(conn, req, { type: 'ok' });
+    // Alert admins without quoting the message: it may be a private DM.
+    if (this.sendPush) {
+      const admins = await this.store.adminPushTargets();
+      if (admins.length) {
+        this.sendPush(admins, {
+          title: 'Message reported',
+          body: req.reason ? `Reason: ${String(req.reason).slice(0, 120)}` : 'A member reported a chat message.',
+          data: { path: '/admin/reports' }
+        }).catch((error) => this.log.error('report push failed', error?.message || error));
+      }
+    }
   }
 
   async block(conn, req) {
