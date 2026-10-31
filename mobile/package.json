@@ -4,7 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "setup": "npm install && npx expo install react react-native expo-router expo-constants expo-linking expo-status-bar expo-splash-screen expo-font expo-secure-store expo-notifications expo-device expo-image expo-image-picker expo-glass-effect expo-symbols expo-haptics expo-calendar expo-web-browser expo-clipboard react-native-safe-area-context react-native-screens react-native-gesture-handler react-native-reanimated react-native-worklets && npx expo install --fix",
+    "setup": "npm install && npx expo install react react-native expo-router expo-constants expo-linking expo-status-bar expo-splash-screen expo-font expo-secure-store expo-notifications expo-device expo-image expo-image-picker expo-glass-effect expo-symbols expo-haptics expo-calendar expo-web-browser expo-clipboard expo-media-library expo-file-system react-native-safe-area-context react-native-screens react-native-gesture-handler react-native-reanimated react-native-worklets && npx expo install --fix",
     "start": "expo start --dev-client",
     "ios": "expo run:ios",
     "android": "expo run:android",

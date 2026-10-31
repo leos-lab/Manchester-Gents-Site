@@ -59,8 +59,10 @@ export const api = {
   rsvp: (id, specialRequests) =>
     request(`/api/v1/events/${enc(id)}/rsvp`, { method: 'POST', body: { specialRequests: specialRequests || null } }),
   cancelRsvp: (id) => request(`/api/v1/events/${enc(id)}/rsvp`, { method: 'DELETE' }),
+  gallery: (id) => request(`/api/v1/events/${enc(id)}/gallery`),
 
   member: (id) => request(`/api/v1/members/${enc(id)}`),
+  searchMembers: (q) => request(`/api/v1/members?q=${enc(q)}`),
 
   registerPushToken: (token, platform) =>
     request('/api/v1/push-tokens', { method: 'POST', body: { token, platform } }),

@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { useChat } from '../../../src/context/ChatContext';
 import { Avatar } from '../../../src/components/Avatar';
 import { EmptyState } from '../../../src/components/EmptyState';
+import { Button } from '../../../src/components/Button';
 import { Icon } from '../../../src/components/Icon';
 import { messageTime } from '../../../src/lib/format';
 import { colors, fonts, radius, space, MAX_CONTENT_WIDTH } from '../../../src/theme';
@@ -52,8 +53,10 @@ export default function Chats() {
           <EmptyState
             symbol="bubble.left.and.bubble.right"
             title="No chats yet"
-            message="Reserve a spot at an event and you’ll join its group chat automatically."
-          />
+            message="Reserve a spot at an event to join its group chat, or message any member."
+          >
+            <Button title="New message" variant="secondary" onPress={() => router.push('/new-message')} />
+          </EmptyState>
         ) : null
       }
     />

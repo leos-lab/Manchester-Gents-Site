@@ -288,6 +288,26 @@ export class ChatHub {
     for (const c of this.conns) if (c.state.user?.id === userId) fn(c);
   }
 
+  // From the website (admin moderation): a message was removed.
+  onMessageDeleted({ roomId, messageId }) {
+    if (roomId && messageId) this.broadcast(roomId, { type: 'deleted', roomId, messageId });
+  }
+
+  // From the website: a member was banned/unbanned from chat. Reload their
+  // details so the change applies to connections that are already open.
+  async onUserChanged({ userId }) {
+    const conns = [...this.conns].filter((c) => c.state.user?.id === userId);
+    if (!conns.length) return;
+    const user = await this.store.getUser(userId);
+    if (!user) {
+      conns.forEach((c) => c.close());
+      return;
+    }
+    conns.forEach((c) => {
+      c.state.user = user;
+    });
+  }
+
   // Called from Postgres NOTIFY when an RSVP is created, cancelled or removed.
   async onMembershipChange({ eventId, userId, op, status }) {
     const stillMember = op !== 'DELETE' && status === 'CONFIRMED';

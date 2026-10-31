@@ -11,6 +11,7 @@ import { Button } from '../../src/components/Button';
 import { Chip } from '../../src/components/Chip';
 import { Content } from '../../src/components/Content';
 import { EmptyState } from '../../src/components/EmptyState';
+import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { Icon } from '../../src/components/Icon';
 import { colors, fonts, radius, space, WIDE_BREAKPOINT } from '../../src/theme';
 
@@ -176,6 +177,10 @@ export default function EventDetail() {
                 </>
               )}
             </View>
+          ) : null}
+
+          {event.hasGallery ? (
+            <GalleryStrip eventId={event.id} onOpen={() => router.push(`/gallery/${event.id}`)} />
           ) : null}
 
           {event.description ? <Text style={styles.description}>{event.description}</Text> : null}

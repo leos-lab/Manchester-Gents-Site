@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { getBaseUrl } from "@/lib/appUrl";
 import { sendInstagramDm } from "@/lib/instagramAutomation";
+import { pushToUsers, hasPushToken } from "@/lib/expoPush";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -109,15 +110,29 @@ export async function POST(request) {
       return NextResponse.json({ error: "Event not found." }, { status: 404 });
     }
 
+    const memberName = getFriendlyFirstName(member);
+
+    // Members with the app get a push notification that opens the event;
+    // everyone else still gets the Instagram DM.
+    if (!messageOverride?.trim() && (await hasPushToken(member.id))) {
+      const dateLabel = format(new Date(event.startTime), "EEE d MMM");
+      const delivered = await pushToUsers([member.id], {
+        title: `RSVP for ${event.title}`,
+        body: `Hi ${memberName}, are you joining us on ${dateLabel}? Tap to reserve your spot.`,
+        data: { eventId: event.id, url: `mcrgents://event/${event.id}` },
+      });
+      if (delivered > 0) {
+        return NextResponse.json({ ok: true, via: "push" });
+      }
+    }
+
     const username = normalizeHandle(member.instagramHandle);
     if (!username) {
       return NextResponse.json(
-        { error: "Member has no Instagram handle." },
+        { error: "Member has no Instagram handle and isn't on the app." },
         { status: 400 }
       );
     }
-
-    const memberName = getFriendlyFirstName(member);
 
     const rsvpLink = `${getBaseUrl()}/events/${event.slug}`;
     const message =
@@ -131,7 +146,7 @@ export async function POST(request) {
 
     await sendInstagramDm({ username, message });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, via: "instagram" });
   } catch (error) {
     console.error("Admin RSVP reminder send error:", error);
     return NextResponse.json(

@@ -49,6 +49,12 @@ export default async function AdminPage() {
           <p>See who hasn’t RSVPed for the next event and DM them a reminder.</p>
           <span className={styles.cardCta}>Review list →</span>
         </Link>
+
+        <Link href="/admin/chat-reports" className={`${styles.card} glass-panel`}>
+          <h2>Chat reports</h2>
+          <p>Messages members have reported in event chats and DMs. Remove them, dismiss, or ban someone from chat.</p>
+          <span className={styles.cardCta}>Review reports →</span>
+        </Link>
       </section>
     </main>
   );

@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useChat } from '../../src/context/ChatContext';
+import { api } from '../../src/lib/api';
+import { Avatar } from '../../src/components/Avatar';
 import { useAuth } from '../../src/context/AuthContext';
 import { setActiveRoom } from '../../src/lib/push';
 import { dayDivider } from '../../src/lib/format';
@@ -28,7 +30,8 @@ import { colors, radius, space, MAX_CONTENT_WIDTH } from '../../src/theme';
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
-// Opened as /chat/<roomId>, or /chat/new?eventId=<id> for an event's chat.
+// Opened as /chat/<roomId>, /chat/new?eventId=<id> for an event's chat, or
+// /chat/new?userId=<id> for a DM.
 export default function ChatRoom() {
   const params = useLocalSearchParams();
   const router = useRouter();
@@ -43,6 +46,7 @@ export default function ChatRoom() {
   const [typing, setTyping] = useState(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [noMoreHistory, setNoMoreHistory] = useState(false);
+  const [other, setOther] = useState(null); // the other member in a DM
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
   const roomId = room?.roomId;
@@ -52,7 +56,12 @@ export default function ChatRoom() {
   useEffect(() => {
     if (!client) return undefined;
     let cancelled = false;
-    const target = params.roomId && params.roomId !== 'new' ? { roomId: params.roomId } : { eventId: params.eventId };
+    const target =
+      params.roomId && params.roomId !== 'new'
+        ? { roomId: params.roomId }
+        : params.userId
+          ? { userId: params.userId }
+          : { eventId: params.eventId };
     client
       .join(target)
       .then((reply) => {
@@ -66,7 +75,13 @@ export default function ChatRoom() {
     return () => {
       cancelled = true;
     };
-  }, [client, params.roomId, params.eventId]);
+  }, [client, params.roomId, params.eventId, params.userId]);
+
+  // DMs: load the other member for the header.
+  useEffect(() => {
+    if (room?.kind !== 'DIRECT' || !room.otherUserId) return;
+    api.member(room.otherUserId).then(({ member }) => setOther(member)).catch(() => {});
+  }, [room?.kind, room?.otherUserId]);
 
   useEffect(() => {
     if (!client || !roomId) return undefined;
@@ -236,7 +251,10 @@ export default function ChatRoom() {
         onPress: () =>
           client
             .request('block', { userId: sender.id })
-            .then(() => setMessages((list) => list.filter((m) => m.sender?.id !== sender.id)))
+            .then(() => {
+              if (isDm) router.back();
+              else setMessages((list) => list.filter((m) => m.sender?.id !== sender.id));
+            })
             .catch((e) => Alert.alert('Couldn’t block', e.message))
       }
     ]);
@@ -274,7 +292,8 @@ export default function ChatRoom() {
     return out;
   }, [messages]);
 
-  const title = room?.title || 'Chat';
+  const isDm = room?.kind === 'DIRECT';
+  const title = isDm ? other?.name || 'Message' : room?.title || 'Chat';
 
   if (!configured) {
     return (
@@ -289,6 +308,14 @@ export default function ChatRoom() {
       <Stack.Screen
         options={{
           title,
+          headerTitle: isDm && other
+            ? () => (
+                <Pressable onPress={() => router.push(`/member/${other.id}`)} style={styles.dmHeader} accessibilityRole="button" accessibilityLabel={`View ${other.name}'s profile`}>
+                  <Avatar name={other.name} uri={other.avatarUrl} size={28} />
+                  <Text style={styles.dmHeaderName} numberOfLines={1}>{other.name}</Text>
+                </Pressable>
+              )
+            : undefined,
           headerRight: room
             ? () => (
                 <Pressable onPress={toggleMute} hitSlop={12} accessibilityRole="button" accessibilityLabel={room.muted ? 'Unmute notifications' : 'Mute notifications'}>
@@ -322,7 +349,11 @@ export default function ChatRoom() {
             ListFooterComponent={loadingOlder ? <ActivityIndicator color={colors.gold} style={styles.older} /> : null}
             ListEmptyComponent={
               <View style={styles.flipped}>
-                <EmptyState symbol="hand.wave" title="Say hello" message="Messages here are seen by everyone going to this event." />
+                <EmptyState
+                  symbol="hand.wave"
+                  title="Say hello"
+                  message={isDm ? `Only you and ${other?.name || 'this member'} can see these messages.` : 'Messages here are seen by everyone going to this event.'}
+                />
               </View>
             }
             renderItem={({ item }) =>
@@ -388,7 +419,7 @@ export default function ChatRoom() {
                 </Pressable>
               </Glass>
             ) : (
-              <Text style={styles.readOnly}>This chat is read-only.</Text>
+              <Text style={styles.readOnly}>{isDm ? 'You can’t message this member.' : 'This chat is read-only.'}</Text>
             )}
           </View>
         ) : null}
@@ -426,5 +457,7 @@ const styles = StyleSheet.create({
   typing: { color: colors.textMuted, fontSize: 13, marginLeft: space.md, marginBottom: 4 },
   offline: { color: colors.gold, fontSize: 13, textAlign: 'center', marginBottom: 6 },
   readOnly: { color: colors.textMuted, textAlign: 'center', paddingVertical: space.md },
-  headerAction: { color: colors.gold, fontWeight: '600' }
+  headerAction: { color: colors.gold, fontWeight: '600' },
+  dmHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm, maxWidth: 240 },
+  dmHeaderName: { color: colors.text, fontSize: 17, fontWeight: '600' }
 });

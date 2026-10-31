@@ -45,8 +45,10 @@ function Navigator() {
         <Stack.Screen name="event/[id]" options={{ title: '' }} />
         <Stack.Screen name="chat/[roomId]" options={{ title: 'Chat' }} />
         <Stack.Screen name="member/[id]" options={{ title: '' }} />
+        <Stack.Screen name="gallery/[eventId]" options={{ title: 'Photos' }} />
         <Stack.Screen name="edit-profile" options={{ ...sheetOptions, title: 'Edit profile' }} />
         <Stack.Screen name="delete-account" options={{ ...sheetOptions, title: 'Delete account' }} />
+        <Stack.Screen name="new-message" options={{ ...sheetOptions, title: 'New message', sheetAllowedDetents: [0.6, 1] }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />

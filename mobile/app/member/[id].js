@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../src/lib/api';
 import { useChat } from '../../src/context/ChatContext';
 import { memberSince } from '../../src/lib/format';
@@ -16,6 +16,7 @@ import { colors, fonts, radius, space } from '../../src/theme';
 export default function MemberProfile() {
   const { id } = useLocalSearchParams();
   const { client } = useChat();
+  const router = useRouter();
   const [member, setMember] = useState(null);
   const [error, setError] = useState(null);
 
@@ -83,6 +84,14 @@ export default function MemberProfile() {
             />
           ) : null}
 
+          {member.canMessage ? (
+            <Button
+              title={`Message ${member.name}`}
+              onPress={() => router.push(`/chat/new?userId=${encodeURIComponent(member.id)}`)}
+              style={styles.message}
+            />
+          ) : null}
+
           {!member.isMe ? (
             <Button
               title={member.blockedByMe ? `Unblock ${member.name}` : `Block ${member.name}`}
@@ -112,5 +121,6 @@ const styles = StyleSheet.create({
   },
   divider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: colors.border },
   bio: { color: colors.text, fontSize: 16, lineHeight: 23, textAlign: 'center' },
-  block: { marginTop: space.lg }
+  message: { alignSelf: 'stretch', marginTop: space.md },
+  block: { marginTop: space.sm }
 });

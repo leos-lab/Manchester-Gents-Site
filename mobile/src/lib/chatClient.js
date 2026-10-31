@@ -195,8 +195,11 @@ export class ChatClient {
     for (const payload of this.outbox.values()) this.trySend(payload);
   }
 
-  async join({ roomId, eventId }) {
-    const reply = await this.request('join', roomId ? { roomId } : { eventId });
+  // Open a room by id, an event's chat by eventId, or a DM by userId.
+  async join({ roomId, eventId, userId }) {
+    const reply = userId
+      ? await this.request('dm', { userId })
+      : await this.request('join', roomId ? { roomId } : { eventId });
     this.joined.add(reply.roomId);
     return reply;
   }

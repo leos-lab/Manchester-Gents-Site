@@ -126,3 +126,34 @@ test('app chat client: bad token stops reconnecting', { skip: !dbUp && 'test dat
   await until(() => unauthorized);
   assert.equal(client.status, 'unauthorized');
 });
+
+test('app chat client: DMs open by member and stay private', { skip: !dbUp && 'test database not running' }, async () => {
+  seed();
+  const hub = new ChatHub({ store: createStore(createShimPool(PG)), secret: SECRET, sendPush: async () => {}, log: { error() {} } });
+  const { MemorySocket } = socketFactory(hub);
+  const make = (userId) => new ChatClient({
+    url: 'memory://chat',
+    getToken: async () => signChatToken({ sub: userId, sv: '1' }, SECRET, 60),
+    WebSocketImpl: MemorySocket
+  });
+  const alex = make('alex');
+  const sam = make('sam');
+  alex.connect(); sam.connect();
+  await until(() => alex.status === 'ready' && sam.status === 'ready');
+
+  const dm = await alex.join({ userId: 'sam' });
+  assert.equal(dm.kind, 'DIRECT');
+  assert.equal(dm.otherUserId, 'sam');
+  const samDm = await sam.join({ userId: 'alex' });
+  assert.equal(samDm.roomId, dm.roomId, 'same room from both sides');
+
+  const got = [];
+  sam.on('message', (m) => got.push(m.message.body));
+  alex.send(dm.roomId, { body: 'Pint before the social?' });
+  await until(() => got.includes('Pint before the social?'));
+
+  const samRooms = await sam.request('rooms');
+  const listed = samRooms.rooms.find((r) => r.kind === 'DIRECT');
+  assert.equal(listed.title, 'Alex');
+  alex.close(); sam.close();
+});

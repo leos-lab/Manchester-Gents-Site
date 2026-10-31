@@ -183,3 +183,26 @@ test('announcements: admin only, event chats only, reach muted members', async (
   assert.deepEqual(pushes.at(-1).targets.map((t) => t.userId).sort(), ['sam']);
   assert.equal(pushes.at(-1).msg.title, '📣 Lodge Social: January');
 });
+
+test('website moderation: deleted message broadcast live, ban applies to open connections', async () => {
+  const { hub, connect, say } = await setup();
+  const alex = await connect('alex');
+  const sam = await connect('sam');
+  for (const c of [alex, sam]) await say(c, { type: 'join', eventId: 'ev1' });
+  const roomId = alex.last('joined').roomId;
+  await say(alex, { type: 'send', roomId, clientId: 'm1', body: 'not nice' });
+  const messageId = alex.last('sent').message.id;
+
+  hub.onMessageDeleted({ roomId, messageId });
+  assert.equal(sam.last('deleted').messageId, messageId);
+
+  sql(`UPDATE "User" SET "chatBannedAt" = now() WHERE "id" = 'alex'`);
+  await hub.onUserChanged({ userId: 'alex' });
+  await say(alex, { type: 'send', roomId, clientId: 'm2', body: 'hello?' });
+  assert.equal(alex.last('error').code, 'forbidden');
+
+  sql(`UPDATE "User" SET "chatBannedAt" = NULL WHERE "id" = 'alex'`);
+  await hub.onUserChanged({ userId: 'alex' });
+  await say(alex, { type: 'send', roomId, clientId: 'm3', body: 'sorry all' });
+  assert.equal(alex.last('sent').message.body, 'sorry all');
+});

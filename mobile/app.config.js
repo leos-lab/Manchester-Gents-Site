@@ -24,8 +24,9 @@ module.exports = ({ config }) => ({
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
       LSApplicationQueriesSchemes: ['instagram'],
-      NSPhotoLibraryUsageDescription: 'Choose a profile picture.',
+      NSPhotoLibraryUsageDescription: 'Choose a profile picture or share photos to event galleries.',
       NSCameraUsageDescription: 'Take a profile picture.',
+      NSPhotoLibraryAddUsageDescription: 'Save event photos to your library.',
       NSCalendarsWriteOnlyAccessUsageDescription: 'Add Manchester Gents events to your calendar.'
     },
     associatedDomains: ['applinks:manchestergents.com']
@@ -69,7 +70,8 @@ module.exports = ({ config }) => ({
         cameraPermission: 'Take a profile picture.'
       }
     ],
-    ['expo-calendar', { calendarPermission: 'Add Manchester Gents events to your calendar.' }]
+    ['expo-calendar', { calendarPermission: 'Add Manchester Gents events to your calendar.' }],
+    ['expo-media-library', { savePhotosPermission: 'Save event photos to your library.', isAccessMediaLocationEnabled: false }]
   ],
   experiments: {
     typedRoutes: false

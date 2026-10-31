@@ -61,3 +61,16 @@ Rules: event chats are open to confirmed attendees and admins. Any member can DM
 any member. DMs are private to the two people (admins can't read them). A block
 in either direction stops both sides posting in that DM and hides the blocked
 person's messages in group chats.
+
+## Website → chat server notifications
+
+The website sends `pg_notify('mg_chat', …)` (`lib/chatNotify.js`) so changes
+apply to open chats immediately:
+- `{ type: "message_deleted", roomId, messageId }` — admin removed a reported message
+- `{ type: "user_changed", userId }` — chat ban/unban (the server reloads the member)
+
+## Push from the website
+
+`lib/expoPush.js` sends Expo pushes: RSVP reminders (push first, Instagram DM
+fallback) and a "new event" alert when an admin creates an event. Optional
+`EXPO_ACCESS_TOKEN` if enhanced push security is on in the Expo account.

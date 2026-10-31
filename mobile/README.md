@@ -7,7 +7,12 @@ for the iPhone Duo (two columns when unfolded), native tabs.
 calendar, event group chat (live, offline retry, typing, mute, announcements for
 admins, report/block/delete), member profiles (events attended + Instagram chip,
 no posts), your profile (avatar via Pinstripe, edit, sign out, delete account),
-push notifications. DMs and the photo gallery arrive in phase 3.
+push notifications.
+
+**Phase 3** adds: DMs with any member (Message button on profiles, New message
+search in Chats), event photo galleries (grid, swipe viewer, save to Photos,
+share, upload several photos at once), a photo strip on event pages, and
+push notifications for new events and RSVP reminders.
 
 ## One-time setup
 
@@ -68,6 +73,16 @@ To test against a website running on your Mac: set `EXPO_PUBLIC_API_URL` to
 - [ ] Profile: add/change/remove photo; edit name, Instagram and bio
 - [ ] Delete account with your password (use a test account)
 - [ ] An admin "log everyone out" on the website signs the app out too
+
+Phase 3:
+- [ ] Member profile → Message: DM opens; the other account receives it live and by push
+- [ ] Chats → New message: search by name or @handle
+- [ ] Block someone in a DM: neither side can send any more
+- [ ] Past event → photo strip → gallery; swipe through, Save to Photos, Share
+- [ ] Gallery → + → pick several photos: they upload with your name attached
+- [ ] Website admin → Chat reports: remove a reported message (disappears in the app straight away), remove & ban (member can't post), unban
+- [ ] Website admin → RSVP reminders: members with the app get a push that opens the event; others get the Instagram DM
+- [ ] Create a new event on the website: app users get a "New Manchester Gents event" push
 
 ## Tests
 
