@@ -14,3 +14,8 @@ public/uploads
 ._*
 .vercel
 .env.local
+
+# Apple / Google signing keys never go in the repo
+*.p8
+*.p12
+*.mobileprovision
