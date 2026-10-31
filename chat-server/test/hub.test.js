@@ -290,3 +290,14 @@ test('event chats are listed before anyone posts and close 48h after the event',
   await say(sam, { type: 'send', roomId: joined.roomId, clientId: 'x', body: 'still here?' });
   assert.equal(sam.last('error').code, 'forbidden');
 });
+
+test('a password reset signs out only that member', async () => {
+  const { connect, hub } = await setup();
+  await sql(`UPDATE "User" SET "sessionVersion" = 1 WHERE "id" = 'alex'`);
+  assert.equal((await connect('alex')).last('error').code, 'bad_token', 'old token rejected');
+  assert.ok((await connect('sam')).last('ready'), 'other members unaffected');
+  const c = fakeConn();
+  hub.attach(c);
+  await hub.handle(c, JSON.stringify({ type: 'auth', token: signChatToken({ sub: 'alex', sv: '7', uv: 1 }, SECRET, 60) }));
+  assert.ok(c.last('ready'), 'new token after the reset works');
+});

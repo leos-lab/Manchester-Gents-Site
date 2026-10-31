@@ -98,7 +98,7 @@ export function createStore(pool) {
     async getUser(userId) {
       return one(
         `SELECT "id", "role", "chatBannedAt", "isPlaceholder", "firstName", "lastName", "preferredName",
-                "shareFirstName", "name", "instagramHandle"
+                "shareFirstName", "name", "instagramHandle", "sessionVersion"
            FROM "User" WHERE "id" = $1`,
         [userId]
       );

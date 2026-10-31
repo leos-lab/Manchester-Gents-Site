@@ -10,7 +10,7 @@ export async function GET(request) {
   const user = await getRequestUser(request);
   if (!user) return Response.json({ error: 'Not authenticated.' }, { status: 401 });
   const token = signChatToken(
-    { sub: user.id, role: user.role, sv: await getSessionVersion(), kind: 'chat' },
+    { sub: user.id, role: user.role, sv: await getSessionVersion(), uv: user.sessionVersion, kind: 'chat' },
     process.env.CHAT_TOKEN_SECRET,
     60 * 60
   );

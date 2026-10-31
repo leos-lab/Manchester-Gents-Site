@@ -32,7 +32,7 @@ export async function POST(request) {
 
   const sv = await getSessionVersion();
   const token = signChatToken(
-    { sub: user.id, role: user.role, sv, kind: 'app' },
+    { sub: user.id, role: user.role, sv, uv: user.sessionVersion, kind: 'app' },
     process.env.CHAT_TOKEN_SECRET,
     APP_TOKEN_TTL_SECONDS
   );

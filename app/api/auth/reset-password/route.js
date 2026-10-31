@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { passwordResetSchema } from '@/lib/validators';
 import { findValidPasswordResetToken } from '@/lib/passwordReset';
 import { hashPassword } from '@/lib/password';
-import { bumpSessionVersion } from '@/lib/sessionVersion';
+import { bumpUserSessionVersion } from '@/lib/sessionVersion';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -57,7 +57,8 @@ export async function POST(request) {
         }
       })
     ]);
-    await bumpSessionVersion();
+    // Sign this member out everywhere else (only them, not every member).
+    await bumpUserSessionVersion(record.userId);
 
     // The reset form signs the member straight in and asks them to check their
     // details (their email may be why they couldn't reset it themselves).

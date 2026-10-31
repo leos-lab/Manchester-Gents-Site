@@ -105,8 +105,11 @@ export class ChatHub {
       this.store.getUser(claims.sub),
       this.store.getSessionVersion()
     ]);
-    // Same kill switch as the site: bumping the session version logs everyone out.
-    if (!user || claims.sv !== version) return this.fail(conn, req, 'bad_token', 'Sign in again.');
+    // Same kill switches as the site: the global version logs everyone out; a
+    // member's own version (bumped on password reset) signs out just them.
+    if (!user || claims.sv !== version || (claims.uv ?? 0) !== (user.sessionVersion ?? 0)) {
+      return this.fail(conn, req, 'bad_token', 'Sign in again.');
+    }
     conn.state.user = user;
     conn.state.blocked = new Set(await this.store.blockedIds(user.id));
     this.reply(conn, req, {
