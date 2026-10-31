@@ -205,22 +205,22 @@ export default function Gallery() {
             ? () =>
                 selecting ? (
                   <Pressable onPress={stopSelecting} hitSlop={12} accessibilityRole="button">
-                    <Text style={styles.headerAction}>Cancel</Text>
+                    <Text style={styles.navButton}>Cancel</Text>
                   </Pressable>
                 ) : (
                   <View style={styles.headerActions}>
                     {photos.length ? (
                       <Pressable onPress={() => startSelecting(null)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Select photos to save">
-                        <Text style={styles.headerAction}>Select</Text>
+                        <Text style={styles.navButton}>Select</Text>
                       </Pressable>
                     ) : null}
                     <Pressable onPress={addPhotos} disabled={uploading} hitSlop={12} accessibilityRole="button" accessibilityLabel="Add photos">
                       {uploading ? (
-                        <ActivityIndicator color={colors.gold} />
+                        <ActivityIndicator color={colors.text} />
                       ) : Platform.OS === 'ios' ? (
-                        <Icon name="plus" size={22} color={colors.gold} />
+                        <Icon name="plus" size={20} color={colors.text} />
                       ) : (
-                        <Text style={styles.headerAction}>Add</Text>
+                        <Text style={styles.navButton}>Add</Text>
                       )}
                     </Pressable>
                   </View>
@@ -315,7 +315,10 @@ export default function Gallery() {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  // Header buttons drawn like iOS bar items (white, 17pt regular), since this
+  // screen's native toolbar items don't render.
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 20, paddingHorizontal: 4 },
+  navButton: { color: colors.text, fontSize: 17 },
   tileSelected: { backgroundColor: 'rgba(20, 29, 41, 0.35)', borderWidth: 3, borderColor: colors.gold },
   check: {
     position: 'absolute',
