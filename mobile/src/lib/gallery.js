@@ -2,6 +2,7 @@
 // website loads them. /api/v1/events/:id/gallery says which gallery to use.
 import { Directory, File, Paths } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
+import { filePart } from './filePart';
 
 const PAGE_SIZE = 60;
 
@@ -75,11 +76,10 @@ export async function uploadPhotos(gallery, assets, onProgress) {
   onProgress?.(0.2);
   const form = new FormData();
   assets.forEach((asset, i) =>
-    form.append('images[]', {
-      uri: asset.uri,
-      type: asset.mimeType || 'image/jpeg',
-      name: asset.fileName || `photo-${Date.now()}-${i}.jpg`
-    })
+    form.append(
+      'images[]',
+      filePart({ uri: asset.uri, mimeType: asset.mimeType || 'image/jpeg', fileName: asset.fileName || `photo-${Date.now()}-${i}.jpg` })
+    )
   );
   form.append('uploaderName', gallery.uploaderName || 'Manchester Gents member');
   form.append('source', 'app');

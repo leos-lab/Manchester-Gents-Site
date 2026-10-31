@@ -1,5 +1,6 @@
 // Client for the website's /api/v1 (see documentation/app-api.md).
 import { API_URL } from '../config';
+import { filePart } from './filePart';
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -78,16 +79,16 @@ export const api = {
 
   // Joining: the private reference photo is uploaded first (multipart), then
   // the account is created with the same fields as the website's form.
-  uploadReferencePhoto: ({ uri, mimeType = 'image/jpeg', fileName = 'photo.jpg' }) => {
+  uploadReferencePhoto: (asset) => {
     const form = new FormData();
-    form.append('file', { uri, type: mimeType, name: fileName });
+    form.append('file', filePart(asset));
     form.append('variant', 'original');
     return request('/api/profile/photo', { method: 'POST', form });
   },
   // A photo for a chat message: returns { imageUrl } to send with it.
-  uploadChatImage: ({ uri, mimeType = 'image/jpeg', fileName = 'photo.jpg' }) => {
+  uploadChatImage: (asset) => {
     const form = new FormData();
-    form.append('file', { uri, type: mimeType, name: fileName });
+    form.append('file', filePart(asset));
     return request('/api/v1/chat/images', { method: 'POST', form });
   },
   register: (details) => request('/api/register', { method: 'POST', body: details, token: null }),
@@ -147,7 +148,7 @@ export function privateImage(path) {
 export async function uploadToPinstripe(target, { uri, mimeType = 'image/jpeg', fileName = 'avatar.jpg' }) {
   const form = new FormData();
   form.append('kind', target.kind);
-  form.append(target.field || 'file', { uri, type: mimeType, name: fileName });
+  form.append(target.field || 'file', filePart({ uri, mimeType, fileName }));
   let res;
   try {
     res = await fetch(target.url, {

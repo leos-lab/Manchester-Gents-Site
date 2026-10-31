@@ -40,45 +40,56 @@ export default function NewMessage() {
 
   const gutter = useGutter(space.lg);
 
+  // One list with the search field as its header, so results always sit
+  // below it (in a form sheet a separate list could be laid over the field).
   return (
-    <View style={[styles.screen, gutter]}>
-      <TextInput
-        style={styles.search}
-        placeholder="Search by name or @instagram"
-        placeholderTextColor={colors.textFaint}
-        value={query}
-        onChangeText={setQuery}
-        autoFocus
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="search"
-        accessibilityLabel="Search members"
-      />
-      {loading ? <ActivityIndicator color={colors.gold} style={styles.spinner} /> : null}
-      {error ? <Text style={styles.hint}>{error}</Text> : null}
-      <FlatList
-        data={results}
-        keyExtractor={(m) => m.id}
-        keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <Pressable onPress={() => open(item)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} accessibilityRole="button">
-            <Avatar name={item.name} uri={item.avatarUrl} size={44} />
-            <View style={styles.text}>
-              <Text style={styles.name}>{item.name}</Text>
-              {item.instagram ? <Text style={styles.handle}>@{item.instagram.handle}</Text> : null}
-            </View>
-          </Pressable>
-        )}
-        ListEmptyComponent={
-          !loading && query.trim().length >= 2 && !error ? <Text style={styles.hint}>No members found.</Text> : null
-        }
-      />
-    </View>
+    <FlatList
+      style={styles.screen}
+      contentContainerStyle={[styles.content, gutter]}
+      contentInsetAdjustmentBehavior="never"
+      data={results}
+      keyExtractor={(m) => m.id}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <TextInput
+            style={styles.search}
+            placeholder="Search by name or @instagram"
+            placeholderTextColor={colors.textFaint}
+            value={query}
+            onChangeText={setQuery}
+            autoFocus
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            accessibilityLabel="Search members"
+          />
+          {loading ? <ActivityIndicator color={colors.gold} style={styles.spinner} /> : null}
+          {error ? <Text style={styles.hint}>{error}</Text> : null}
+        </View>
+      }
+      renderItem={({ item }) => (
+        <Pressable onPress={() => open(item)} style={({ pressed }) => [styles.row, pressed && styles.pressed]} accessibilityRole="button">
+          <Avatar name={item.name} uri={item.avatarUrl} size={44} />
+          <View style={styles.text}>
+            <Text style={styles.name}>{item.name}</Text>
+            {item.instagram ? <Text style={styles.handle}>@{item.instagram.handle}</Text> : null}
+          </View>
+        </Pressable>
+      )}
+      ListEmptyComponent={
+        !loading && query.trim().length >= 2 && !error ? <Text style={styles.hint}>No members found.</Text> : null
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.navy, padding: space.lg, gap: space.md },
+  screen: { flex: 1, backgroundColor: colors.navy },
+  content: { paddingVertical: space.lg, gap: space.xs },
+  header: { gap: space.md, marginBottom: space.sm },
   search: { backgroundColor: colors.card, borderRadius: radius.pill, color: colors.text, fontSize: 16, paddingHorizontal: space.lg, paddingVertical: 12 },
   spinner: { marginTop: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm, borderRadius: radius.md },
