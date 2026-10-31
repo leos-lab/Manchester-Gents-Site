@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { useAuth } from '../src/context/AuthContext';
 import { api, privateImage } from '../src/lib/api';
 import { pickImage } from '../src/lib/pickImage';
 import { useGutter } from '../src/lib/layout';
-import { Button } from '../src/components/Button';
+import { HeaderAction } from '../src/components/HeaderAction';
 import { Field, SectionTitle, ToggleRow } from '../src/components/Form';
 import { colors, radius, space } from '../src/theme';
 
@@ -87,6 +87,7 @@ export default function EditProfile() {
     // In a form sheet, KeyboardAvoidingView mis-measures and leaves the sheet
     // blank; the scroll view makes room for the keyboard itself.
     <>
+      <Stack.Screen options={{ headerRight: () => <HeaderAction title="Save" onPress={save} busy={busy} disabled={uploading} /> }} />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.content, gutter]}
@@ -121,7 +122,6 @@ export default function EditProfile() {
           <Text style={styles.photoLabel}>{uploading ? 'Uploading…' : 'Change'}</Text>
         </Pressable>
 
-        <Button title="Save" onPress={save} loading={busy} disabled={uploading} />
       </ScrollView>
     </>
   );

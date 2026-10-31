@@ -189,7 +189,7 @@ export default function AdminEvent() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.navy },
   content: { padding: space.lg, gap: space.xl, paddingBottom: 140 },
-  cover: { height: 180, borderRadius: radius.lg },
+  cover: { aspectRatio: 16 / 9, borderRadius: radius.lg },
   header: { gap: space.sm },
   title: { color: colors.gold, fontFamily: fonts.heading, fontSize: 32 },
   meta: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },

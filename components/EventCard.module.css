@@ -9,7 +9,8 @@
 
 .photo {
   position: relative;
-  aspect-ratio: 4 / 5;
+  /* Every event cover is 16:9, so any photo sits the same way in every layout. */
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 6px;
   background: var(--color-steel);
@@ -131,10 +132,6 @@
   align-items: end;
 }
 
-.feature .photo {
-  aspect-ratio: 5 / 4;
-}
-
 .feature .title {
   font-size: clamp(2.6rem, 5vw, 4.2rem);
 }
@@ -147,10 +144,6 @@
   font-size: 1.05rem;
 }
 
-.condensed .photo {
-  aspect-ratio: 3 / 2;
-}
-
 .condensed .title {
   font-size: 1.5rem;
 }
@@ -159,10 +152,6 @@
   .feature {
     grid-template-columns: 1fr;
     gap: 0;
-  }
-  .list .photo,
-  .feature .photo {
-    aspect-ratio: 3 / 2;
   }
 }
 

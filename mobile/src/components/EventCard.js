@@ -71,8 +71,9 @@ function Details({ event, status, style }) {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.card, borderRadius: radius.lg, overflow: 'hidden' },
-  cover: { height: 200, justifyContent: 'flex-end' },
-  coverCompact: { height: 140 },
+  // Event covers are 16:9 everywhere (website too).
+  cover: { aspectRatio: 16 / 9, justifyContent: 'flex-end' },
+  coverCompact: {},
   shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(20, 29, 41, 0.25)' },
   dateOnCover: { position: 'absolute', top: space.md, left: space.md },
   textOnly: { flexDirection: 'row', alignItems: 'flex-start', padding: space.lg, gap: space.lg },
