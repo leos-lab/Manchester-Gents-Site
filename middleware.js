@@ -7,22 +7,38 @@ function parseDateToMs(value) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+// The middleware asks the site's own API routes for gate settings. On Vercel
+// preview deployments with Deployment Protection, those requests are blocked
+// unless they carry the visitor's Vercel sign-in cookie (or the automation
+// bypass secret), so forward both.
+function internalFetch(req, pathname) {
+  const url = req.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = '';
+  const headers = { 'x-mg-internal': '1' };
+  const cookie = req.headers.get('cookie');
+  if (cookie) headers.cookie = cookie;
+  if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+    headers['x-vercel-protection-bypass'] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  }
+  return fetch(url.toString(), { cache: 'no-store', headers, redirect: 'manual' });
+}
+
+// If the settings can't be read on a preview deployment, don't gate: the
+// coming-soon page reads the database directly and would bounce visitors
+// straight back, causing a redirect loop. Production still fails closed.
+const IS_PREVIEW = (process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV) === 'preview';
+
 const FALLBACK_COMING_SOON_ENABLED = process.env.NEXT_PUBLIC_COMING_SOON !== 'false';
 const FALLBACK_DISABLE_AT_MS = parseDateToMs(process.env.NEXT_PUBLIC_COMING_SOON_DISABLE_AT);
 
 async function getComingSoonState(req) {
   const fallback = {
-    enabled: FALLBACK_COMING_SOON_ENABLED,
+    enabled: IS_PREVIEW ? false : FALLBACK_COMING_SOON_ENABLED,
     disableAtMs: FALLBACK_DISABLE_AT_MS
   };
   try {
-    const statusUrl = req.nextUrl.clone();
-    statusUrl.pathname = '/api/coming-soon';
-    statusUrl.search = '';
-    const res = await fetch(statusUrl.toString(), {
-      cache: 'no-store',
-      headers: { 'x-mg-internal': '1' }
-    });
+    const res = await internalFetch(req, '/api/coming-soon');
     if (!res.ok) {
       return fallback;
     }
@@ -38,15 +54,9 @@ async function getComingSoonState(req) {
 }
 
 async function getPhotoNoticeState(req) {
-  const fallback = { enabled: true, updatedAtMs: null };
+  const fallback = { enabled: !IS_PREVIEW, updatedAtMs: null };
   try {
-    const statusUrl = req.nextUrl.clone();
-    statusUrl.pathname = '/api/photo-notice';
-    statusUrl.search = '';
-    const res = await fetch(statusUrl.toString(), {
-      cache: 'no-store',
-      headers: { 'x-mg-internal': '1' }
-    });
+    const res = await internalFetch(req, '/api/photo-notice');
     if (!res.ok) {
       return fallback;
     }
@@ -90,13 +100,7 @@ export async function middleware(req) {
 
   let currentSessionVersion = null;
   try {
-    const versionUrl = req.nextUrl.clone();
-    versionUrl.pathname = '/api/session-version';
-    versionUrl.search = '';
-    const versionRes = await fetch(versionUrl.toString(), {
-      cache: 'no-store',
-      headers: { 'x-mg-internal': '1' }
-    });
+    const versionRes = await internalFetch(req, '/api/session-version');
     if (versionRes.ok) {
       const data = await versionRes.json();
       currentSessionVersion = data?.version || null;
