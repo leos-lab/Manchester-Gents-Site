@@ -38,8 +38,9 @@ export default function PhotoViewer() {
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ title: photos.length ? `${current + 1} of ${photos.length}` : '' }} />
-      <Stack.Toolbar placement="left">
-        <Stack.Toolbar.Button onPress={() => router.back()} tintColor={colors.gold}>
+      {/* Top right: the secondary toolbar (on the folded iPhone Duo's rail). */}
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button onPress={() => router.back()} tintColor={colors.gold} variant="done">
           Done
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
