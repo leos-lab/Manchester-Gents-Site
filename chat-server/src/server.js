@@ -39,6 +39,7 @@ async function listen() {
       if (payload.type === 'membership') hub.onMembershipChange(payload);
       else if (payload.type === 'message_deleted') hub.onMessageDeleted(payload);
       else if (payload.type === 'message_created') hub.onMessageCreated(payload).catch((e) => console.error(e));
+      else if (payload.type === 'room_changed') hub.onRoomChanged(payload);
       else if (payload.type === 'user_changed') hub.onUserChanged(payload).catch((e) => console.error(e));
     } catch (e) {
       console.error('bad notification', e);

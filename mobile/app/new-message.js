@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, Vi
 import { useRouter } from 'expo-router';
 import { api } from '../src/lib/api';
 import { Avatar } from '../src/components/Avatar';
+import { Icon } from '../src/components/Icon';
 import { colors, radius, space } from '../src/theme';
 import { useGutter } from '../src/lib/layout';
 
@@ -66,6 +67,19 @@ export default function NewMessage() {
             clearButtonMode="while-editing"
             accessibilityLabel="Search members"
           />
+          <Pressable
+            onPress={() => {
+              router.back();
+              router.push('/new-group');
+            }}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            accessibilityRole="button"
+          >
+            <View style={styles.groupIcon}>
+              <Icon name="person.2.fill" size={20} color={colors.navy} />
+            </View>
+            <Text style={styles.name}>New group</Text>
+          </Pressable>
           {loading ? <ActivityIndicator color={colors.gold} style={styles.spinner} /> : null}
           {error ? <Text style={styles.hint}>{error}</Text> : null}
         </View>
@@ -97,5 +111,6 @@ const styles = StyleSheet.create({
   text: { flex: 1 },
   name: { color: colors.text, fontSize: 16, fontWeight: '600' },
   handle: { color: colors.textMuted, fontSize: 14 },
-  hint: { color: colors.textMuted, textAlign: 'center', marginTop: space.lg }
+  hint: { color: colors.textMuted, textAlign: 'center', marginTop: space.lg },
+  groupIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' }
 });

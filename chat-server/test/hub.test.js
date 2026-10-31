@@ -302,3 +302,83 @@ test('a password reset signs out only that member', async () => {
   await hub.handle(c, JSON.stringify({ type: 'auth', token: signChatToken({ sub: 'alex', sv: '7', uv: 1 }, SECRET, 60) }));
   assert.ok(c.last('ready'), 'new token after the reset works');
 });
+
+test('group chats: create with members and an event, private, add and leave', async () => {
+  const { connect, say } = await setup();
+  const alex = await connect('alex');
+  const sam = await connect('sam');
+  const admin = await connect('admin');
+
+  await say(alex, { type: 'create_group', title: 'Pre-drinks', userIds: ['sam'], eventId: 'ev1' });
+  const joined = alex.last('joined');
+  assert.equal(joined.kind, 'GROUP');
+  assert.equal(joined.title, 'Pre-drinks');
+  assert.equal(joined.regarding.title, 'Lodge Social: January');
+  assert.equal(joined.messages.at(-1).kind, 'SYSTEM');
+  const roomId = joined.roomId;
+
+  await say(sam, { type: 'rooms' });
+  assert.ok(sam.last('rooms').rooms.some((r) => r.id === roomId && r.kind === 'GROUP' && r.regarding?.id === 'ev1'));
+  await say(admin, { type: 'join', roomId });
+  assert.equal(admin.last('error').code, 'forbidden', 'groups are private, admins included');
+
+  await say(sam, { type: 'join', roomId });
+  await say(alex, { type: 'add_members', roomId, userIds: ['outsider'] });
+  assert.deepEqual(alex.last('members_added').added, ['outsider']);
+  assert.match(sam.last('message').message.body, /added Olly/);
+
+  await say(sam, { type: 'leave_group', roomId });
+  await say(sam, { type: 'send', roomId, clientId: 'g1', body: 'still here?' });
+  assert.equal(sam.last('error').code, 'forbidden');
+  await say(alex, { type: 'group_members', roomId });
+  assert.deepEqual(alex.last('group_members').members.map((m) => m.id).sort(), ['alex', 'outsider']);
+});
+
+test('group admins: creator is admin, can promote, remove and rename; others cannot', async () => {
+  const { connect, say } = await setup();
+  const alex = await connect('alex');
+  const sam = await connect('sam');
+  await say(alex, { type: 'create_group', title: 'Tailors', userIds: ['sam', 'outsider'] });
+  const joined = alex.last('joined');
+  assert.equal(joined.canManage, true);
+  const roomId = joined.roomId;
+
+  await say(sam, { type: 'join', roomId });
+  assert.equal(sam.last('joined').canManage, false);
+  await say(sam, { type: 'remove_member', roomId, userId: 'outsider' });
+  assert.equal(sam.last('error').code, 'forbidden');
+
+  await say(alex, { type: 'set_admin', roomId, userId: 'sam', isAdmin: true });
+  await say(alex, { type: 'group_members', roomId });
+  assert.deepEqual(alex.last('group_members').members.filter((m) => m.isAdmin).map((m) => m.id).sort(), ['alex', 'sam']);
+  await say(sam, { type: 'rename_group', roomId, title: 'Bespoke' });
+  assert.equal(alex.last('room_updated').title, 'Bespoke');
+  await say(sam, { type: 'remove_member', roomId, userId: 'outsider' });
+  await say(alex, { type: 'set_admin', roomId, userId: 'sam', isAdmin: false });
+  await say(alex, { type: 'set_admin', roomId, userId: 'alex', isAdmin: false });
+  assert.equal(alex.last('error').code, 'bad_request', 'the last admin stays');
+
+  // Community chat: site admins manage it.
+  const admin = await connect('admin');
+  await say(admin, { type: 'join', roomId: 'community' });
+  assert.equal(admin.last('joined').canManage, true);
+  await say(alex, { type: 'join', roomId: 'community' });
+  assert.equal(alex.last('joined').canManage, false);
+});
+
+test('member lists for event and community chats', async () => {
+  const { connect, say } = await setup();
+  const alex = await connect('alex');
+  await say(alex, { type: 'join', eventId: 'ev1' });
+  const roomId = alex.last('joined').roomId;
+  await say(alex, { type: 'group_members', roomId });
+  assert.deepEqual(alex.last('group_members').members.map((m) => m.id).sort(), ['alex', 'sam']);
+  await say(alex, { type: 'group_members', roomId: 'community' });
+  const everyone = alex.last('group_members').members;
+  assert.equal(everyone[0].id, 'admin', 'site admins listed first');
+  assert.equal(everyone[0].isAdmin, true);
+  assert.equal(everyone.length, 4);
+  await say(alex, { type: 'dm', userId: 'sam' });
+  await say(alex, { type: 'group_members', roomId: alex.last('joined').roomId });
+  assert.equal(alex.last('error').code, 'forbidden');
+});

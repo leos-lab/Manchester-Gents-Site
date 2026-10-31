@@ -125,7 +125,15 @@ function RoomRow({ room, onPress }) {
         : room.lastKind === 'IMAGE' && !room.lastBody
           ? '📷 Photo'
           : room.lastBody ||
-            (room.kind === 'COMMUNITY' ? 'Everyone at Manchester Gents' : room.kind === 'EVENT' ? 'Event chat' : 'Say hello');
+            (room.kind === 'COMMUNITY'
+              ? 'Everyone at Manchester Gents'
+              : room.kind === 'EVENT'
+                ? 'Event chat'
+                : room.kind === 'GROUP'
+                  ? room.regarding
+                    ? `About ${room.regarding.title}`
+                    : 'Group chat'
+                  : 'Say hello');
   return (
     <Pressable
       onPress={onPress}
@@ -133,13 +141,15 @@ function RoomRow({ room, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={`${room.title}${unread ? `, ${room.unread} unread` : ''}`}
     >
-      {room.kind === 'COMMUNITY' ? (
+      {(room.kind === 'COMMUNITY' || room.kind === 'GROUP') && room.photoUrl ? (
+        <Image source={{ uri: room.photoUrl }} style={[styles.thumb, styles.roundThumb]} contentFit="cover" />
+      ) : room.kind === 'COMMUNITY' || room.kind === 'GROUP' ? (
         <View style={[styles.thumb, styles.thumbFallback]}>
-          <Icon name="person.3.fill" size={22} color={colors.gold} />
+          <Icon name={room.kind === 'GROUP' ? 'person.2.fill' : 'person.3.fill'} size={22} color={colors.gold} />
         </View>
       ) : room.kind === 'EVENT' ? (
-        room.coverImageUrl ? (
-          <Image source={{ uri: room.coverImageUrl }} style={styles.thumb} contentFit="cover" />
+        room.photoUrl || room.coverImageUrl ? (
+          <Image source={{ uri: room.photoUrl || room.coverImageUrl }} style={styles.thumb} contentFit="cover" />
         ) : (
           <View style={[styles.thumb, styles.thumbFallback]}>
             <Icon name="calendar" size={22} color={colors.gold} />
@@ -172,6 +182,7 @@ function RoomRow({ room, onPress }) {
 }
 
 const styles = StyleSheet.create({
+  roundThumb: { borderRadius: 27 },
   folders: { flexDirection: 'row', gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm },
   folder: { paddingHorizontal: space.lg, paddingVertical: 7, borderRadius: radius.pill, backgroundColor: colors.card },
   folderActive: { backgroundColor: colors.gold },

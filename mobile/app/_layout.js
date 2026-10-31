@@ -67,6 +67,8 @@ function Navigator() {
         <Stack.Screen name="new-message" options={{ ...sheetOptions, title: 'New message', sheetAllowedDetents: [0.6, 1] }} />
         <Stack.Screen name="whats-new" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+        <Stack.Screen name="new-group" options={{ ...sheetOptions, title: 'New group' }} />
+        <Stack.Screen name="chat-info" options={{ title: '' }} />
         <Stack.Screen
           name="photos"
           options={{ presentation: 'fullScreenModal', title: '', headerTransparent: true, contentStyle: { backgroundColor: '#000' } }}

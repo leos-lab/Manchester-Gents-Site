@@ -8,6 +8,15 @@ import { Avatar } from './Avatar';
 import { Icon } from './Icon';
 
 function MessageBubbleBase({ message, mine, showSender, onLongPress, onPressSender, onRetry }) {
+  // Group events: "Leo created the group", "Leo added Sam", "Sam left".
+  if (message.kind === 'SYSTEM') {
+    return (
+      <Text style={styles.system} accessibilityRole="text">
+        {message.body}
+      </Text>
+    );
+  }
+
   if (message.kind === 'ANNOUNCEMENT') {
     return (
       <Pressable onLongPress={onLongPress} style={styles.announcement} accessibilityRole="text">
@@ -97,6 +106,7 @@ function LocationBody({ location, mine }) {
 export const MessageBubble = memo(MessageBubbleBase);
 
 const styles = StyleSheet.create({
+  system: { alignSelf: 'center', color: colors.textFaint, fontSize: 12, marginVertical: space.sm, paddingHorizontal: space.lg, textAlign: 'center' },
   image: { width: 220, height: 220, borderRadius: radius.md, marginBottom: 4 },
   location: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minWidth: 180, paddingVertical: 2 },
   locationText: { flexShrink: 1 },

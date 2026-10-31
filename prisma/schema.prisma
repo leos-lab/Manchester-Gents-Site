@@ -77,6 +77,7 @@ model User {
   avatarPromptDoneAt      DateTime?
   announcementsMade       Announcement[]
   notifications           Notification[]
+  groupChatsCreated       ChatRoom[]           @relation("ChatRoomCreatedBy")
   chatReportsFiled        ChatReport[]         @relation("ChatReportReporter")
   blocking                UserBlock[]          @relation("UserBlockBlocker")
   blockedBy               UserBlock[]          @relation("UserBlockBlocked")
@@ -120,7 +121,8 @@ model Event {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   attendees        EventSignup[]
-  chatRoom         ChatRoom?
+  chatRoom         ChatRoom?      @relation("EventChat")
+  groupChats       ChatRoom[]     @relation("ChatRoomRegarding")
   announcements    Announcement[]
 }
 
@@ -178,6 +180,7 @@ enum ChatRoomKind {
   EVENT
   DIRECT
   COMMUNITY // one room for every member
+  GROUP // members' own group chats (ChatRoomMember is the membership)
 }
 
 // EVENT rooms: one per event. Who can read/post is derived from a CONFIRMED
@@ -185,15 +188,23 @@ enum ChatRoomKind {
 // DIRECT rooms: one per pair of members (directKey = sorted "userA:userB"),
 // membership stored in ChatRoomMember.
 model ChatRoom {
-  id            String           @id @default(cuid())
-  kind          ChatRoomKind
-  event         Event?           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId       String?          @unique
-  directKey     String?          @unique
-  createdAt     DateTime         @default(now())
-  lastMessageAt DateTime?
-  members       ChatRoomMember[]
-  messages      ChatMessage[]
+  id               String           @id @default(cuid())
+  kind             ChatRoomKind
+  event            Event?           @relation("EventChat", fields: [eventId], references: [id], onDelete: Cascade)
+  eventId          String?          @unique
+  // GROUP chats: a name, an optional event they're about, who made it.
+  title            String?
+  regardingEvent   Event?           @relation("ChatRoomRegarding", fields: [regardingEventId], references: [id], onDelete: SetNull)
+  regardingEventId String?
+  createdBy        User?            @relation("ChatRoomCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById      String?
+  // Group and community chat picture (set by group admins / site admins).
+  photoUrl         String?
+  directKey        String?          @unique
+  createdAt        DateTime         @default(now())
+  lastMessageAt    DateTime?
+  members          ChatRoomMember[]
+  messages         ChatMessage[]
 
   @@index([lastMessageAt])
 }
@@ -207,6 +218,9 @@ model ChatRoomMember {
   userId     String
   lastReadAt DateTime?
   muted      Boolean   @default(false)
+  // GROUP chats: group admins (the creator first) manage the picture, name,
+  // members and other admins. The community chat's admins are site admins.
+  isAdmin    Boolean   @default(false)
   createdAt  DateTime  @default(now())
 
   @@id([roomId, userId])

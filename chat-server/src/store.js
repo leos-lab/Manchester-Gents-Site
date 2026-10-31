@@ -123,6 +123,76 @@ export function createStore(pool) {
       return one(`SELECT * FROM "ChatRoom" WHERE "id" = $1`, [COMMUNITY_ROOM_ID]);
     },
 
+    async eventSummary(eventId) {
+      return one(`SELECT "id", "title", "startTime" FROM "Event" WHERE "id" = $1`, [eventId]);
+    },
+
+    // Members' own group chats. Placeholders can't be added.
+    async createGroup({ creatorId, title, userIds, regardingEventId }) {
+      const id = newId();
+      await pool.query(
+        `INSERT INTO "ChatRoom" ("id", "kind", "title", "regardingEventId", "createdById")
+         VALUES ($1, 'GROUP', $2, $3, $4)`,
+        [id, title, regardingEventId || null, creatorId]
+      );
+      await this.addGroupMembers(id, [creatorId, ...userIds]);
+      await this.setGroupAdmin(id, creatorId, true); // the creator is the first admin
+      return one(`SELECT * FROM "ChatRoom" WHERE "id" = $1`, [id]);
+    },
+
+    // Adds members (skipping placeholders and existing ones); returns who was added.
+    async addGroupMembers(roomId, userIds) {
+      const { rows } = await pool.query(
+        `INSERT INTO "ChatRoomMember" ("roomId", "userId")
+         SELECT $1, u."id" FROM "User" u WHERE u."id" = ANY($2::text[]) AND NOT u."isPlaceholder"
+         ON CONFLICT DO NOTHING
+         RETURNING "userId"`,
+        [roomId, [...new Set(userIds)]]
+      );
+      return rows.map((r) => r.userId);
+    },
+
+    async setGroupAdmin(roomId, userId, isAdmin) {
+      await pool.query(`UPDATE "ChatRoomMember" SET "isAdmin" = $3 WHERE "roomId" = $1 AND "userId" = $2`, [roomId, userId, isAdmin]);
+    },
+
+    async renameGroup(roomId, title) {
+      await pool.query(`UPDATE "ChatRoom" SET "title" = $2 WHERE "id" = $1 AND "kind" = 'GROUP'`, [roomId, title]);
+    },
+
+    // Who's in an event chat (everyone going) or the community chat (every
+    // member). Admins here are the site's admins.
+    async roomMembers(room) {
+      const people =
+        room.kind === 'EVENT'
+          ? `SELECT u.* FROM "EventSignup" s JOIN "User" u ON u."id" = s."userId"
+              WHERE s."eventId" = $1 AND s."status" = 'CONFIRMED'`
+          : `SELECT u.* FROM "User" u WHERE NOT u."isPlaceholder" AND $1::text IS NULL`;
+      const { rows } = await pool.query(
+        `SELECT p."id", p."firstName", p."lastName", p."preferredName", p."shareFirstName", p."name",
+                p."instagramHandle", p."avatarUrl", p."role"
+           FROM (${people}) p
+          ORDER BY (p."role" = 'ADMIN') DESC, p."firstName", p."id"`,
+        [room.kind === 'EVENT' ? room.eventId : null]
+      );
+      return rows.map((u) => ({ id: u.id, name: displayName(u), photoUrl: u.avatarUrl || null, isAdmin: u.role === 'ADMIN' }));
+    },
+
+    async removeGroupMember(roomId, userId) {
+      await pool.query(`DELETE FROM "ChatRoomMember" WHERE "roomId" = $1 AND "userId" = $2`, [roomId, userId]);
+    },
+
+    async groupMembers(roomId) {
+      const { rows } = await pool.query(
+        `SELECT u."id", u."firstName", u."lastName", u."preferredName", u."shareFirstName", u."name",
+                u."instagramHandle", u."avatarUrl", m."isAdmin"
+           FROM "ChatRoomMember" m JOIN "User" u ON u."id" = m."userId"
+          WHERE m."roomId" = $1 ORDER BY m."isAdmin" DESC, m."createdAt"`,
+        [roomId]
+      );
+      return rows.map((u) => ({ id: u.id, name: displayName(u), photoUrl: u.avatarUrl || null, isAdmin: u.isAdmin }));
+    },
+
     async directRoom(userA, userB) {
       const key = directKey(userA, userB);
       await pool.query(
@@ -157,8 +227,8 @@ export function createStore(pool) {
     // { room, canRead, canPost, isAdmin, muted, title, otherUserId }
     async getAccess(user, roomId) {
       const row = await one(
-        `SELECT r.*, e."title", e."chatEnabled", e."chatLockedAt", e."startTime", e."endTime",
-                s."status" AS "signupStatus", m."muted", m."userId" AS "memberId"
+        `SELECT r.*, e."title" AS "eventTitle", e."chatEnabled", e."chatLockedAt", e."startTime", e."endTime",
+                s."status" AS "signupStatus", m."muted", m."userId" AS "memberId", m."isAdmin" AS "memberIsAdmin"
            FROM "ChatRoom" r
            LEFT JOIN "Event" e ON e."id" = r."eventId"
            LEFT JOIN "EventSignup" s ON s."eventId" = r."eventId" AND s."userId" = $2
@@ -171,18 +241,36 @@ export function createStore(pool) {
       const isAdmin = user.role === 'ADMIN';
       const muted = Boolean(row.muted);
 
+      // GROUP: only its members (admins included), like DMs.
+      if (row.kind === 'GROUP') {
+        if (!row.memberId) return denied;
+        const regarding = row.regardingEventId ? await this.eventSummary(row.regardingEventId) : null;
+        return {
+          room: row,
+          canRead: true,
+          canPost: !user.chatBannedAt,
+          canManage: Boolean(row.memberIsAdmin), // group admin
+          isAdmin,
+          muted,
+          title: row.title || 'Group',
+          regarding
+        };
+      }
+
       if (row.kind === 'COMMUNITY') {
         const canRead = !user.isPlaceholder;
-        return { room: row, canRead, canPost: canRead && !user.chatBannedAt, isAdmin, muted, title: 'Community' };
+        // The community chat's admins are the site's admins.
+        return { room: row, canRead, canPost: canRead && !user.chatBannedAt, canManage: isAdmin, isAdmin, muted, title: 'Community' };
       }
 
       if (row.kind === 'EVENT') {
         const isMember = row.signupStatus === 'CONFIRMED';
         const canRead = isAdmin || (isMember && row.chatEnabled);
+        const canManage = isAdmin; // site admins manage event chats
         const closesAt = eventChatClosesAt(row.startTime, row.endTime);
         const closed = Boolean(closesAt && closesAt < new Date());
         const canPost = !closed && (isAdmin || (canRead && !row.chatLockedAt && !user.chatBannedAt));
-        return { room: row, canRead, canPost, closed, closesAt, isAdmin, muted, title: row.title, eventId: row.eventId };
+        return { room: row, canRead, canPost, canManage, closed, closesAt, isAdmin, muted, title: row.eventTitle, eventId: row.eventId };
       }
 
       // DIRECT: only the two members; nobody else, admins included.
@@ -224,9 +312,10 @@ export function createStore(pool) {
            UNION ALL
            SELECT r.* FROM "ChatRoom" r
              JOIN "ChatRoomMember" m ON m."roomId" = r."id" AND m."userId" = $1
-            WHERE r."kind" = 'DIRECT' AND r."lastMessageAt" IS NOT NULL
+            WHERE (r."kind" = 'DIRECT' AND r."lastMessageAt" IS NOT NULL) OR r."kind" = 'GROUP'
          )
-         SELECT v."id", v."kind", v."eventId", v."lastMessageAt",
+         SELECT v."id", v."kind", v."eventId", v."lastMessageAt", v."title" AS "groupTitle", v."createdAt", v."photoUrl",
+                re."id" AS "regardingId", re."title" AS "regardingTitle",
                 e."title", e."slug", e."startTime", e."endTime", e."coverImageUrl",
                 me."muted",
                 o."id" AS "otherId", o."firstName" AS "otherFirstName", o."lastName" AS "otherLastName",
@@ -240,6 +329,7 @@ export function createStore(pool) {
                     AND m."createdAt" > COALESCE(me."lastReadAt", 'epoch')) AS "unread"
            FROM visible v
            LEFT JOIN "Event" e ON e."id" = v."eventId"
+           LEFT JOIN "Event" re ON re."id" = v."regardingEventId"
            LEFT JOIN "ChatRoomMember" me ON me."roomId" = v."id" AND me."userId" = $1
            LEFT JOIN "User" o ON v."kind" = 'DIRECT'
                 AND o."id" = (SELECT x FROM unnest(string_to_array(v."directKey", ':')) x WHERE x <> $1 LIMIT 1)
@@ -248,7 +338,7 @@ export function createStore(pool) {
               WHERE m."roomId" = v."id" AND m."deletedAt" IS NULL
               ORDER BY m."createdAt" DESC LIMIT 1
            ) lm ON true
-          ORDER BY (v."kind" = 'COMMUNITY') DESC, COALESCE(v."lastMessageAt", e."startTime") DESC`,
+          ORDER BY (v."kind" = 'COMMUNITY') DESC, COALESCE(v."lastMessageAt", e."startTime", v."createdAt") DESC`,
         [user.id, isAdmin, Boolean(user.isPlaceholder)]
       );
       const now = new Date();
@@ -256,7 +346,16 @@ export function createStore(pool) {
         id: r.id,
         kind: r.kind,
         eventId: r.eventId,
-        title: r.kind === 'EVENT' ? r.title : r.kind === 'COMMUNITY' ? 'Community' : shapePerson(r, 'other')?.name,
+        title:
+          r.kind === 'EVENT'
+            ? r.title
+            : r.kind === 'COMMUNITY'
+              ? 'Community'
+              : r.kind === 'GROUP'
+                ? r.groupTitle || 'Group'
+                : shapePerson(r, 'other')?.name,
+        regarding: r.regardingId ? { id: r.regardingId, title: r.regardingTitle } : null,
+        photoUrl: r.photoUrl || null,
         closed: r.kind === 'EVENT' ? (eventChatClosesAt(r.startTime, r.endTime) ?? now) < now : false,
         slug: r.slug,
         startTime: r.startTime,

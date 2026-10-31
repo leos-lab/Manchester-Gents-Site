@@ -95,6 +95,13 @@ export const api = {
     form.append('file', filePart(asset));
     return request('/api/v1/chat/images', { method: 'POST', form });
   },
+  // A group or community chat's picture (group admins / site admins).
+  setChatPhoto: (roomId, asset) => {
+    const form = new FormData();
+    form.append('file', filePart(asset));
+    return request(`/api/v1/chat/rooms/${enc(roomId)}/photo`, { method: 'POST', form });
+  },
+  removeChatPhoto: (roomId) => request(`/api/v1/chat/rooms/${enc(roomId)}/photo`, { method: 'DELETE' }),
   register: (details) => request('/api/register', { method: 'POST', body: details, token: null }),
   forgotPassword: (identifier) =>
     request('/api/auth/forgot-password', { method: 'POST', body: { identifier }, token: null }),

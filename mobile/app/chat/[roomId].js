@@ -113,6 +113,20 @@ export default function ChatRoom() {
         if (r !== roomId) return;
         setMessages((list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null } : m)));
       }),
+      // Renamed or new picture (groups, community).
+      client.on('room_updated', (update) => {
+        if (update.roomId !== roomId) return;
+        setRoom((r) => ({
+          ...r,
+          ...(update.title ? { title: update.title } : {}),
+          ...('photoUrl' in update ? { photoUrl: update.photoUrl } : {})
+        }));
+      }),
+      client.on('removed', ({ roomId: r }) => {
+        if (r !== roomId) return;
+        refreshRooms();
+        router.back();
+      }),
       client.on('typing', ({ roomId: r, user: who }) => {
         if (r !== roomId) return;
         setTyping(who.name);
@@ -140,7 +154,7 @@ export default function ChatRoom() {
       clearTimeout(typingTimer.current);
       client.leave(roomId); // screen closed: stop live updates for this room
     };
-  }, [client, roomId, router]);
+  }, [client, roomId, router, refreshRooms]);
 
   // While this screen is visible: mark read and hide pushes for this room.
   useFocusEffect(
@@ -367,6 +381,10 @@ export default function ChatRoom() {
   }, [messages]);
 
   const isDm = room?.kind === 'DIRECT';
+  const isGroup = room?.kind === 'GROUP';
+
+  // Group, community and event chats: who's in it, and (for its admins) settings.
+  const openInfo = () => router.push(`/chat-info?roomId=${encodeURIComponent(roomId)}`);
   const title = isDm ? other?.name || 'Message' : room?.title || 'Chat';
 
   if (!configured) {
@@ -392,13 +410,20 @@ export default function ChatRoom() {
             : undefined,
           headerRight: room
             ? () => (
-                <Pressable onPress={toggleMute} hitSlop={12} accessibilityRole="button" accessibilityLabel={room.muted ? 'Unmute notifications' : 'Mute notifications'}>
-                  {Platform.OS === 'ios' ? (
-                    <Icon name={room.muted ? 'bell.slash' : 'bell'} size={20} color={colors.gold} />
-                  ) : (
-                    <Text style={styles.headerAction}>{room.muted ? 'Unmute' : 'Mute'}</Text>
-                  )}
-                </Pressable>
+                <View style={styles.headerButtons}>
+                  {!isDm ? (
+                    <Pressable onPress={openInfo} hitSlop={12} accessibilityRole="button" accessibilityLabel="Chat info and members">
+                      {Platform.OS === 'ios' ? <Icon name="info.circle" size={21} color={colors.gold} /> : <Text style={styles.headerAction}>Info</Text>}
+                    </Pressable>
+                  ) : null}
+                  <Pressable onPress={toggleMute} hitSlop={12} accessibilityRole="button" accessibilityLabel={room.muted ? 'Unmute notifications' : 'Mute notifications'}>
+                    {Platform.OS === 'ios' ? (
+                      <Icon name={room.muted ? 'bell.slash' : 'bell'} size={20} color={colors.gold} />
+                    ) : (
+                      <Text style={styles.headerAction}>{room.muted ? 'Unmute' : 'Mute'}</Text>
+                    )}
+                  </Pressable>
+                </View>
               )
             : undefined
         }}
@@ -411,6 +436,14 @@ export default function ChatRoom() {
             <ActivityIndicator color={colors.gold} />
           </View>
         ) : (
+          <>
+          {room.regarding ? (
+            // Groups can be about an event: open it.
+            <Pressable onPress={() => router.push(`/event/${room.regarding.id}`)} style={[styles.regarding, { top: insets.top + 52 }]} accessibilityRole="link">
+              <Icon name="calendar" size={14} color={colors.navy} />
+              <Text style={styles.regardingText} numberOfLines={1}>About: {room.regarding.title}</Text>
+            </Pressable>
+          ) : null}
           <FlatList
             inverted
             style={styles.list}
@@ -426,7 +459,15 @@ export default function ChatRoom() {
                 <EmptyState
                   symbol="hand.wave"
                   title="Say hello"
-                  message={isDm ? `Only you and ${other?.name || 'this member'} can see these messages.` : 'Messages here are seen by everyone going to this event.'}
+                  message={
+                    isDm
+                      ? `Only you and ${other?.name || 'this member'} can see these messages.`
+                      : isGroup
+                        ? 'Only the people in this group can see these messages.'
+                        : room.kind === 'COMMUNITY'
+                          ? 'Every member of Manchester Gents can see these messages.'
+                          : 'Messages here are seen by everyone going to this event.'
+                  }
                 />
               </View>
             }
@@ -445,6 +486,7 @@ export default function ChatRoom() {
               )
             }
           />
+          </>
         )}
 
         {room ? (
@@ -559,6 +601,21 @@ const styles = StyleSheet.create({
   closed: { gap: space.sm, alignItems: 'center', paddingBottom: space.sm },
   closedButton: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: colors.gold },
   closedButtonText: { color: colors.navy, fontWeight: '700' },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  regarding: {
+    position: 'absolute',
+    alignSelf: 'center',
+    zIndex: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: '80%',
+    backgroundColor: colors.gold,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.md,
+    paddingVertical: 6
+  },
+  regardingText: { color: colors.navy, fontSize: 13, fontWeight: '700', flexShrink: 1 },
   readOnly: { color: colors.textMuted, textAlign: 'center', paddingVertical: space.md },
   headerAction: { color: colors.gold, fontWeight: '600' },
   dmHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm, maxWidth: 240 },

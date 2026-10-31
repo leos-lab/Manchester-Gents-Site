@@ -88,6 +88,13 @@ export class ChatHub {
         report: this.report,
         block: this.block,
         unblock: this.unblock,
+        create_group: this.createGroup,
+        add_members: this.addMembers,
+        leave_group: this.leaveGroup,
+        group_members: this.groupMembers,
+        set_admin: this.setAdmin,
+        remove_member: this.removeMember,
+        rename_group: this.renameGroup,
         ping: (c, r) => this.reply(c, r, { type: 'pong' })
       }[req.type];
       if (!handler) return this.fail(conn, req, 'unknown_type', `Unknown type ${req.type}.`);
@@ -145,10 +152,132 @@ export class ChatHub {
       // Event chats close 48h after the event; the app points people to the
       // community chat or DMs.
       closed: Boolean(access.closed),
+      regarding: access.regarding || null,
+      photoUrl: access.room.photoUrl || null,
+      canManage: Boolean(access.canManage),
       closesAt: access.closesAt || null,
       muted: access.muted,
       messages: this.filterBlocked(conn, messages)
     });
+  }
+
+  // Group chats: any member can start one, name it, optionally say which
+  // event it's about, and add people; members add more people or leave.
+  async createGroup(conn, req) {
+    const me = conn.state.user;
+    const title = typeof req.title === 'string' ? req.title.trim().slice(0, 60) : '';
+    const userIds = Array.isArray(req.userIds) ? req.userIds.filter((id) => typeof id === 'string' && id !== me.id).slice(0, 100) : [];
+    if (!title) return this.fail(conn, req, 'bad_request', 'Give the group a name.');
+    if (!userIds.length) return this.fail(conn, req, 'bad_request', 'Add at least one member.');
+    const regardingEventId = typeof req.eventId === 'string' && req.eventId ? req.eventId : null;
+    if (regardingEventId && !(await this.store.eventSummary(regardingEventId))) {
+      return this.fail(conn, req, 'not_found', 'Event not found.');
+    }
+    const room = await this.store.createGroup({ creatorId: me.id, title, userIds, regardingEventId });
+    await this.systemMessage(room.id, me, `${displayName(me)} created the group`);
+    for (const id of [me.id, ...userIds]) this.forEachConnOf(id, (c) => c.send({ type: 'rooms_changed' }));
+    return this.join(conn, { ...req, roomId: room.id });
+  }
+
+  async addMembers(conn, req) {
+    const access = await this.store.getAccess(conn.state.user, req.roomId);
+    if (access.room?.kind !== 'GROUP' || !access.canPost) return this.fail(conn, req, 'forbidden', 'You can’t add people to this chat.');
+    const added = await this.store.addGroupMembers(req.roomId, Array.isArray(req.userIds) ? req.userIds.slice(0, 100) : []);
+    if (added.length) {
+      const names = (await this.store.groupMembers(req.roomId)).filter((m) => added.includes(m.id)).map((m) => m.name);
+      await this.systemMessage(req.roomId, conn.state.user, `${displayName(conn.state.user)} added ${names.join(', ')}`);
+      for (const id of added) this.forEachConnOf(id, (c) => c.send({ type: 'rooms_changed' }));
+    }
+    this.reply(conn, req, { type: 'members_added', roomId: req.roomId, added });
+  }
+
+  async leaveGroup(conn, req) {
+    const access = await this.store.getAccess(conn.state.user, req.roomId);
+    if (access.room?.kind !== 'GROUP' || !access.canRead) return this.fail(conn, req, 'forbidden', 'Not in this group.');
+    await this.systemMessage(req.roomId, conn.state.user, `${displayName(conn.state.user)} left`);
+    await this.store.removeGroupMember(req.roomId, conn.state.user.id);
+    this.forEachConnOf(conn.state.user.id, (c) => {
+      if (c.state.rooms.delete(req.roomId)) this.rooms.get(req.roomId)?.delete(c);
+      c.send({ type: 'rooms_changed' });
+    });
+    this.reply(conn, req, { type: 'left_group', roomId: req.roomId });
+  }
+
+  // Who's in a chat: a group's members, everyone going to an event, or every
+  // member for the community chat. (Not for DMs.)
+  async groupMembers(conn, req) {
+    if (req.roomId === COMMUNITY_ROOM_ID) await this.store.communityRoom();
+    const access = await this.store.getAccess(conn.state.user, req.roomId);
+    if (!access.canRead || access.room?.kind === 'DIRECT') return this.fail(conn, req, 'forbidden', 'Not in this chat.');
+    const members =
+      access.room.kind === 'GROUP' ? await this.store.groupMembers(req.roomId) : await this.store.roomMembers(access.room);
+    this.reply(conn, req, { type: 'group_members', roomId: req.roomId, members });
+  }
+
+  // Group admins: make or remove admins (never the last one), remove members,
+  // rename the group.
+  async manageable(conn, req) {
+    const access = await this.store.getAccess(conn.state.user, req.roomId);
+    if (access.room?.kind !== 'GROUP' || !access.canManage) {
+      this.fail(conn, req, 'forbidden', 'Only group admins can do that.');
+      return null;
+    }
+    return access;
+  }
+
+  async setAdmin(conn, req) {
+    if (!(await this.manageable(conn, req))) return;
+    const members = await this.store.groupMembers(req.roomId);
+    const target = members.find((m) => m.id === req.userId);
+    if (!target) return this.fail(conn, req, 'not_found', 'Not in this group.');
+    const makeAdmin = req.isAdmin !== false;
+    if (!makeAdmin && members.filter((m) => m.isAdmin).length === 1 && target.isAdmin) {
+      return this.fail(conn, req, 'bad_request', 'A group needs at least one admin.');
+    }
+    await this.store.setGroupAdmin(req.roomId, req.userId, makeAdmin);
+    await this.systemMessage(
+      req.roomId,
+      conn.state.user,
+      makeAdmin ? `${displayName(conn.state.user)} made ${target.name} an admin` : `${target.name} is no longer an admin`
+    );
+    this.reply(conn, req, { type: 'ok' });
+  }
+
+  async removeMember(conn, req) {
+    if (!(await this.manageable(conn, req))) return;
+    const target = (await this.store.groupMembers(req.roomId)).find((m) => m.id === req.userId);
+    if (!target || req.userId === conn.state.user.id) return this.fail(conn, req, 'bad_request', 'Use Leave group to leave.');
+    await this.store.removeGroupMember(req.roomId, req.userId);
+    await this.systemMessage(req.roomId, conn.state.user, `${displayName(conn.state.user)} removed ${target.name}`);
+    this.forEachConnOf(req.userId, (c) => {
+      if (c.state.rooms.delete(req.roomId)) this.rooms.get(req.roomId)?.delete(c);
+      c.send({ type: 'removed', roomId: req.roomId });
+      c.send({ type: 'rooms_changed' });
+    });
+    this.reply(conn, req, { type: 'ok' });
+  }
+
+  async renameGroup(conn, req) {
+    if (!(await this.manageable(conn, req))) return;
+    const title = typeof req.title === 'string' ? req.title.trim().slice(0, 60) : '';
+    if (!title) return this.fail(conn, req, 'bad_request', 'Give the group a name.');
+    await this.store.renameGroup(req.roomId, title);
+    await this.systemMessage(req.roomId, conn.state.user, `${displayName(conn.state.user)} renamed the group to ${title}`);
+    this.broadcast(req.roomId, { type: 'room_updated', roomId: req.roomId, title });
+    this.conns.forEach((c) => c.state.user && c.send({ type: 'rooms_changed' }));
+    this.reply(conn, req, { type: 'ok' });
+  }
+
+  // From the website: a chat's picture changed.
+  onRoomChanged({ roomId, photoUrl }) {
+    this.broadcast(roomId, { type: 'room_updated', roomId, photoUrl: photoUrl ?? null });
+    this.conns.forEach((c) => c.state.user && c.send({ type: 'rooms_changed' }));
+  }
+
+  // A line in the chat about what happened (created, added, left).
+  async systemMessage(roomId, actor, body) {
+    const { message } = await this.store.insertMessage({ roomId, userId: actor.id, kind: 'SYSTEM', body });
+    this.broadcast(roomId, { type: 'message', message });
   }
 
   // Start (or reopen) a DM with any member.
