@@ -6,13 +6,17 @@
   "build": {
     "base": {
       "node": "22.13.0",
-      "ios": { "image": "latest" }
+      "ios": {
+        "image": "latest"
+      }
     },
     "development": {
       "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "APP_VARIANT": "development" }
+      "env": {
+        "APP_VARIANT": "development"
+      }
     },
     "uat": {
       "extends": "base",
@@ -34,7 +38,15 @@
     }
   },
   "submit": {
-    "uat": {},
+    "uat": {
+      "ios": {
+        "ascAppId": "6829331248",
+        "appleTeamId": "MS98FXR8TX",
+        "ascApiKeyPath": "/Users/leoleung/.appstoreconnect/private_keys/AuthKey_D4ZX6QGKA9.p8",
+        "ascApiKeyIssuerId": "27a37356-5597-4202-9488-8ed7be82de96",
+        "ascApiKeyId": "D4ZX6QGKA9"
+      }
+    },
     "production": {}
   }
 }
