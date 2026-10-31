@@ -8,6 +8,7 @@ import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import clsx from "clsx";
 import { getDisplayName } from "@/lib/displayName";
+import { photoSrc } from "@/lib/memberPhotoRef";
 import ToggleAdminModeButton from "@/components/ToggleAdminModeButton";
 import { useAdminMode } from "@/components/AdminModeProvider";
 
@@ -22,7 +23,8 @@ function NavBarContent() {
   const { data: session, status } = useSession();
   const userRole = session?.user?.role;
   const displayName = getDisplayName(session?.user);
-  const avatarUrl = session?.user?.profilePhotoUrl || null;
+  // Stored as a Pinstripe reference; served (to the member) via /api/member-photos.
+  const avatarUrl = photoSrc(session?.user?.profilePhotoUrl, "thumb");
   const [menuOpen, setMenuOpen] = useState(false);
   const { adminMode } = useAdminMode();
 
@@ -111,6 +113,7 @@ function NavBarContent() {
                         alt={displayName || "Profile"}
                         width={28}
                         height={28}
+                        unoptimized
                       />
                     </span>
                   )}
