@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Alert, FlatList, Platform, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getViewerSession, savePhotoToLibrary } from '../src/lib/gallery';
 import { BackupImage } from '../src/components/BackupImage';
 import { colors } from '../src/theme';
@@ -16,8 +15,6 @@ export default function PhotoViewer() {
   const [current, setCurrent] = useState(index);
   const [saving, setSaving] = useState(false);
   const photo = photos[current];
-  const insets = useSafeAreaInsets();
-  const captionWidth = Math.max(120, width - insets.left - insets.right - 180);
 
   const save = async () => {
     if (!photo || saving) return;
@@ -38,7 +35,22 @@ export default function PhotoViewer() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: photos.length ? `${current + 1} of ${photos.length}` : '' }} />
+      {/* Centre of the top bar: which photo, and who shared it. */}
+      <Stack.Screen
+        options={{
+          title: photos.length ? `${current + 1} of ${photos.length}` : '',
+          headerTitle: () => (
+            <View style={styles.title}>
+              <Text style={styles.count}>{photos.length ? `${current + 1} of ${photos.length}` : ''}</Text>
+              {photo?.uploaderName ? (
+                <Text style={styles.credit} numberOfLines={1}>
+                  Shared by {photo.uploaderName}
+                </Text>
+              ) : null}
+            </View>
+          )
+        }}
+      />
       {/* Top right: the secondary toolbar (on the folded iPhone Duo's rail). */}
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button onPress={() => router.back()} tintColor={colors.gold} variant="done">
@@ -49,18 +61,6 @@ export default function PhotoViewer() {
         <Stack.Toolbar.Button icon="square.and.arrow.up" onPress={share} tintColor={colors.gold}>
           Share
         </Stack.Toolbar.Button>
-        <Stack.Toolbar.Spacer />
-        {/* Who shared it, in line with Share and Save. Toolbar items need an
-            explicit size: everything left once the two buttons are placed. */}
-        {photo?.uploaderName ? (
-          <Stack.Toolbar.View hidesSharedBackground>
-            <View style={[styles.captionBox, { width: captionWidth }]}>
-              <Text style={styles.caption} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
-                Shared by {photo.uploaderName}
-              </Text>
-            </View>
-          </Stack.Toolbar.View>
-        ) : null}
         <Stack.Toolbar.Spacer />
         <Stack.Toolbar.Button icon="square.and.arrow.down" onPress={save} disabled={saving} tintColor={colors.gold}>
           {saving ? 'Saving' : 'Save to Photos'}
@@ -95,6 +95,7 @@ export default function PhotoViewer() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
-  captionBox: { height: 40, alignItems: 'center', justifyContent: 'center' },
-  caption: { color: colors.text, fontSize: 13, textAlign: 'center' }
+  title: { alignItems: 'center', maxWidth: 260 },
+  count: { color: colors.text, fontSize: 17, fontWeight: '600' },
+  credit: { color: colors.textMuted, fontSize: 12 }
 });
