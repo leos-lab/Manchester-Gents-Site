@@ -133,18 +133,11 @@ export default async function HomePage() {
             </AdminModeOnly>
           )}
         </HomeHero>
-        {/* Photos from past socials, for visitors who aren't signed in. Admins
-            see it in admin mode to edit it. */}
-        {!signedIn ? (
-          <PhotoMarquee photos={home.showcase} />
-        ) : (
-          <AdminModeOnly note="Visitors who aren’t signed in see these photos scroll past.">
-            <div className={styles.marqueeEdit}>
-              <EditButton section="showcase" label="Edit scrolling photos" />
-            </div>
-            <PhotoMarquee photos={home.showcase} />
-          </AdminModeOnly>
-        )}
+        {/* Photos from past socials scrolling past, for everyone. */}
+        <div className={styles.marqueeEdit}>
+          <EditButton section="showcase" label={home.showcase.length ? 'Edit scrolling photos' : 'Add scrolling photos'} />
+        </div>
+        <PhotoMarquee photos={home.showcase} />
 
         <div className={styles.inner}>
           <section className={styles.section} aria-labelledby="next-social">

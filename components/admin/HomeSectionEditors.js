@@ -90,7 +90,7 @@ export function ShowcaseFields({ content, setContent, picker }) {
     });
   return (
     <>
-      <p className={styles.hint}>Visitors who aren’t signed in see these scroll slowly past, in this order.</p>
+      <p className={styles.hint}>Everyone sees these scroll slowly past under the hero, in this order.</p>
       {focusing && content.showcase.some((p) => p.id === focusing) ? (
         <div className={styles.heroPreview}>
           <FocusPicker
