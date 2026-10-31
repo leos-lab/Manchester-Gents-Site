@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import PhotoPicker from './PhotoPicker';
+import FocusPicker from './FocusPicker';
 import styles from './AdminHomeEditor.module.css';
 
 // Fields for each editable section of the home page (opened from its Edit
@@ -13,8 +15,7 @@ export function HeroFields({ content, setContent, picker }) {
     <>
       <div className={styles.heroPreview}>
         {content.heroPhoto ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={content.heroPhoto.src} alt="" />
+          <FocusPicker photo={content.heroPhoto} onChange={(focus) => setContent((c) => ({ ...c, heroPhoto: { ...c.heroPhoto, focus } }))} />
         ) : (
           <p>No photo chosen: the latest event cover is used. Pick one below.</p>
         )}
@@ -73,6 +74,7 @@ export function AppFields({ content, setContent }) {
 }
 
 export function ShowcaseFields({ content, setContent, picker }) {
+  const [focusing, setFocusing] = useState(null); // photo id
   const inShowcase = (id) => content.showcase.some((p) => p.id === id);
   const toggle = (photo) =>
     setContent((c) => ({
@@ -89,18 +91,34 @@ export function ShowcaseFields({ content, setContent, picker }) {
   return (
     <>
       <p className={styles.hint}>Visitors who aren’t signed in see these scroll slowly past, in this order.</p>
+      {focusing && content.showcase.some((p) => p.id === focusing) ? (
+        <div className={styles.heroPreview}>
+          <FocusPicker
+            photo={content.showcase.find((p) => p.id === focusing)}
+            onChange={(focus) =>
+              setContent((c) => ({ ...c, showcase: c.showcase.map((p) => (p.id === focusing ? { ...p, focus } : p)) }))
+            }
+          />
+          <button type="button" onClick={() => setFocusing(null)}>
+            Done
+          </button>
+        </div>
+      ) : null}
       {content.showcase.length ? (
         <ol className={styles.showcase}>
           {content.showcase.map((p, i) => (
             <li key={p.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.src} alt="" />
+              <img src={p.src} alt="" style={p.focus ? { objectPosition: `${p.focus.x}% ${p.focus.y}%` } : undefined} />
               <div>
                 <button type="button" onClick={() => move(i, -1)} disabled={i === 0}>
                   Earlier
                 </button>
                 <button type="button" onClick={() => move(i, 1)} disabled={i === content.showcase.length - 1}>
                   Later
+                </button>
+                <button type="button" onClick={() => setFocusing(p.id)} aria-pressed={focusing === p.id}>
+                  Focus
                 </button>
                 <button type="button" onClick={() => toggle(p)}>
                   Remove

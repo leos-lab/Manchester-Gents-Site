@@ -1,0 +1,75 @@
+.picker {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.frame {
+  position: relative;
+  cursor: crosshair;
+  border-radius: 12px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.frame:focus-visible {
+  outline: 2px solid #ffd460;
+  outline-offset: 3px;
+}
+
+.frame img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  background: #000;
+  user-select: none;
+}
+
+.dot {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  border: 3px solid #ffd460;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6), inset 0 0 0 2px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.previews {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-end;
+}
+
+.previews figure {
+  margin: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.previews img {
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.wide img {
+  width: 220px;
+  height: 100px;
+}
+
+.tall img {
+  width: 70px;
+  height: 120px;
+}
+
+.previews figcaption {
+  font-size: 0.75rem;
+  color: rgba(247, 244, 237, 0.6);
+}
+
+.hint {
+  margin: 0;
+  color: rgba(247, 244, 237, 0.66);
+  font-size: 0.9rem;
+}

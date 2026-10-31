@@ -14,7 +14,15 @@ export default function PhotoMarquee({ photos }) {
             {photos.map((p) => (
               <li key={`${copy}-${p.id}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.src} srcSet={p.srcSet} sizes="(min-width: 900px) 420px, 70vw" alt="" loading="lazy" decoding="async" />
+                <img
+                  src={p.src}
+                  srcSet={p.srcSet}
+                  sizes="(min-width: 900px) 420px, 70vw"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  style={p.focus ? { objectPosition: `${p.focus.x}% ${p.focus.y}%` } : undefined}
+                />
               </li>
             ))}
           </ul>

@@ -10,7 +10,9 @@ const photo = z.object({
   src: z.string().url(),
   srcSet: z.string().max(2000).optional(),
   width: z.number().int().positive().nullable().optional(),
-  height: z.number().int().positive().nullable().optional()
+  height: z.number().int().positive().nullable().optional(),
+  // Focus point, percent across and down: pages crop around it.
+  focus: z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) }).optional()
 });
 
 const schema = z.object({
