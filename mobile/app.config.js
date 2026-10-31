@@ -18,6 +18,7 @@ module.exports = ({ config }) => ({
   ...config,
   name: 'MCR Gents', // short enough not to truncate on the home screen
   slug: 'manchester-gents',
+  owner: 'leos-lab',
   scheme: 'mcrgents',
   version: '1.0.0',
   orientation: 'default', // iOS 27 apps are resizable; layouts adapt (incl. iPhone Duo)
@@ -28,7 +29,7 @@ module.exports = ({ config }) => ({
   ios: {
     bundleIdentifier: BUNDLE_ID,
     supportsTablet: true,
-    appleTeamId: process.env.APPLE_TEAM_ID,
+    appleTeamId: process.env.APPLE_TEAM_ID || 'MS98FXR8TX',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
       LSApplicationQueriesSchemes: ['instagram'],
@@ -91,6 +92,7 @@ module.exports = ({ config }) => ({
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL || `https://${IS_DEV ? 'dev.' : IS_UAT ? 'uat.' : ''}manchestergents.com`,
     chatUrl: process.env.EXPO_PUBLIC_CHAT_URL || (IS_DEV ? 'wss://chat-dev.manchestergents.com/ws' : IS_UAT ? 'wss://chat-uat.manchestergents.com/ws' : null),
-    eas: { projectId: process.env.EAS_PROJECT_ID }
+    // Not secret; in the config because EAS cloud builds don't see .env files.
+    eas: { projectId: process.env.EAS_PROJECT_ID || 'b34f34bb-c8af-4766-8f07-67df426d305e' }
   }
 });
