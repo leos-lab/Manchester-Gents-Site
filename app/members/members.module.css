@@ -1,0 +1,269 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Profile: a tall portrait beside the details, like a tailor's fitting card. */
+.profile {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.25rem, 4vw, 3rem) 6rem;
+  display: grid;
+  grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+.portrait {
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 26px, rgba(255, 212, 96, 0.07) 26px 27px),
+    var(--color-steel);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 1px rgba(255, 212, 96, 0.35);
+}
+
+.portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait span {
+  font-family: var(--font-heading), 'Thelorin', sans-serif;
+  font-size: 7rem;
+  color: var(--color-gold);
+}
+
+.details h1 {
+  margin: 0;
+  font-size: clamp(2.8rem, 7vw, 5rem);
+  line-height: 0.95;
+  color: var(--color-gold);
+}
+
+.team {
+  margin: 0.6rem 0 0;
+  color: rgba(247, 244, 237, 0.75);
+}
+
+.stats {
+  display: flex;
+  gap: 2.5rem;
+  margin: 2rem 0;
+}
+
+.stats dt {
+  font-size: 0.9rem;
+  color: rgba(247, 244, 237, 0.6);
+}
+
+.stats dd {
+  margin: 0.2rem 0 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-body);
+}
+
+.stats div:last-child dd {
+  font-size: 1.25rem;
+  padding-top: 0.6rem;
+}
+
+.bio {
+  max-width: 34rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0 0 2rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.primary,
+.instagram {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.9rem;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.primary {
+  background: var(--color-gold);
+  color: var(--color-navy);
+}
+
+.instagram {
+  color: var(--color-body);
+  box-shadow: inset 0 0 0 1.5px rgba(247, 244, 237, 0.5);
+}
+
+.instagram:hover,
+.instagram:focus-visible {
+  color: var(--color-gold);
+  box-shadow: inset 0 0 0 1.5px var(--color-gold);
+}
+
+.note {
+  color: rgba(247, 244, 237, 0.7);
+  max-width: 34rem;
+}
+
+.shared {
+  grid-column: 1 / -1;
+}
+
+.shared h2,
+.listTitle {
+  font-size: 1.4rem;
+  margin: 1rem 0 1.25rem;
+  color: var(--color-body);
+}
+
+.shared ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.25rem;
+}
+
+.shared a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--color-body);
+}
+
+.shared img,
+.cloth {
+  aspect-ratio: 3 / 2;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--color-steel);
+}
+
+.directory {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.25rem, 4vw, 3rem) 6rem;
+}
+
+.directory h1 {
+  margin: 0 0 1.5rem;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  line-height: 0.95;
+  color: var(--color-gold);
+}
+
+.search {
+  display: flex;
+  gap: 0.6rem;
+  max-width: 34rem;
+  margin-bottom: 2rem;
+}
+
+.search input {
+  flex: 1;
+  min-height: 2.9rem;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-body);
+  font: inherit;
+}
+
+.search input:focus-visible,
+.person:focus-visible,
+.primary:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.search button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0 1.3rem;
+  background: var(--color-gold);
+  color: var(--color-navy);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.5rem 1.25rem;
+}
+
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--color-body);
+}
+
+.person img,
+.initial {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--color-steel);
+  margin-bottom: 0.4rem;
+}
+
+.initial {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-heading), 'Thelorin', sans-serif;
+  font-size: 3.5rem;
+  color: var(--color-gold);
+}
+
+.personName {
+  font-weight: 600;
+}
+
+.personHandle {
+  font-size: 0.88rem;
+  color: rgba(247, 244, 237, 0.6);
+}
+
+@media (max-width: 720px) {
+  .profile {
+    grid-template-columns: 1fr;
+  }
+  .portrait {
+    max-width: 260px;
+  }
+}
