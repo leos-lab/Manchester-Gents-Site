@@ -141,3 +141,60 @@ export function ShowcaseFields({ content, setContent, picker }) {
     </>
   );
 }
+
+export function EveningFields({ content, setContent, picker }) {
+  const set = (key) => (e) => setContent((c) => ({ ...c, [key]: e.target.value }));
+  const setPoint = (i, key) => (e) =>
+    setContent((c) => ({ ...c, eveningPoints: c.eveningPoints.map((p, j) => (j === i ? { ...p, [key]: e.target.value } : p)) }));
+  return (
+    <>
+      <div className={styles.heroPreview}>
+        {content.eveningPhoto ? (
+          <FocusPicker
+            photo={content.eveningPhoto}
+            onChange={(focus) => setContent((c) => ({ ...c, eveningPhoto: { ...c.eveningPhoto, focus } }))}
+          />
+        ) : (
+          <p>No photo chosen: the latest event cover is used. Pick one below.</p>
+        )}
+        {content.eveningPhoto ? (
+          <button type="button" onClick={() => setContent((c) => ({ ...c, eveningPhoto: null }))}>
+            Remove photo
+          </button>
+        ) : null}
+      </div>
+      <label>
+        <span>Title</span>
+        <input value={content.eveningTitle} onChange={set('eveningTitle')} maxLength={60} />
+      </label>
+      <label>
+        <span>Intro</span>
+        <textarea value={content.eveningIntro} onChange={set('eveningIntro')} maxLength={400} rows={3} />
+      </label>
+      {content.eveningPoints.map((point, i) => (
+        <div key={i} className={styles.point}>
+          <label>
+            <span>Point {i + 1} heading</span>
+            <input value={point.title} onChange={setPoint(i, 'title')} maxLength={40} />
+          </label>
+          <label>
+            <span>Point {i + 1} text</span>
+            <input value={point.text} onChange={setPoint(i, 'text')} maxLength={200} />
+          </label>
+        </div>
+      ))}
+      <PhotoPicker
+        {...picker}
+        renderPhoto={(photo) => (
+          <button
+            type="button"
+            aria-pressed={content.eveningPhoto?.id === photo.id}
+            onClick={() => setContent((c) => ({ ...c, eveningPhoto: strip(photo) }))}
+          >
+            {content.eveningPhoto?.id === photo.id ? 'Chosen' : 'Use this photo'}
+          </button>
+        )}
+      />
+    </>
+  );
+}

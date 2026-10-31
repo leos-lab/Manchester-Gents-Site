@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminPhotoCurator from '@/components/admin/AdminPhotoCurator';
-import { AppFields, HeroFields, ShowcaseFields } from '@/components/admin/HomeSectionEditors';
+import { AppFields, EveningFields, HeroFields, ShowcaseFields } from '@/components/admin/HomeSectionEditors';
 import styles from './HomeAdmin.module.css';
 
 // Admins edit the home page in place: switch on admin mode (remembered per
@@ -69,7 +69,13 @@ export function AdminModeOnly({ children, note }) {
   );
 }
 
-const TITLES = { hero: 'Hero', apps: 'App downloads', showcase: 'Scrolling photos', featured: 'Photos shown first' };
+const TITLES = {
+  hero: 'Hero',
+  apps: 'App downloads',
+  showcase: 'Scrolling photos',
+  evening: 'How an evening goes',
+  featured: 'Photos shown first'
+};
 
 function EditPanel({ section, eventId, picker, onClose }) {
   const router = useRouter();
@@ -130,6 +136,8 @@ function EditPanel({ section, eventId, picker, onClose }) {
             <HeroFields content={content} setContent={setContent} picker={picker} />
           ) : section === 'apps' ? (
             <AppFields content={content} setContent={setContent} />
+          ) : section === 'evening' ? (
+            <EveningFields content={content} setContent={setContent} picker={picker} />
           ) : (
             <ShowcaseFields content={content} setContent={setContent} picker={picker} />
           )}

@@ -64,6 +64,7 @@ export default async function HomePage() {
   ]);
   // Admins choose the hero photo; until then, the latest event cover.
   const heroPhoto = home.heroPhoto || (covers[0] ? { src: covers[0] } : null);
+  const eveningPhoto = home.eveningPhoto || (covers[0] ? { src: covers[0] } : null);
   // Gallery photos are for members only.
   const highlights = signedIn && lastEvent ? await getGalleryHighlights(lastEvent, 8) : [];
   // Admins edit sections in place (admin mode); they pick photos from galleries.
@@ -203,30 +204,32 @@ export default async function HomePage() {
 
           <section className={`${styles.section} ${styles.evening}`} aria-labelledby="the-evening">
             <div className={styles.eveningPhoto}>
-              {covers[0] ? (
+              {eveningPhoto?.src ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={covers[0]} alt="" loading="lazy" decoding="async" />
+                <img
+                  src={eveningPhoto.src}
+                  srcSet={eveningPhoto.srcSet}
+                  sizes="(min-width: 900px) 50vw, 100vw"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  style={eveningPhoto.focus ? { objectPosition: `${eveningPhoto.focus.x}% ${eveningPhoto.focus.y}%` } : undefined}
+                />
               ) : null}
             </div>
             <div className={styles.eveningText}>
-              <h2 id="the-evening" className={styles.sectionTitle}>How an evening goes</h2>
-              <p>
-                We meet at The Lodge in Manchester. Dress sharp, grab a drink, and talk with gents who care
-                about good tailoring as much as you do.
-              </p>
+              <EditButton section="evening" label="Edit this section" />
+              <h2 id="the-evening" className={styles.sectionTitle}>{home.eveningTitle}</h2>
+              {home.eveningIntro ? <p>{home.eveningIntro}</p> : null}
               <dl className={styles.points}>
-                <div>
-                  <dt className="heading-font">Unscripted</dt>
-                  <dd>No presentations and no agenda, just relaxed conversation in well-dressed company.</dd>
-                </div>
-                <div>
-                  <dt className="heading-font">Familiar faces</dt>
-                  <dd>Meet the people you know from Instagram, and new gents who share your taste.</dd>
-                </div>
-                <div>
-                  <dt className="heading-font">Optional nightcaps</dt>
-                  <dd>Stay for the full two hours, or carry on downstairs at The Eagle afterwards.</dd>
-                </div>
+                {home.eveningPoints
+                  .filter((p) => p.title || p.text)
+                  .map((p) => (
+                    <div key={p.title || p.text}>
+                      {p.title ? <dt className="heading-font">{p.title}</dt> : null}
+                      {p.text ? <dd>{p.text}</dd> : null}
+                    </div>
+                  ))}
               </dl>
               {!signedIn ? (
                 <Link href="/register" className={styles.primary}>
