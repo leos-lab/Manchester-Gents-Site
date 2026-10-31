@@ -68,11 +68,15 @@ export default function PhotoViewer() {
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
 
+      {/* Folding or unfolding (or rotating) changes the page width, which would
+          leave the list part-way between photos. Rebuild it at the new width,
+          on the photo being viewed. */}
       <FlatList
+        key={`page-${Math.round(width)}`}
         horizontal
         pagingEnabled
         data={photos}
-        initialScrollIndex={index}
+        initialScrollIndex={current}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
         keyExtractor={(p) => p.id}
         showsHorizontalScrollIndicator={false}
