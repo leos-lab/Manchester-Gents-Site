@@ -8,7 +8,7 @@ const GOOGLE_SERVICES = process.env.GOOGLE_SERVICES_JSON || './google-services.j
 
 module.exports = ({ config }) => ({
   ...config,
-  name: IS_DEV ? 'MG Dev' : 'Manchester Gents',
+  name: IS_DEV ? 'MCR Dev' : 'MCR Gents', // short enough not to truncate on the home screen
   slug: 'manchester-gents',
   scheme: 'mcrgents',
   version: '1.0.0',

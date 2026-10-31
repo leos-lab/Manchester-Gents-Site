@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { ChatHub } from '../src/hub.js';
@@ -6,12 +6,25 @@ import { createStore } from '../src/store.js';
 import { signChatToken, verifyChatToken } from '../src/token.js';
 import { createShimPool } from './pgShim.js';
 
+// TEST_DATABASE_URL runs against the real pg driver. Every test truncates the
+// chat, user and event tables, so point it at a throwaway database branch only.
+const TEST_URL = process.env.TEST_DATABASE_URL;
 const PG = { host: process.env.PGHOST || '/home/claude/.pgtest', port: 5433, db: 'mg' };
 const SECRET = 'test-secret';
-const sql = (q) => execFileSync('psql', ['-X', '-q', '-A', '-t', '-h', PG.host, '-p', String(PG.port), '-U', 'postgres', PG.db, '-c', q]).toString().trim();
+const pool = TEST_URL
+  ? new (await import('pg')).default.Pool({ connectionString: TEST_URL, max: 4 })
+  : createShimPool(PG);
+after(() => pool.end?.());
+
+// Runs raw SQL and returns the first column of the last row, like psql -A -t.
+async function sql(q) {
+  if (!TEST_URL) return execFileSync('psql', ['-X', '-q', '-A', '-t', '-h', PG.host, '-p', String(PG.port), '-U', 'postgres', PG.db, '-c', q]).toString().trim();
+  const row = [].concat(await pool.query(q)).at(-1).rows?.at(-1);
+  return row ? String(Object.values(row)[0]) : '';
+}
 
 function seed() {
-  sql(`TRUNCATE "User", "Event", "GlobalSetting", "ChatRoom" CASCADE;
+  return sql(`TRUNCATE "User", "Event", "GlobalSetting", "ChatRoom" CASCADE;
     INSERT INTO "GlobalSetting" ("key","value","updatedAt") VALUES ('sessionVersion','7',now());
     INSERT INTO "User" ("id","email","passwordHash","instagramHandle","firstName","lastName","shareFirstName","role","updatedAt") VALUES
       ('admin','a@x','x','manchester.gents','Leo','L',true,'ADMIN',now()),
@@ -31,9 +44,9 @@ function fakeConn() {
 }
 
 async function setup() {
-  seed();
+  await seed();
   const pushes = [];
-  const store = createStore(createShimPool(PG));
+  const store = createStore(pool);
   const hub = new ChatHub({ store, secret: SECRET, sendPush: async (targets, msg) => pushes.push({ targets, msg }), log: { error: (...a) => { throw new Error(a.join(' ')); } } });
   const connect = async (userId, sv = '7') => {
     const c = fakeConn();
@@ -144,7 +157,7 @@ test('moderation: report, block hides messages, admin delete, RSVP cancel remove
   await say(alex, { type: 'send', roomId, clientId: 'x1', body: 'rude' });
   const msgId = alex.last('sent').message.id;
   await say(sam, { type: 'report', messageId: msgId, reason: 'rude' });
-  assert.equal(sql(`SELECT count(*) FROM "ChatReport"`), '1');
+  assert.equal(await sql(`SELECT count(*) FROM "ChatReport"`), '1');
 
   await say(sam, { type: 'block', userId: 'alex' });
   const before = sam.inbox.length;
@@ -156,7 +169,7 @@ test('moderation: report, block hides messages, admin delete, RSVP cancel remove
   assert.equal(alex.last('deleted').messageId, msgId);
   assert.equal((await store.history(roomId)).find((m) => m.id === msgId).body, null);
 
-  sql(`DELETE FROM "EventSignup" WHERE "id" = 's1'`);
+  await sql(`DELETE FROM "EventSignup" WHERE "id" = 's1'`);
   await hub.onMembershipChange({ eventId: 'ev1', userId: 'alex', op: 'DELETE' });
   assert.equal(alex.last('removed').roomId, roomId);
   await say(alex, { type: 'send', roomId, clientId: 'x3', body: 'still here?' });
@@ -196,12 +209,12 @@ test('website moderation: deleted message broadcast live, ban applies to open co
   hub.onMessageDeleted({ roomId, messageId });
   assert.equal(sam.last('deleted').messageId, messageId);
 
-  sql(`UPDATE "User" SET "chatBannedAt" = now() WHERE "id" = 'alex'`);
+  await sql(`UPDATE "User" SET "chatBannedAt" = now() WHERE "id" = 'alex'`);
   await hub.onUserChanged({ userId: 'alex' });
   await say(alex, { type: 'send', roomId, clientId: 'm2', body: 'hello?' });
   assert.equal(alex.last('error').code, 'forbidden');
 
-  sql(`UPDATE "User" SET "chatBannedAt" = NULL WHERE "id" = 'alex'`);
+  await sql(`UPDATE "User" SET "chatBannedAt" = NULL WHERE "id" = 'alex'`);
   await hub.onUserChanged({ userId: 'alex' });
   await say(alex, { type: 'send', roomId, clientId: 'm3', body: 'sorry all' });
   assert.equal(alex.last('sent').message.body, 'sorry all');
