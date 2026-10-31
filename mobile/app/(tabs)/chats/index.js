@@ -11,10 +11,21 @@ import { messageTime } from '../../../src/lib/format';
 import { colors, fonts, radius, space, MAX_CONTENT_WIDTH } from '../../../src/theme';
 import { useGutter } from '../../../src/lib/layout';
 
+// Folders: event chats move to Archived 48 hours after the event (they're
+// read-only by then); Active is everything else; Unread is anything waiting.
+const FOLDERS = [
+  { key: 'active', label: 'Active', match: (r) => !r.closed },
+  { key: 'unread', label: 'Unread', match: (r) => r.unread > 0 && !r.muted },
+  { key: 'archived', label: 'Archived', match: (r) => r.closed }
+];
+
 export default function Chats() {
   const router = useRouter();
   const { rooms, status, refreshRooms, configured } = useChat();
   const [refreshing, setRefreshing] = useState(false);
+  const [folder, setFolder] = useState('active');
+  const shown = rooms.filter(FOLDERS.find((f) => f.key === folder).match);
+  const counts = Object.fromEntries(FOLDERS.map((f) => [f.key, rooms.filter(f.match).length]));
 
   useFocusEffect(
     useCallback(() => {
@@ -29,7 +40,7 @@ export default function Chats() {
       style={styles.list}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={[styles.container, gutter]}
-      data={rooms}
+      data={shown}
       keyExtractor={(r) => r.id}
       refreshControl={
         <RefreshControl
@@ -43,14 +54,44 @@ export default function Chats() {
         />
       }
       ListHeaderComponent={
-        configured && status !== 'ready' && status !== 'idle' ? (
-          <Text style={styles.status}>{status === 'connecting' ? 'Connecting…' : 'Offline. Reconnecting…'}</Text>
+        <>
+          {configured && status !== 'ready' && status !== 'idle' ? (
+            <Text style={styles.status}>{status === 'connecting' ? 'Connecting…' : 'Offline. Reconnecting…'}</Text>
+          ) : null}
+          <View style={styles.folders} accessibilityRole="tablist">
+            {FOLDERS.map((f) => (
+              <Pressable
+                key={f.key}
+                onPress={() => setFolder(f.key)}
+                style={[styles.folder, folder === f.key && styles.folderActive]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: folder === f.key }}
+              >
+                <Text style={[styles.folderText, folder === f.key && styles.folderTextActive]}>
+                  {f.label}
+                  {f.key !== 'active' && counts[f.key] ? ` ${counts[f.key]}` : ''}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      }
+      ListFooterComponent={
+        rooms.length ? (
+          <Text style={styles.footer}>
+            Looking for the group chat from a past social? Event chats are archived automatically 48 hours after the event.
+            You’ll find their history in Archived.
+          </Text>
         ) : null
       }
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) => <RoomRow room={item} onPress={() => router.push(`/chat/${item.id}`)} />}
       ListEmptyComponent={
-        !configured ? (
+        rooms.length ? (
+          <Text style={styles.emptyFolder}>
+            {folder === 'unread' ? 'You’re all caught up.' : folder === 'archived' ? 'No archived chats yet.' : 'No active chats.'}
+          </Text>
+        ) : !configured ? (
           <EmptyState symbol="bubble.left.and.bubble.right" title="Chat isn’t set up" message="The chat server address is missing from the app’s settings." />
         ) : status === 'ready' ? (
           <EmptyState
@@ -123,6 +164,13 @@ function RoomRow({ room, onPress }) {
 }
 
 const styles = StyleSheet.create({
+  folders: { flexDirection: 'row', gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm },
+  folder: { paddingHorizontal: space.lg, paddingVertical: 7, borderRadius: radius.pill, backgroundColor: colors.card },
+  folderActive: { backgroundColor: colors.gold },
+  folderText: { color: colors.textMuted, fontSize: 15, fontWeight: '600' },
+  folderTextActive: { color: colors.navy },
+  footer: { color: colors.textFaint, fontSize: 13, lineHeight: 18, textAlign: 'center', paddingHorizontal: space.xl, paddingVertical: space.xl },
+  emptyFolder: { color: colors.textMuted, fontSize: 15, textAlign: 'center', padding: space.xl },
   closedTag: { color: colors.textFaint, fontSize: 13, fontWeight: '400' },
   list: { flex: 1, backgroundColor: colors.navy },
   container: { paddingVertical: space.sm, paddingBottom: 120, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },

@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { api } from '../../../src/lib/api';
 import { useLoader } from '../../../src/lib/useLoader';
 import { eventWhen, memberSince } from '../../../src/lib/format';
-import { Avatar } from '../../../src/components/Avatar';
+import { MemberAvatar } from '../../../src/components/MemberAvatar';
 import { Button } from '../../../src/components/Button';
 import { Content } from '../../../src/components/Content';
 import { EmptyState } from '../../../src/components/EmptyState';
@@ -55,7 +55,7 @@ export default function AdminHome() {
                 {data.newMembers.slice(0, 5).map((m) => (
                   <ListRow
                     key={m.id}
-                    left={<Avatar name={m.name} uri={m.avatarUrl} size={36} />}
+                    left={<MemberAvatar member={m} size={36} />}
                     title={m.name}
                     subtitle={`${m.instagramHandle ? `@${m.instagramHandle} · ` : ''}joined ${memberSince(m.memberSince)}`}
                     onPress={() => router.push(`/admin/member/${m.id}`)}

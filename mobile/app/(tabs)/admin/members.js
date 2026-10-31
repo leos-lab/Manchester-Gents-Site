@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { api } from '../../../src/lib/api';
 import { useGutter } from '../../../src/lib/layout';
 import { memberSince } from '../../../src/lib/format';
-import { Avatar } from '../../../src/components/Avatar';
+import { MemberAvatar } from '../../../src/components/MemberAvatar';
 import { Button } from '../../../src/components/Button';
 import { Field, ToggleRow } from '../../../src/components/Form';
 import { ListRow } from '../../../src/components/ListGroup';
@@ -94,7 +94,7 @@ export default function AdminMembers() {
       renderItem={({ item: m, index }) => (
         <View style={[styles.cell, index === 0 && styles.first, index === members.length - 1 && styles.last]}>
           <ListRow
-            left={<Avatar name={m.name} uri={m.avatarUrl} size={40} ring={m.isAdmin} />}
+            left={<MemberAvatar member={m} size={40} />}
             title={m.name}
             subtitle={[
               m.instagramHandle ? `@${m.instagramHandle}` : m.email,

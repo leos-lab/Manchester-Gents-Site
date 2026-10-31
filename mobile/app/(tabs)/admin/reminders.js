@@ -3,7 +3,7 @@ import { Alert, RefreshControl, ScrollView, StyleSheet, Text } from 'react-nativ
 import { api } from '../../../src/lib/api';
 import { useLoader } from '../../../src/lib/useLoader';
 import { eventWhen } from '../../../src/lib/format';
-import { Avatar } from '../../../src/components/Avatar';
+import { MemberAvatar } from '../../../src/components/MemberAvatar';
 import { Content } from '../../../src/components/Content';
 import { EmptyState } from '../../../src/components/EmptyState';
 import { ListGroup, ListRow } from '../../../src/components/ListGroup';
@@ -44,7 +44,7 @@ export default function AdminReminders() {
               {data.members.map((m) => (
                 <ListRow
                   key={m.id}
-                  left={<Avatar name={m.name} uri={m.avatarUrl} size={36} />}
+                  left={<MemberAvatar member={m} size={36} />}
                   title={m.name}
                   subtitle={`${m.eventsSignedUp} ${m.eventsSignedUp === 1 ? 'event' : 'events'} · ${m.hasApp ? 'Has the app' : 'Email'}`}
                   right={sent[m.id] || 'Remind'}

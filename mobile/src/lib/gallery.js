@@ -9,13 +9,16 @@ function galleryPath(g) {
   return `${g.apiBase}/api/sites/${encodeURIComponent(g.siteSlug)}/events/${encodeURIComponent(g.eventSlug)}`;
 }
 
-// Grid-sized and full-sized URLs from one asset. Pinstripe's own 400px thumb
-// suits the grid; ImgBB's thumb is a tiny crop, so its medium size is used.
+// URLs from one asset: grid, full-screen viewing, and the original (saving
+// and sharing only). Pinstripe's own sizes are WebP; its 400px thumb suits the
+// grid, while ImgBB's thumb is a tiny crop, so its medium size is used.
 function urls(a) {
-  if (!a) return { thumb: null, full: null };
+  if (!a) return { thumb: null, full: null, original: null };
+  const local = a.provider === 'local';
   return {
-    thumb: (a.provider === 'local' ? a.thumbUrl : a.mediumUrl) || a.displayUrl || a.thumbUrl || a.url,
-    full: a.url || a.displayUrl || a.mediumUrl
+    thumb: (local ? a.thumbUrl : a.mediumUrl) || a.displayUrl || a.thumbUrl || a.url,
+    full: (local ? a.displayUrl : null) || a.url || a.displayUrl || a.mediumUrl,
+    original: a.url || a.displayUrl || a.mediumUrl
   };
 }
 
@@ -28,6 +31,8 @@ function normalise(photo) {
     id: String(photo.id),
     thumb: main.thumb,
     full: main.full,
+    original: main.original,
+    backupOriginal: backup.original,
     backupThumb: backup.thumb,
     backupFull: backup.full,
     width: photo.width || null,
@@ -98,9 +103,9 @@ export async function savePhotoToLibrary(photo) {
     const ext = (url.split('?')[0].match(/\.(jpe?g|png|webp|heic|gif)$/i)?.[1] || 'jpg').toLowerCase();
     return File.downloadFileAsync(url, new File(dir, `${photo.id}.${ext}`), { idempotent: true });
   };
-  const file = await download(photo.full).catch((error) => {
-    if (!photo.backupFull) throw error;
-    return download(photo.backupFull);
+  const file = await download(photo.original).catch((error) => {
+    if (!photo.backupOriginal) throw error;
+    return download(photo.backupOriginal);
   });
   await MediaLibrary.saveToLibraryAsync(file.uri);
 }

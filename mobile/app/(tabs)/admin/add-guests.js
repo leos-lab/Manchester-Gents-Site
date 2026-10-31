@@ -3,7 +3,7 @@ import { Alert, FlatList, StyleSheet, Text, TextInput, View } from 'react-native
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../src/lib/api';
 import { useGutter } from '../../../src/lib/layout';
-import { Avatar } from '../../../src/components/Avatar';
+import { MemberAvatar } from '../../../src/components/MemberAvatar';
 import { Button } from '../../../src/components/Button';
 import { Icon } from '../../../src/components/Icon';
 import { ListRow } from '../../../src/components/ListGroup';
@@ -75,7 +75,7 @@ export default function AddGuests() {
         keyboardShouldPersistTaps="handled"
         renderItem={({ item: m }) => (
           <ListRow
-            left={<Avatar name={m.name} uri={m.avatarUrl} size={36} />}
+            left={<MemberAvatar member={m} size={36} />}
             title={m.name}
             subtitle={[m.instagramHandle ? `@${m.instagramHandle}` : null, m.isPlaceholder ? 'Placeholder' : null].filter(Boolean).join(' · ')}
             right={picked.has(m.id) ? <Icon name="checkmark.circle.fill" size={22} color={colors.gold} /> : <Text style={styles.add}>Add</Text>}

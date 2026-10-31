@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { v1 } from '@/lib/apiV1';
 import { getDisplayName } from '@/lib/displayName';
+import { photoSrc } from '@/lib/memberPhotoRef';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,6 +33,7 @@ export const GET = v1(
         shareFirstName: true,
         name: true,
         avatarUrl: true,
+        profilePhotoUrl: true,
         createdAt: true,
         _count: { select: { eventsSignedUp: true, pushTokens: true } }
       }
@@ -42,6 +44,7 @@ export const GET = v1(
         id: m.id,
         name: getDisplayName(m),
         avatarUrl: m.avatarUrl || null,
+        referenceThumbUrl: photoSrc(m.profilePhotoUrl, 'thumb'),
         memberSince: m.createdAt,
         eventsSignedUp: m._count.eventsSignedUp,
         hasApp: m._count.pushTokens > 0

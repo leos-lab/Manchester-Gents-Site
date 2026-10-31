@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { api, privateImage } from '../../../../src/lib/api';
@@ -11,6 +11,7 @@ import { Chip } from '../../../../src/components/Chip';
 import { Content } from '../../../../src/components/Content';
 import { Field, ToggleRow } from '../../../../src/components/Form';
 import { ListGroup, ListRow } from '../../../../src/components/ListGroup';
+import { PhotoViewer } from '../../../../src/components/PhotoViewer';
 import { colors, fonts, radius, space } from '../../../../src/theme';
 
 const STATUS = { CONFIRMED: 'Going', WAITLISTED: 'Waitlist', CANCELLED: 'Cancelled' };
@@ -23,6 +24,7 @@ export default function AdminMember() {
   const { data, refreshing, refresh, reload } = useLoader(() => api.admin.member(id));
   const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [viewing, setViewing] = useState(null); // { source, label }
 
   if (!data) return <View style={styles.screen} />;
   const { member, events } = data;
@@ -110,18 +112,31 @@ export default function AdminMember() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.gold} />}
       >
         <Content style={styles.content}>
+          {/* Tap either photo to see it full size (the reference photo uncropped). */}
           <View style={styles.photos}>
             {member.referencePhotoUrl ? (
-              <View style={styles.photoBlock}>
+              <Pressable
+                style={styles.photoBlock}
+                onPress={() => setViewing({ source: privateImage(member.referenceFullUrl), label: 'Reference photo' })}
+                accessibilityRole="imagebutton"
+                accessibilityLabel="Reference photo. Open full size"
+              >
                 <Image source={privateImage(member.referencePhotoUrl)} style={styles.reference} contentFit="cover" />
                 <Text style={styles.caption}>Reference (private)</Text>
-              </View>
+              </Pressable>
             ) : null}
-            <View style={styles.photoBlock}>
+            <Pressable
+              style={styles.photoBlock}
+              disabled={!member.avatarUrl}
+              onPress={() => setViewing({ source: { uri: member.avatarUrl }, label: 'Profile photo' })}
+              accessibilityRole="imagebutton"
+              accessibilityLabel={member.avatarUrl ? 'Profile photo. Open full size' : 'No profile photo'}
+            >
               <Avatar name={member.name} uri={member.avatarUrl} size={96} ring={member.isAdmin} />
-              <Text style={styles.caption}>Profile photo</Text>
-            </View>
+              <Text style={styles.caption}>{member.avatarUrl ? 'Profile photo' : 'No profile photo'}</Text>
+            </Pressable>
           </View>
+          <PhotoViewer source={viewing?.source} label={viewing?.label} onClose={() => setViewing(null)} />
 
           <View style={styles.header}>
             <Text style={styles.name}>{member.name}</Text>

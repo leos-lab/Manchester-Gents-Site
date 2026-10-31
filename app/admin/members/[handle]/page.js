@@ -115,14 +115,22 @@ export default async function MemberDetailPage({ params }) {
         <div className={styles.profileColumn}>
           <div className={styles.profileCard}>
             {member.profilePhotoUrl ? (
-              <Image
-                src={photoSrc(member.profilePhotoUrl, 'medium')}
-                unoptimized
-                alt={`Reference for ${displayName}`}
-                width={160}
-                height={160}
-                className={styles.profileImage}
-              />
+              // Opens the full, uncropped reference photo (admins only).
+              <a
+                href={photoSrc(member.profilePhotoOriginalUrl || member.profilePhotoUrl, 'original')}
+                target="_blank"
+                rel="noreferrer"
+                title="Open full photo"
+              >
+                <Image
+                  src={photoSrc(member.profilePhotoUrl, 'medium')}
+                  unoptimized
+                  alt={`Reference for ${displayName}`}
+                  width={160}
+                  height={160}
+                  className={styles.profileImage}
+                />
+              </a>
             ) : (
               <div className={styles.profilePlaceholder}>{displayName.charAt(0)}</div>
             )}

@@ -3,12 +3,13 @@ import { Image } from 'expo-image';
 import { colors } from '../theme';
 import { initials } from '../lib/format';
 
-export function Avatar({ name, uri, size = 44, ring = false }) {
+// `source` overrides `uri` (e.g. a private photo that needs the app token).
+export function Avatar({ name, uri, source, size = 44, ring = false }) {
   const box = { width: size, height: size, borderRadius: size / 2 };
   return (
     <View style={[styles.wrap, box, ring && styles.ring]} accessibilityLabel={name ? `${name}'s photo` : undefined}>
-      {uri ? (
-        <Image source={{ uri }} style={box} contentFit="cover" transition={150} />
+      {source || uri ? (
+        <Image source={source || { uri }} style={box} contentFit="cover" transition={150} />
       ) : (
         <Text style={[styles.initials, { fontSize: size * 0.38 }]}>{initials(name)}</Text>
       )}

@@ -33,8 +33,10 @@ function normalisePhoto(photo) {
   const backup = photo.assets?.[1] || null;
   const local = asset?.provider === 'local';
   const thumbUrl = (local ? asset.thumbUrl : asset?.mediumUrl) || asset?.displayUrl || asset?.thumbUrl || asset?.url || '';
+  // Viewing uses the display size (WebP from Pinstripe); the original is only
+  // fetched for downloads.
   const fullUrl = asset?.url || asset?.displayUrl || asset?.mediumUrl || asset?.thumbUrl || '';
-  const previewUrl = fullUrl;
+  const previewUrl = (local ? asset.displayUrl : null) || fullUrl;
   const coverUrl = asset?.mediumUrl || asset?.displayUrl || asset?.thumbUrl || asset?.url || '';
   const dateSource = photo.takenAt || photo.createdAt;
   const dateTaken = dateSource ? new Date(dateSource) : null;

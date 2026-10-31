@@ -219,7 +219,7 @@ function Viewer({ photos, index, onClose }) {
           </Pressable>
           <Text style={styles.viewerCount}>{photos.length ? `${current + 1} of ${photos.length}` : ''}</Text>
           <View style={styles.viewerButtons}>
-            <Pressable onPress={() => photo && Share.share({ url: photo.full, message: Platform.OS === 'android' ? photo.full : undefined })} hitSlop={10} accessibilityRole="button" accessibilityLabel="Share photo">
+            <Pressable onPress={() => photo && Share.share({ url: photo.original, message: Platform.OS === 'android' ? photo.original : undefined })} hitSlop={10} accessibilityRole="button" accessibilityLabel="Share photo">
               <Text style={styles.viewerAction}>Share</Text>
             </Pressable>
             <Pressable onPress={save} disabled={saving} hitSlop={10} accessibilityRole="button" accessibilityLabel="Save to Photos">
