@@ -7,6 +7,14 @@ import styles from './ChatApp.module.css';
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
+// Folders (as in the app): event chats move to Archived 48 hours after the
+// event; Unread is anything waiting.
+const FOLDERS = [
+  { key: 'active', label: 'Active', match: (r) => !r.closed },
+  { key: 'unread', label: 'Unread', match: (r) => r.unread > 0 && !r.muted },
+  { key: 'archived', label: 'Archived', match: (r) => r.closed }
+];
+
 function time(iso) {
   const d = new Date(iso);
   const sameDay = d.toDateString() === new Date().toDateString();
@@ -199,6 +207,53 @@ export default function ChatApp({ me, initialOpen }) {
     } catch {}
   };
 
+  const [folder, setFolder] = useState('active');
+  const [attaching, setAttaching] = useState(false);
+  const fileRef = useRef(null);
+  const shownRooms = rooms.filter(FOLDERS.find((f) => f.key === folder).match);
+
+  // Photos go up through the website first (stored privately), then send.
+  const sendPhoto = async (file) => {
+    const client = clientRef.current;
+    if (!file || !client || !open) return;
+    setAttaching(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/v1/chat/images', { method: 'POST', body: form });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || 'Couldn’t send the photo.');
+      const body = text.trim() || undefined;
+      const optimistic = client.send(open.roomId, { body, imageUrl: json.imageUrl });
+      setMessages((list) => [...list, { ...optimistic, localUri: URL.createObjectURL(file) }]);
+      setText('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAttaching(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const sendLocation = () => {
+    const client = clientRef.current;
+    if (!client || !open || !navigator.geolocation) return setError('Location isn’t available in this browser.');
+    setAttaching(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setAttaching(false);
+        if (!window.confirm('Share your current location in this chat?')) return;
+        const location = { latitude: coords.latitude, longitude: coords.longitude, name: null };
+        setMessages((list) => [...list, client.send(open.roomId, { location })]);
+      },
+      () => {
+        setAttaching(false);
+        setError('Allow location access for this site to share where you are.');
+      },
+      { enableHighAccuracy: false, timeout: 15000 }
+    );
+  };
+
   const send = (e) => {
     e?.preventDefault();
     const body = text.trim();
@@ -266,8 +321,31 @@ export default function ChatApp({ me, initialOpen }) {
           <Link href="/members" className={styles.newButton}>New message</Link>
         </div>
         {status !== 'ready' ? <p className={styles.status}>{status === 'connecting' ? 'Connecting…' : 'Reconnecting…'}</p> : null}
+        <div className={styles.folders} role="tablist" aria-label="Chat folders">
+          {FOLDERS.map((f) => {
+            const count = f.key === 'active' ? 0 : rooms.filter(f.match).length;
+            return (
+              <button
+                key={f.key}
+                type="button"
+                role="tab"
+                aria-selected={folder === f.key}
+                className={`${styles.folder} ${folder === f.key ? styles.folderActive : ''}`}
+                onClick={() => setFolder(f.key)}
+              >
+                {f.label}
+                {count ? ` ${count}` : ''}
+              </button>
+            );
+          })}
+        </div>
+        {rooms.length && !shownRooms.length ? (
+          <p className={styles.emptyRooms}>
+            {folder === 'unread' ? 'You’re all caught up.' : folder === 'archived' ? 'No archived chats yet.' : 'No active chats.'}
+          </p>
+        ) : null}
         <ul className={styles.rooms}>
-          {rooms.map((room) => {
+          {shownRooms.map((room) => {
             const unread = room.unread > 0 && !room.muted;
             return (
               <li key={room.id}>
@@ -309,6 +387,12 @@ export default function ChatApp({ me, initialOpen }) {
             );
           })}
         </ul>
+        {rooms.length ? (
+          <p className={styles.archiveNote}>
+            Looking for the group chat from a past social? Event chats are archived automatically 48 hours after the
+            event. You’ll find their history in Archived.
+          </p>
+        ) : null}
         {status === 'ready' && rooms.length === 0 ? (
           <p className={styles.emptyRooms}>
             Reserve a spot at an <Link href="/events">event</Link> to join its chat, or message any member.
@@ -367,7 +451,11 @@ export default function ChatApp({ me, initialOpen }) {
                     ) : null}
                     <div className={styles.bubbleRow}>
                       <p className={`${styles.bubble} ${m.status ? styles.pending : ''}`}>
-                        {!m.deleted && m.imageUrl && !m.status ? (
+                        {!m.deleted && m.localUri ? (
+                          // Photo still sending: show the local copy.
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={m.localUri} alt="Photo" className={styles.chatImage} />
+                        ) : !m.deleted && m.imageUrl && !m.status ? (
                           // Private photo: the website checks you're in this chat.
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -426,6 +514,35 @@ export default function ChatApp({ me, initialOpen }) {
                     <input type="checkbox" checked={announce} onChange={(e) => setAnnounce(e.target.checked)} />
                     Announcement
                   </label>
+                ) : null}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  hidden
+                  onChange={(e) => sendPhoto(e.target.files?.[0])}
+                />
+                <button
+                  type="button"
+                  className={styles.attach}
+                  onClick={() => fileRef.current?.click()}
+                  disabled={attaching || announce}
+                  aria-label="Send a photo"
+                  title="Send a photo"
+                >
+                  Photo
+                </button>
+                {open.kind === 'DIRECT' ? (
+                  <button
+                    type="button"
+                    className={styles.attach}
+                    onClick={sendLocation}
+                    disabled={attaching}
+                    aria-label="Share your location"
+                    title="Share your location"
+                  >
+                    Location
+                  </button>
                 ) : null}
                 <textarea
                   value={text}

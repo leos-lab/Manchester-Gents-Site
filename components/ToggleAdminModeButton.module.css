@@ -3,7 +3,9 @@
   align-items: center;
   gap: 0.4rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* Admin-only controls glow red (see components/home/HomeAdmin.module.css). */
+  border: 1.5px solid #ff4d4d;
+  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.35), 0 0 12px rgba(255, 77, 77, 0.5);
   background: rgba(255, 255, 255, 0.08);
   color: inherit;
   letter-spacing: 0.12em;

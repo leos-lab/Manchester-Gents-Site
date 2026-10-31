@@ -2,45 +2,21 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminMode } from '@/components/AdminModeProvider';
 import AdminPhotoCurator from '@/components/admin/AdminPhotoCurator';
 import { AppFields, EveningFields, HeroFields, ShowcaseFields } from '@/components/admin/HomeSectionEditors';
 import styles from './HomeAdmin.module.css';
 
-// Admins edit the home page in place: switch on admin mode (remembered per
-// browser) and an Edit button appears on each editable section.
+// Admins edit the home page in place: with the site's admin mode on (the
+// switch in the nav bar), an Edit button appears on each editable section.
 const AdminMode = createContext({ isAdmin: false, on: false });
-const STORAGE_KEY = 'mg-admin-mode';
 
 export function AdminModeProvider({ isAdmin, picker, children }) {
-  const [on, setOn] = useState(false);
+  const { adminMode } = useAdminMode();
   const [editing, setEditing] = useState(null); // { section, eventId? }
-
-  useEffect(() => {
-    try {
-      setOn(isAdmin && window.localStorage.getItem(STORAGE_KEY) === '1');
-    } catch {
-      // storage unavailable: starts off
-    }
-  }, [isAdmin]);
-
-  const toggle = () =>
-    setOn((value) => {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, value ? '0' : '1');
-      } catch {
-        // not remembered
-      }
-      return !value;
-    });
-
   return (
-    <AdminMode.Provider value={{ isAdmin, on: isAdmin && on, toggle, edit: setEditing }}>
+    <AdminMode.Provider value={{ isAdmin, on: isAdmin && adminMode, edit: setEditing }}>
       {children}
-      {isAdmin ? (
-        <button type="button" className={`${styles.toggle} ${on ? styles.toggleOn : ''}`} onClick={toggle} aria-pressed={on}>
-          {on ? 'Admin mode on' : 'Admin mode'}
-        </button>
-      ) : null}
       {editing ? <EditPanel {...editing} picker={picker} onClose={() => setEditing(null)} /> : null}
     </AdminMode.Provider>
   );

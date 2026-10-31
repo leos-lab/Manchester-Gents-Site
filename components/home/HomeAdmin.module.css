@@ -1,25 +1,5 @@
-.toggle {
-  position: fixed;
-  right: clamp(1rem, 3vw, 2rem);
-  bottom: clamp(1rem, 3vw, 2rem);
-  z-index: 60;
-  padding: 0.7rem 1.2rem;
-  border-radius: 999px;
-  background: rgba(20, 29, 41, 0.92);
-  color: #ffd460;
-  font-weight: 700;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-}
-
-.toggleOn {
-  background: #ffd460;
-  color: #1c2837;
-}
-
 /* Admin-only controls glow red so they're never mistaken for the page. */
-.edit,
-.toggle {
+.edit {
   border: 1.5px solid #ff4d4d;
   box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.35), 0 0 14px rgba(255, 77, 77, 0.55);
   animation: adminGlow 2.4s ease-in-out infinite;
@@ -50,8 +30,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .edit,
-  .toggle {
+  .edit {
     animation: none;
   }
 }

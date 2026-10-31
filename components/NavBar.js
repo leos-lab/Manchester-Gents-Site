@@ -10,6 +10,7 @@ import clsx from "clsx";
 import { getDisplayName } from "@/lib/displayName";
 import { photoSrc } from "@/lib/memberPhotoRef";
 import ToggleAdminModeButton from "@/components/ToggleAdminModeButton";
+import NotificationBell from "@/components/NotificationBell";
 import { useAdminMode } from "@/components/AdminModeProvider";
 
 const navLinks = [
@@ -102,6 +103,7 @@ function NavBarContent() {
             {userRole === "ADMIN" && <ToggleAdminModeButton />}
             {status === "loading" ? null : session ? (
               <>
+                <NotificationBell />
                 <Link href="/chat" className="nav-secondary">
                   Chats
                 </Link>
@@ -295,6 +297,29 @@ function NavBarContent() {
           font-weight: 600;
           letter-spacing: 0.08em;
           text-transform: uppercase;
+        }
+        :global(.nav-bell) {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding-left: 0.7rem;
+          padding-right: 0.7rem;
+        }
+        :global(.nav-bell-badge) {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 4px;
+          border-radius: 9px;
+          background: #ff6b6b;
+          color: #fff;
+          font-size: 0.68rem;
+          font-weight: 700;
+          line-height: 18px;
+          text-align: center;
         }
         :global(.nav-cta) {
           color: #0c1523;

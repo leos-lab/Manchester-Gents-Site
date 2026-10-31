@@ -496,3 +496,50 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Folders: Active, Unread, Archived (as in the app). */
+.folders {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.25rem 1rem 0.75rem;
+}
+
+.folder {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(247, 244, 237, 0.7);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.folderActive {
+  background: var(--gold, #ffd460);
+  color: #1c2837;
+}
+
+.archiveNote {
+  margin: 0;
+  padding: 1rem 1.25rem 1.5rem;
+  color: rgba(247, 244, 237, 0.45);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.attach {
+  flex: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: var(--gold, #ffd460);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.attach:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
