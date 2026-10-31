@@ -6,29 +6,11 @@ import { authOptions } from '@/lib/auth';
 import { notFound, redirect } from 'next/navigation';
 import EventPhotosClient from './EventPhotosClient';
 import styles from './page.module.css';
+import { getPinstripeEventSlug, PINSTRIPE_SITE_SLUG } from '@/lib/pinstripe';
 
-const DEFAULT_SITE_SLUG = 'manchestergents';
 
 function getPinstripeApiBase() {
   return (process.env.NEXT_PUBLIC_PINSTRIPE_API_URL || '').replace(/\/+$/, '');
-}
-
-function getPinstripeEventSlug(event) {
-  if (!event.galleryUrl) {
-    return event.slug;
-  }
-
-  try {
-    const url = new URL(event.galleryUrl);
-    const [, routeType, routeSlug] = url.pathname.split('/');
-    if (routeType === 'event' && routeSlug) {
-      return decodeURIComponent(routeSlug);
-    }
-  } catch {
-    // Keep event.slug as the stable fallback when galleryUrl is not a URL.
-  }
-
-  return event.slug;
 }
 
 async function getEvent(slug) {
@@ -94,7 +76,7 @@ export default async function EventPhotosPage({ params }) {
       <main className={styles.photosMain}>
         <EventPhotosClient
           apiBase={getPinstripeApiBase()}
-          siteSlug={process.env.NEXT_PUBLIC_PINSTRIPE_SITE_SLUG || DEFAULT_SITE_SLUG}
+          siteSlug={PINSTRIPE_SITE_SLUG}
           eventSlug={getPinstripeEventSlug(event)}
           eventId={event.id}
           eventTitle={event.title}

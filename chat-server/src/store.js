@@ -14,7 +14,7 @@ export function directKey(a, b) {
 
 const SENDER_COLUMNS = `
   u."id" AS "senderId", u."firstName", u."lastName", u."preferredName",
-  u."shareFirstName", u."name", u."instagramHandle", u."profilePhotoUrl", u."role" AS "senderRole"`;
+  u."shareFirstName", u."name", u."instagramHandle", u."avatarUrl", u."role" AS "senderRole"`;
 
 export function displayName(u) {
   if (!u) return '';
@@ -42,7 +42,7 @@ function shapePerson(row, prefix = '') {
       instagramHandle: get('InstagramHandle')
     }),
     handle: get('InstagramHandle'),
-    photoUrl: get('ProfilePhotoUrl')
+    photoUrl: get('AvatarUrl')
   };
 }
 
@@ -64,7 +64,7 @@ export function shapeMessage(row) {
           id: row.senderId,
           name: displayName(row),
           handle: row.instagramHandle,
-          photoUrl: row.profilePhotoUrl,
+          photoUrl: row.avatarUrl,
           isAdmin: row.senderRole === 'ADMIN'
         }
       : null
@@ -83,7 +83,7 @@ export function createStore(pool) {
     async getUser(userId) {
       return one(
         `SELECT "id", "role", "chatBannedAt", "isPlaceholder", "firstName", "lastName", "preferredName",
-                "shareFirstName", "name", "instagramHandle", "profilePhotoUrl"
+                "shareFirstName", "name", "instagramHandle"
            FROM "User" WHERE "id" = $1`,
         [userId]
       );
@@ -189,7 +189,7 @@ export function createStore(pool) {
                 o."id" AS "otherId", o."firstName" AS "otherFirstName", o."lastName" AS "otherLastName",
                 o."preferredName" AS "otherPreferredName", o."shareFirstName" AS "otherShareFirstName",
                 o."name" AS "otherName", o."instagramHandle" AS "otherInstagramHandle",
-                o."profilePhotoUrl" AS "otherProfilePhotoUrl",
+                o."avatarUrl" AS "otherAvatarUrl",
                 lm."body" AS "lastBody", lm."kind" AS "lastKind",
                 (SELECT count(*)::int FROM "ChatMessage" m
                   WHERE m."roomId" = v."id" AND m."deletedAt" IS NULL

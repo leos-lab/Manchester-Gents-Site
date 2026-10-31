@@ -73,6 +73,9 @@ model User {
   blocking                UserBlock[]          @relation("UserBlockBlocker")
   blockedBy               UserBlock[]          @relation("UserBlockBlocked")
   chatBannedAt            DateTime?
+  // Public avatar shown on member profiles and in chat. Separate from the
+  // private reference photo (profilePhotoUrl), which stays admin/self only.
+  avatarUrl               String?
   createdAt               DateTime             @default(now())
   updatedAt               DateTime             @updatedAt
 }
