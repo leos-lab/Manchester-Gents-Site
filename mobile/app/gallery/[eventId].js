@@ -45,6 +45,10 @@ export default function Gallery() {
   const [uploading, setUploading] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
   const [pending, setPending] = useState(null); // picked photos awaiting a name
+  // Select mode (long-press a photo, or "Select"): save several or all.
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
+  const [saving, setSaving] = useState(null); // { done, total }
   const { user } = useAuth();
 
   const columns = width >= WIDE_BREAKPOINT ? 5 : 3;
@@ -87,6 +91,80 @@ export default function Gallery() {
     }
   };
 
+  const startSelecting = (photo) => {
+    Haptics.selectionAsync().catch(() => {});
+    setSelecting(true);
+    setSelected(new Set(photo ? [photo.id] : []));
+  };
+
+  const stopSelecting = () => {
+    setSelecting(false);
+    setSelected(new Set());
+  };
+
+  const toggle = (photo) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(photo.id)) next.delete(photo.id);
+      else next.add(photo.id);
+      return next;
+    });
+
+  // Saves originals to the photo library one at a time, with progress.
+  const saveMany = async (list) => {
+    let failed = 0;
+    setSaving({ done: 0, total: list.length });
+    for (const [i, photo] of list.entries()) {
+      try {
+        await savePhotoToLibrary(photo);
+      } catch (e) {
+        failed += 1;
+        if (i === 0 && /access/i.test(e.message)) {
+          setSaving(null);
+          Alert.alert('Couldn’t save', e.message);
+          return;
+        }
+      }
+      setSaving({ done: i + 1, total: list.length });
+    }
+    setSaving(null);
+    stopSelecting();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    const saved = list.length - failed;
+    Alert.alert(
+      `Saved ${saved} ${saved === 1 ? 'photo' : 'photos'} to Photos`,
+      failed ? `${failed} couldn’t be saved. Try those again in a moment.` : undefined
+    );
+  };
+
+  const saveSelected = () => saveMany(photos.filter((p) => selected.has(p.id)));
+
+  // Every photo in the gallery, loading any pages not shown yet.
+  const saveAll = () =>
+    Alert.alert(`Save all ${total} photos?`, 'They’ll be added to your photo library.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Save all',
+        onPress: async () => {
+          let all = photos;
+          let next = page + 1;
+          let more = hasMore;
+          setSaving({ done: 0, total });
+          try {
+            while (more) {
+              const result = await loadPhotos(gallery, next);
+              all = [...all, ...result.photos.filter((p) => !all.some((q) => q.id === p.id))];
+              more = result.hasMore;
+              next += 1;
+            }
+          } catch {
+            // save what we have
+          }
+          await saveMany(all);
+        }
+      }
+    ]);
+
   const addPhotos = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -123,17 +201,29 @@ export default function Gallery() {
         options={{
           title: gallery?.eventTitle || 'Photos',
           headerRight: gallery
-            ? () => (
-                <Pressable onPress={addPhotos} disabled={uploading} hitSlop={12} accessibilityRole="button" accessibilityLabel="Add photos">
-                  {uploading ? (
-                    <ActivityIndicator color={colors.gold} />
-                  ) : Platform.OS === 'ios' ? (
-                    <Icon name="plus" size={22} color={colors.gold} />
-                  ) : (
-                    <Text style={styles.headerAction}>Add</Text>
-                  )}
-                </Pressable>
-              )
+            ? () =>
+                selecting ? (
+                  <Pressable onPress={stopSelecting} hitSlop={12} accessibilityRole="button">
+                    <Text style={styles.headerAction}>Cancel</Text>
+                  </Pressable>
+                ) : (
+                  <View style={styles.headerActions}>
+                    {photos.length ? (
+                      <Pressable onPress={() => startSelecting(null)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Select photos to save">
+                        <Text style={styles.headerAction}>Select</Text>
+                      </Pressable>
+                    ) : null}
+                    <Pressable onPress={addPhotos} disabled={uploading} hitSlop={12} accessibilityRole="button" accessibilityLabel="Add photos">
+                      {uploading ? (
+                        <ActivityIndicator color={colors.gold} />
+                      ) : Platform.OS === 'ios' ? (
+                        <Icon name="plus" size={22} color={colors.gold} />
+                      ) : (
+                        <Text style={styles.headerAction}>Add</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                )
             : undefined
         }}
       />
@@ -151,8 +241,23 @@ export default function Gallery() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadFirst(); setRefreshing(false); }} tintColor={colors.gold} />}
         ListHeaderComponent={total ? <Text style={styles.count}>{total} photos</Text> : null}
         renderItem={({ item, index }) => (
-          <Pressable onPress={() => setViewerIndex(index)} accessibilityRole="imagebutton" accessibilityLabel={`Photo ${index + 1}${item.uploaderName ? ` by ${item.uploaderName}` : ''}`}>
+          <Pressable
+            onPress={() => (selecting ? toggle(item) : setViewerIndex(index))}
+            onLongPress={() => (selecting ? toggle(item) : startSelecting(item))}
+            delayLongPress={300}
+            accessibilityRole="imagebutton"
+            accessibilityState={selecting ? { selected: selected.has(item.id) } : undefined}
+            accessibilityLabel={`Photo ${index + 1}${item.uploaderName ? ` by ${item.uploaderName}` : ''}`}
+            accessibilityHint={selecting ? 'Double-tap to select or deselect' : 'Hold to select photos to save'}
+          >
             <BackupImage uri={item.thumb} backupUri={item.backupThumb} style={{ width: tile, height: tile }} contentFit="cover" recyclingKey={item.id} transition={120} />
+            {selecting ? (
+              <View style={[StyleSheet.absoluteFill, selected.has(item.id) && styles.tileSelected]}>
+                <View style={[styles.check, selected.has(item.id) && styles.checkOn]}>
+                  {selected.has(item.id) ? <Icon name="checkmark" size={13} color={colors.navy} /> : null}
+                </View>
+              </View>
+            ) : null}
           </Pressable>
         )}
         ListFooterComponent={loading && photos.length ? <ActivityIndicator color={colors.gold} style={styles.more} /> : null}
@@ -170,6 +275,28 @@ export default function Gallery() {
           )
         }
       />
+      {selecting || saving ? (
+        <Glass style={[styles.selectBar, { bottom: insets.bottom + space.md, left: insets.left + space.md, right: insets.right + space.md }]}>
+          {saving ? (
+            <>
+              <ActivityIndicator color={colors.gold} />
+              <Text style={styles.selectText}>
+                Saving {saving.done} of {saving.total}…
+              </Text>
+            </>
+          ) : (
+            <>
+              <Pressable onPress={saveAll} hitSlop={8} accessibilityRole="button">
+                <Text style={styles.headerAction}>Save all {total}</Text>
+              </Pressable>
+              <Text style={styles.selectText}>{selected.size ? `${selected.size} selected` : 'Tap photos to select'}</Text>
+              <Pressable onPress={saveSelected} disabled={!selected.size} hitSlop={8} accessibilityRole="button">
+                <Text style={[styles.headerAction, !selected.size && styles.disabled]}>Save</Text>
+              </Pressable>
+            </>
+          )}
+        </Glass>
+      ) : null}
       <Viewer photos={photos} index={viewerIndex} onClose={() => setViewerIndex(null)} />
       <UploaderPrompt visible={Boolean(pending)} count={pending?.length || 0} user={user} onUpload={upload} onCancel={() => setPending(null)} />
     </>
@@ -249,6 +376,34 @@ function Viewer({ photos, index, onClose }) {
 }
 
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  tileSelected: { backgroundColor: 'rgba(20, 29, 41, 0.35)', borderWidth: 3, borderColor: colors.gold },
+  check: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.text,
+    backgroundColor: 'rgba(20, 29, 41, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  checkOn: { backgroundColor: colors.gold, borderColor: colors.gold },
+  selectBar: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+    borderRadius: 22,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md
+  },
+  selectText: { color: colors.text, fontSize: 15, flexShrink: 1, textAlign: 'center' },
+  disabled: { opacity: 0.4 },
   screen: { flex: 1, backgroundColor: colors.navy },
   count: { color: colors.textMuted, fontSize: 13, padding: space.md },
   more: { marginVertical: space.xl },

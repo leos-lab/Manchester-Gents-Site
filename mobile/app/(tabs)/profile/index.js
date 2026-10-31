@@ -119,7 +119,7 @@ export default function Profile() {
 
         <Text style={styles.name}>{user.name}</Text>
         {user.instagram ? (
-          <Chip label={`@${user.instagram.handle}`} symbol="camera" onPress={() => openInstagram(user.instagram)} />
+          <Chip label={`@${user.instagram.handle}`} symbol="instagram" style={{ alignSelf: 'center' }} onPress={() => openInstagram(user.instagram)} />
         ) : null}
 
         <View style={styles.stats}>

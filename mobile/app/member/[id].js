@@ -78,7 +78,8 @@ export default function MemberProfile() {
           {member.instagram ? (
             <Chip
               label={`@${member.instagram.handle}`}
-              symbol="camera"
+              symbol="instagram"
+              style={{ alignSelf: 'center' }}
               onPress={() => openInstagram(member.instagram)}
               accessibilityLabel={`Open @${member.instagram.handle} on Instagram`}
             />

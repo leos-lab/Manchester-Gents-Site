@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,8 +16,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 
 function Navigator() {
-  const { loading, signedIn } = useAuth();
+  const { loading, signedIn, refreshMe } = useAuth();
   const router = useRouter();
+  const askedAboutAvatar = useRef(false);
 
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync().catch(() => {});
@@ -36,6 +37,21 @@ function Navigator() {
     return () => sub.remove();
   }, [signedIn, router]);
 
+  // Once per member: what's new in the app, and choose a public avatar.
+  useEffect(() => {
+    if (!signedIn) {
+      askedAboutAvatar.current = false;
+      return;
+    }
+    if (askedAboutAvatar.current) return;
+    askedAboutAvatar.current = true;
+    refreshMe()
+      .then((me) => {
+        if (!me.avatarPromptDoneAt) setTimeout(() => router.push('/whats-new'), 600);
+      })
+      .catch(() => {});
+  }, [signedIn, refreshMe, router]);
+
   if (loading) return null;
 
   return (
@@ -49,6 +65,7 @@ function Navigator() {
         <Stack.Screen name="edit-profile" options={{ ...sheetOptions, title: 'Edit profile' }} />
         <Stack.Screen name="delete-account" options={{ ...sheetOptions, title: 'Delete account' }} />
         <Stack.Screen name="new-message" options={{ ...sheetOptions, title: 'New message', sheetAllowedDetents: [0.6, 1] }} />
+        <Stack.Screen name="whats-new" options={{ presentation: 'modal', headerShown: false }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />

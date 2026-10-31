@@ -1,8 +1,10 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from './Icon';
+import { InstagramGlyph } from './InstagramGlyph';
 import { colors, radius, space } from '../theme';
 
-export function Chip({ label, symbol, onPress, tone = 'default', accessibilityLabel }) {
+// symbol: an SF Symbol name, or "instagram" for the Instagram glyph.
+export function Chip({ label, symbol, onPress, tone = 'default', accessibilityLabel, style }) {
   const t = TONES[tone] || TONES.default;
   return (
     <Pressable
@@ -10,9 +12,15 @@ export function Chip({ label, symbol, onPress, tone = 'default', accessibilityLa
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : 'text'}
       accessibilityLabel={accessibilityLabel || label}
-      style={({ pressed }) => [styles.chip, t.container, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [styles.chip, t.container, style, pressed && { opacity: 0.75 }]}
     >
-      {symbol ? <Icon name={symbol} size={15} color={t.text.color} style={styles.icon} /> : null}
+      {symbol === 'instagram' ? (
+        <View style={styles.icon}>
+          <InstagramGlyph size={15} color={t.text.color} />
+        </View>
+      ) : symbol ? (
+        <Icon name={symbol} size={15} color={t.text.color} style={styles.icon} />
+      ) : null}
       <Text style={[styles.label, t.text]}>{label}</Text>
     </Pressable>
   );

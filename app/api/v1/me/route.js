@@ -23,7 +23,8 @@ async function loadMe(userId) {
         profilePhotoUrl: true,
         termsAgreed: true,
         termsSignedAt: true,
-        photoNoticeAgreedAt: true
+        photoNoticeAgreedAt: true,
+        avatarPromptDoneAt: true
       }
     }),
     prisma.eventSignup.count({ where: eventsAttendedWhere(userId) })
@@ -42,7 +43,8 @@ async function loadMe(userId) {
     referencePhotoUrl: photoSrc(user.profilePhotoUrl, 'medium'),
     termsAgreed: user.termsAgreed,
     termsSignedAt: user.termsSignedAt,
-    photoNoticeAgreedAt: user.photoNoticeAgreedAt
+    photoNoticeAgreedAt: user.photoNoticeAgreedAt,
+    avatarPromptDoneAt: user.avatarPromptDoneAt
   };
 }
 
@@ -69,11 +71,15 @@ const updateSchema = z.object({
   // A "pinstripe:<id>" ref from POST /api/profile/photo.
   referencePhoto: z.string().min(1).optional(),
   acceptTerms: z.literal(true).optional(),
-  photoNoticeAgreed: z.literal(true).optional()
+  photoNoticeAgreed: z.literal(true).optional(),
+  // The app's one-off "what's new / choose an avatar" prompt is done.
+  avatarPromptDone: z.literal(true).optional()
 });
 
 export const PATCH = v1(async ({ request, user }) => {
-  const { acceptTerms, photoNoticeAgreed, referencePhoto, ...data } = updateSchema.parse(await request.json());
+  const { acceptTerms, photoNoticeAgreed, avatarPromptDone, referencePhoto, ...data } = updateSchema.parse(
+    await request.json()
+  );
   const current = await prisma.user.findUnique({ where: { id: user.id } });
   if (data.instagramHandle) {
     const taken = await prisma.user.findFirst({
@@ -105,6 +111,7 @@ export const PATCH = v1(async ({ request, user }) => {
     });
   }
   if (photoNoticeAgreed) update.photoNoticeAgreedAt = now;
+  if (avatarPromptDone) update.avatarPromptDoneAt = now;
 
   const previousPhotos = [current.profilePhotoUrl, current.profilePhotoOriginalUrl];
   const nextPhotos = referencePhoto ? [referencePhoto, referencePhoto] : previousPhotos;

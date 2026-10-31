@@ -72,6 +72,9 @@ model User {
   // Bumped when this member resets their password: signs out their other
   // sessions only (GlobalSetting sessionVersion still logs everyone out).
   sessionVersion          Int                  @default(0)
+  // Set once the member has seen the app's "what's new" prompt and chosen a
+  // public avatar (or none), so it isn't shown again.
+  avatarPromptDoneAt      DateTime?
   announcementsMade       Announcement[]
   chatReportsFiled        ChatReport[]         @relation("ChatReportReporter")
   blocking                UserBlock[]          @relation("UserBlockBlocker")
