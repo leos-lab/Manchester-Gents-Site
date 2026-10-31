@@ -66,6 +66,12 @@ model User {
   role                    Role                 @default(MEMBER)
   eventsSignedUp          EventSignup[]
   passwordResetTokens     PasswordResetToken[]
+  chatMessages            ChatMessage[]
+  pushTokens              PushToken[]
+  chatReportsFiled        ChatReport[]         @relation("ChatReportReporter")
+  blocking                UserBlock[]          @relation("UserBlockBlocker")
+  blockedBy               UserBlock[]          @relation("UserBlockBlocked")
+  chatBannedAt            DateTime?
   createdAt               DateTime             @default(now())
   updatedAt               DateTime             @updatedAt
 }
@@ -94,9 +100,12 @@ model Event {
   signupDeadline   DateTime?
   capacity         Int?
   published        Boolean       @default(true)
+  chatEnabled      Boolean       @default(true)
+  chatLockedAt     DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   attendees        EventSignup[]
+  chatMessages     ChatMessage[]
 }
 
 model EventSignup {
@@ -111,7 +120,11 @@ model EventSignup {
   groupChatAdded          Boolean      @default(false)
   actionRequiredMessageId String?
   chatValidationCode      String?      @unique
+  chatLastReadAt          DateTime?
+  chatMuted               Boolean      @default(false)
   createdAt               DateTime     @default(now())
+
+  @@unique([eventId, userId])
 }
 
 model GlobalSetting {
@@ -131,4 +144,77 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+enum ChatMessageKind {
+  TEXT
+  IMAGE
+  ANNOUNCEMENT
+  SYSTEM
+}
+
+enum ChatReportStatus {
+  OPEN
+  ACTIONED
+  DISMISSED
+}
+
+// One chat room per event. Membership is not stored separately: any CONFIRMED
+// EventSignup (or an ADMIN) can read and post, so RSVPing joins the chat and
+// cancelling leaves it automatically.
+model ChatMessage {
+  id        String          @id @default(cuid())
+  event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  kind      ChatMessageKind @default(TEXT)
+  body      String?
+  imageUrl  String?
+  replyToId String?
+  clientId  String?
+  createdAt DateTime        @default(now())
+  editedAt  DateTime?
+  deletedAt DateTime?
+  reports   ChatReport[]
+
+  @@unique([eventId, clientId])
+  @@index([eventId, createdAt])
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ChatReport {
+  id         String           @id @default(cuid())
+  message    ChatMessage      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId  String
+  reporter   User             @relation("ChatReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporterId String
+  reason     String?
+  status     ChatReportStatus @default(OPEN)
+  createdAt  DateTime         @default(now())
+  resolvedAt DateTime?
+
+  @@unique([messageId, reporterId])
+  @@index([status])
+}
+
+model UserBlock {
+  blocker   User     @relation("UserBlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId String
+  blocked   User     @relation("UserBlockBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId String
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
 }

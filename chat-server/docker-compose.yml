@@ -1,0 +1,15 @@
+# Runs on the home server. Cloudflare Tunnel publishes it at chat.<your domain>
+# without opening any ports on your router.
+services:
+  chat:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - chat

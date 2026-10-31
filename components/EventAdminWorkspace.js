@@ -4,8 +4,6 @@ import { useState } from 'react';
 import AdminEventForm from '@/components/AdminEventForm';
 import AdminAddToEventForm from '@/components/AdminAddToEventForm';
 import EventAttendeeManager from '@/components/EventAttendeeManager';
-import CommunityChatChecklist from '@/components/CommunityChatChecklist';
-import EventAttendeeSyncPanel from '@/components/EventAttendeeSyncPanel';
 import styles from './EventAdminWorkspace.module.css';
 
 const TAB_CONFIG = [
@@ -19,11 +17,6 @@ const TAB_CONFIG = [
     label: 'Guest list',
     description: 'Add members or placeholders, then prune the attendee list if plans change.'
   },
-  {
-    id: 'community',
-    label: 'Community chat',
-    description: 'After the night wraps, add first-time attendees to the standing Instagram DM.'
-  }
 ];
 
 export default function EventAdminWorkspace({
@@ -78,19 +71,6 @@ export default function EventAdminWorkspace({
                     <EventAttendeeManager eventId={event.id} attendees={attendees} />
                   </div>
                 </div>
-              </div>
-            )}
-            {tab.id === 'community' && (
-              <div className={styles.panelBody}>
-                <EventAttendeeSyncPanel
-                  event={event}
-                  attendees={eventAttendees}
-                  isAdmin={isAdmin}
-                />
-                <CommunityChatChecklist
-                  attendees={eventAttendees}
-                  eventStartTime={event.startTime}
-                />
               </div>
             )}
           </section>
