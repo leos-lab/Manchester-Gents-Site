@@ -5,7 +5,6 @@
   z-index: 60;
   padding: 0.7rem 1.2rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 212, 96, 0.6);
   background: rgba(20, 29, 41, 0.92);
   color: #ffd460;
   font-weight: 700;
@@ -18,30 +17,54 @@
   color: #1c2837;
 }
 
+/* Admin-only controls glow red so they're never mistaken for the page. */
+.edit,
+.toggle {
+  border: 1.5px solid #ff4d4d;
+  box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.35), 0 0 14px rgba(255, 77, 77, 0.55);
+  animation: adminGlow 2.4s ease-in-out infinite;
+}
+
 .edit {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
-  border: 0;
-  background: #ffd460;
-  color: #1c2837;
+  background: rgba(20, 29, 41, 0.9);
+  color: #ffd460;
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.edit:hover {
+  background: #ffd460;
+  color: #1c2837;
+}
+
+@keyframes adminGlow {
+  50% {
+    box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.5), 0 0 22px rgba(255, 77, 77, 0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edit,
+  .toggle {
+    animation: none;
+  }
 }
 
 .adminOnly {
-  outline: 2px dashed rgba(255, 212, 96, 0.5);
+  outline: 2px dashed rgba(255, 77, 77, 0.6);
   outline-offset: 6px;
   border-radius: 12px;
 }
 
 .adminNote {
   margin: 0 0 0.6rem;
-  color: #ffd460;
+  color: #ff8080;
   font-size: 0.85rem;
 }
 
