@@ -20,6 +20,7 @@ import { api } from '../../src/lib/api';
 import { loadPhotos, openViewerSession, savePhotoToLibrary, uploadPhotos } from '../../src/lib/gallery';
 import { EmptyState } from '../../src/components/EmptyState';
 import { Button } from '../../src/components/Button';
+import { Glass } from '../../src/components/Glass';
 import { Icon } from '../../src/components/Icon';
 import { colors, space, WIDE_BREAKPOINT } from '../../src/theme';
 import { BackupImage } from '../../src/components/BackupImage';
@@ -200,48 +201,33 @@ export default function Gallery() {
       <Stack.Screen
         options={{
           title: gallery?.eventTitle || 'Photos',
+          headerRight: gallery
+            ? () =>
+                selecting ? (
+                  <Pressable onPress={stopSelecting} hitSlop={12} accessibilityRole="button">
+                    <Text style={styles.headerAction}>Cancel</Text>
+                  </Pressable>
+                ) : (
+                  <View style={styles.headerActions}>
+                    {photos.length ? (
+                      <Pressable onPress={() => startSelecting(null)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Select photos to save">
+                        <Text style={styles.headerAction}>Select</Text>
+                      </Pressable>
+                    ) : null}
+                    <Pressable onPress={addPhotos} disabled={uploading} hitSlop={12} accessibilityRole="button" accessibilityLabel="Add photos">
+                      {uploading ? (
+                        <ActivityIndicator color={colors.gold} />
+                      ) : Platform.OS === 'ios' ? (
+                        <Icon name="plus" size={22} color={colors.gold} />
+                      ) : (
+                        <Text style={styles.headerAction}>Add</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                )
+            : undefined
         }}
       />
-      {/* Native header buttons: Select and Add, or Cancel while selecting. */}
-      {gallery ? (
-        <Stack.Toolbar placement="right">
-          {selecting ? (
-            <Stack.Toolbar.Button onPress={stopSelecting} tintColor={colors.gold}>
-              Cancel
-            </Stack.Toolbar.Button>
-          ) : (
-            <>
-              {photos.length ? (
-                <Stack.Toolbar.Button onPress={() => startSelecting(null)} tintColor={colors.gold}>
-                  Select
-                </Stack.Toolbar.Button>
-              ) : null}
-              <Stack.Toolbar.Button icon="plus" onPress={addPhotos} disabled={uploading} tintColor={colors.gold}>
-                Add photos
-              </Stack.Toolbar.Button>
-            </>
-          )}
-        </Stack.Toolbar>
-      ) : null}
-      {/* While selecting: save the selection or everything, in the native
-          bottom toolbar. */}
-      {selecting || saving ? (
-        <Stack.Toolbar placement="bottom">
-          {saving ? (
-            <Stack.Toolbar.Button disabled>{`Saving ${saving.done} of ${saving.total}…`}</Stack.Toolbar.Button>
-          ) : (
-            <>
-              <Stack.Toolbar.Button onPress={saveAll} tintColor={colors.gold}>
-                {`Save all ${total}`}
-              </Stack.Toolbar.Button>
-              <Stack.Toolbar.Spacer />
-              <Stack.Toolbar.Button onPress={saveSelected} disabled={!selected.size} tintColor={colors.gold} variant="prominent">
-                {selected.size ? `Save ${selected.size}` : 'Save'}
-              </Stack.Toolbar.Button>
-            </>
-          )}
-        </Stack.Toolbar>
-      ) : null}
       <FlatList
         key={columns}
         style={styles.screen}
@@ -301,12 +287,35 @@ export default function Gallery() {
           )
         }
       />
+      {selecting || saving ? (
+        <Glass style={[styles.selectBar, { bottom: insets.bottom + space.md, left: insets.left + space.md, right: insets.right + space.md }]}>
+          {saving ? (
+            <>
+              <ActivityIndicator color={colors.gold} />
+              <Text style={styles.selectText}>
+                Saving {saving.done} of {saving.total}…
+              </Text>
+            </>
+          ) : (
+            <>
+              <Pressable onPress={saveAll} hitSlop={8} accessibilityRole="button">
+                <Text style={styles.headerAction}>Save all {total}</Text>
+              </Pressable>
+              <Text style={styles.selectText}>{selected.size ? `${selected.size} selected` : 'Tap photos to select'}</Text>
+              <Pressable onPress={saveSelected} disabled={!selected.size} hitSlop={8} accessibilityRole="button">
+                <Text style={[styles.headerAction, !selected.size && styles.disabled]}>Save</Text>
+              </Pressable>
+            </>
+          )}
+        </Glass>
+      ) : null}
       <UploaderPrompt visible={Boolean(pending)} count={pending?.length || 0} user={user} onUpload={upload} onCancel={() => setPending(null)} />
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   tileSelected: { backgroundColor: 'rgba(20, 29, 41, 0.35)', borderWidth: 3, borderColor: colors.gold },
   check: {
     position: 'absolute',
@@ -322,7 +331,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   checkOn: { backgroundColor: colors.gold, borderColor: colors.gold },
+  selectBar: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+    borderRadius: 22,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md
+  },
+  selectText: { color: colors.text, fontSize: 15, flexShrink: 1, textAlign: 'center' },
+  disabled: { opacity: 0.4 },
   screen: { flex: 1, backgroundColor: colors.navy },
   count: { color: colors.textMuted, fontSize: 13, padding: space.md },
-  more: { marginVertical: space.xl }
+  more: { marginVertical: space.xl },
+  headerAction: { color: colors.gold, fontWeight: '600' }
 });
