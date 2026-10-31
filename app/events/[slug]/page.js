@@ -224,7 +224,6 @@ export default async function EventDetailPage({ params }) {
                 deadline={event.signupDeadline}
                 existingSignup={existingSignup}
                 consentSnapshot={attendeeConsent}
-                groupChatLink={event.groupChatLink}
                 photoNoticeEnabled={photoNoticeConfig.enabled && isOpenForRsvp}
               />
               {canChat && !eventHasStarted ? (
