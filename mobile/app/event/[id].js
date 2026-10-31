@@ -4,7 +4,10 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-rou
 import { Image } from 'expo-image';
 import * as Calendar from 'expo-calendar';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/lib/api';
+import { loadContent } from '../../src/lib/content';
+import { useAuth } from '../../src/context/AuthContext';
 import { eventWhen } from '../../src/lib/format';
 import { Avatar } from '../../src/components/Avatar';
 import { Button } from '../../src/components/Button';
@@ -19,6 +22,8 @@ export default function EventDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const { user, refreshMe } = useAuth();
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -46,7 +51,33 @@ export default function EventDetail() {
   const full = event?.spotsLeft === 0 && !going;
   const closed = event?.signupDeadline && new Date(event.signupDeadline) < new Date();
 
+  // When admins switch the photography notice on, members accept it (and any
+  // later update to it) before reserving, as on the website.
+  const confirmPhotoNotice = async () => {
+    const { photographyNotice: notice } = await loadContent();
+    const agreedAt = user?.photoNoticeAgreedAt ? new Date(user.photoNoticeAgreedAt) : null;
+    const current = agreedAt && (!notice.updatedAt || agreedAt >= new Date(notice.updatedAt));
+    if (!notice.required || current) return true;
+    const accepted = await new Promise((resolve) =>
+      Alert.alert(notice.title, notice.paragraphs.join('\n\n'), [
+        { text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'I understand', onPress: () => resolve(true) }
+      ])
+    );
+    if (accepted) {
+      await api.updateMe({ photoNoticeAgreed: true });
+      await refreshMe().catch(() => {});
+    }
+    return accepted;
+  };
+
   const rsvp = async () => {
+    try {
+      if (!(await confirmPhotoNotice())) return;
+    } catch (e) {
+      Alert.alert('Couldn’t reserve your spot', e.message);
+      return;
+    }
     setBusy(true);
     try {
       await api.rsvp(id, requests.trim());
@@ -108,6 +139,13 @@ export default function EventDetail() {
   const when = eventWhen(event.startTime, event.endTime);
   const heroHeight = Math.min(Math.max(width * 0.75, 280), width >= WIDE_BREAKPOINT ? 420 : 380);
   const accent = event.accentColor || colors.gold;
+  const heading = (
+    <>
+      {going ? <Chip label="You’re going" tone="success" symbol="checkmark.circle.fill" /> : null}
+      <Text style={styles.title}>{event.title}</Text>
+      {event.subtitle ? <Text style={styles.subtitle}>{event.subtitle}</Text> : null}
+    </>
+  );
 
   return (
     <>
@@ -117,19 +155,16 @@ export default function EventDetail() {
         contentInsetAdjustmentBehavior="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.gold} />}
       >
-        <View style={[styles.hero, { height: heroHeight }]}>
-          {event.coverImageUrl ? (
+        {event.coverImageUrl ? (
+          <View style={[styles.hero, { height: heroHeight }]}>
             <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: event.backgroundColor || colors.steel }]} />
-          )}
-          <View style={styles.heroShade} />
-          <Content style={styles.heroText}>
-            {going ? <Chip label="You’re going" tone="success" symbol="checkmark.circle.fill" /> : null}
-            <Text style={styles.title}>{event.title}</Text>
-            {event.subtitle ? <Text style={styles.subtitle}>{event.subtitle}</Text> : null}
-          </Content>
-        </View>
+            <View style={styles.heroShade} />
+            <Content style={styles.heroText}>{heading}</Content>
+          </View>
+        ) : (
+          // No cover photo: a text header under the navigation bar, no image space.
+          <Content style={[styles.heroText, { paddingTop: insets.top + 56, paddingBottom: 0 }]}>{heading}</Content>
+        )}
 
         <Content style={styles.body}>
           <View style={styles.facts}>

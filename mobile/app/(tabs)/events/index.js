@@ -6,6 +6,7 @@ import { EventCard } from '../../../src/components/EventCard';
 import { EmptyState } from '../../../src/components/EmptyState';
 import { Button } from '../../../src/components/Button';
 import { colors, radius, space, MAX_CONTENT_WIDTH, WIDE_BREAKPOINT } from '../../../src/theme';
+import { useGutter } from '../../../src/lib/layout';
 
 const SCOPES = [
   { key: 'upcoming', label: 'Upcoming' },
@@ -45,13 +46,14 @@ export default function Events() {
 
   const events = data[scope];
   const columns = wide ? 2 : 1;
+  const gutter = useGutter(space.lg);
 
   return (
     <FlatList
       key={columns}
       style={styles.list}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[styles.container, { maxWidth: wide ? MAX_CONTENT_WIDTH * 1.6 : MAX_CONTENT_WIDTH }]}
+      contentContainerStyle={[styles.container, gutter, { maxWidth: wide ? MAX_CONTENT_WIDTH * 1.6 : MAX_CONTENT_WIDTH }]}
       data={events || []}
       numColumns={columns}
       columnWrapperStyle={columns > 1 ? styles.columns : undefined}

@@ -4,7 +4,8 @@ import { colors, fonts, radius, space } from '../theme';
 import { eventDay } from '../lib/format';
 import { Chip } from './Chip';
 
-// Image-led card: cover photo with the date stamped on it.
+// Image-led card: cover photo with the date stamped on it. Events without a
+// cover get a text-only card.
 export function EventCard({ event, onPress, compact = false }) {
   const day = eventDay(event.startTime);
   const accent = event.accentColor || event.primaryColor || colors.gold;
@@ -24,28 +25,46 @@ export function EventCard({ event, onPress, compact = false }) {
       accessibilityLabel={`${event.title}, ${day.weekday} ${day.day} ${day.month}${status ? `, ${status.label}` : ''}`}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={[styles.cover, compact && styles.coverCompact]}>
-        {event.coverImageUrl ? (
-          <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: event.backgroundColor || colors.steel }]} />
-        )}
-        <View style={styles.shade} />
-        <View style={[styles.date, { borderColor: accent }]}>
-          <Text style={styles.dateMonth}>{day.month.toUpperCase()}</Text>
-          <Text style={styles.dateDay}>{day.day}</Text>
-          <Text style={styles.dateWeekday}>{day.weekday}</Text>
+      {event.coverImageUrl ? (
+        <>
+          <View style={[styles.cover, compact && styles.coverCompact]}>
+            <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+            <View style={styles.shade} />
+            <DateStamp day={day} accent={accent} style={styles.dateOnCover} />
+          </View>
+          <Details event={event} status={status} />
+        </>
+      ) : (
+        // No cover photo: a text-only card, no empty image space.
+        <View style={styles.textOnly}>
+          <DateStamp day={day} accent={accent} />
+          <Details event={event} status={status} style={styles.textOnlyBody} />
         </View>
-      </View>
-      <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={2}>{event.title}</Text>
-        {event.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{event.subtitle}</Text> : null}
-        <View style={styles.meta}>
-          {event.location ? <Text style={styles.location} numberOfLines={1}>{event.location}</Text> : <View />}
-          {status ? <Chip label={status.label} tone={status.tone} symbol={status.symbol} /> : null}
-        </View>
-      </View>
+      )}
     </Pressable>
+  );
+}
+
+function DateStamp({ day, accent, style }) {
+  return (
+    <View style={[styles.date, { borderColor: accent }, style]}>
+      <Text style={styles.dateMonth}>{day.month}</Text>
+      <Text style={styles.dateDay}>{day.day}</Text>
+      <Text style={styles.dateWeekday}>{day.weekday}</Text>
+    </View>
+  );
+}
+
+function Details({ event, status, style }) {
+  return (
+    <View style={[styles.body, style]}>
+      <Text style={styles.title} numberOfLines={2}>{event.title}</Text>
+      {event.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{event.subtitle}</Text> : null}
+      <View style={styles.meta}>
+        {event.location ? <Text style={styles.location} numberOfLines={1}>{event.location}</Text> : <View />}
+        {status ? <Chip label={status.label} tone={status.tone} symbol={status.symbol} /> : null}
+      </View>
+    </View>
   );
 }
 
@@ -55,10 +74,10 @@ const styles = StyleSheet.create({
   cover: { height: 200, justifyContent: 'flex-end' },
   coverCompact: { height: 140 },
   shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(20, 29, 41, 0.25)' },
+  dateOnCover: { position: 'absolute', top: space.md, left: space.md },
+  textOnly: { flexDirection: 'row', alignItems: 'flex-start', padding: space.lg, gap: space.lg },
+  textOnlyBody: { flex: 1, padding: 0 },
   date: {
-    position: 'absolute',
-    top: space.md,
-    left: space.md,
     backgroundColor: 'rgba(20, 29, 41, 0.82)',
     borderRadius: radius.sm,
     borderWidth: 1.5,

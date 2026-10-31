@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { useAuth } from '../src/context/AuthContext';
 import { Button } from '../src/components/Button';
 import { Content } from '../src/components/Content';
-import { API_URL } from '../src/config';
 import { colors, fonts, radius, space } from '../src/theme';
 
 export default function SignIn() {
+  const router = useRouter();
   const { signIn } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -66,13 +67,13 @@ export default function SignIn() {
             />
             {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
             <Button title="Sign in" onPress={submit} loading={busy} />
-            <Button title="Forgot password?" variant="ghost" onPress={() => Linking.openURL(`${API_URL}/forgot-password`)} />
+            <Button title="Forgot password?" variant="ghost" onPress={() => router.push('/forgot-password')} />
           </View>
 
           <Text style={styles.footer}>
             New here?{' '}
-            <Text style={styles.link} onPress={() => Linking.openURL(`${API_URL}/register`)}>
-              Join on manchestergents.com
+            <Text style={styles.link} onPress={() => router.replace('/register')} accessibilityRole="link">
+              Join the club
             </Text>
           </Text>
         </Content>

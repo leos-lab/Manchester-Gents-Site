@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { api } from '../src/lib/api';
 import { Avatar } from '../src/components/Avatar';
 import { colors, radius, space } from '../src/theme';
+import { useGutter } from '../src/lib/layout';
 
 // Find any member to message.
 export default function NewMessage() {
@@ -37,8 +38,10 @@ export default function NewMessage() {
     router.push(`/chat/new?userId=${encodeURIComponent(member.id)}`);
   };
 
+  const gutter = useGutter(space.lg);
+
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, gutter]}>
       <TextInput
         style={styles.search}
         placeholder="Search by name or @instagram"

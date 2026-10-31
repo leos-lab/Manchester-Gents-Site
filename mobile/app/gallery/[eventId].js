@@ -31,6 +31,7 @@ const GAP = 2;
 export default function Gallery() {
   const { eventId } = useLocalSearchParams();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [gallery, setGallery] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [page, setPage] = useState(1);
@@ -43,7 +44,8 @@ export default function Gallery() {
   const [viewerIndex, setViewerIndex] = useState(null);
 
   const columns = width >= WIDE_BREAKPOINT ? 5 : 3;
-  const tile = Math.floor((width - GAP * (columns - 1)) / columns);
+  // Leave room for the Duo's folded-state rail (see src/lib/layout.js).
+  const tile = Math.floor((width - insets.left - insets.right - GAP * (columns - 1)) / columns);
 
   const loadFirst = useCallback(async () => {
     try {
@@ -133,7 +135,7 @@ export default function Gallery() {
         numColumns={columns}
         keyExtractor={(p) => p.id}
         columnWrapperStyle={{ gap: GAP }}
-        contentContainerStyle={{ gap: GAP, paddingBottom: 80 }}
+        contentContainerStyle={{ gap: GAP, paddingBottom: 80, paddingLeft: insets.left, paddingRight: insets.right }}
         onEndReached={loadMore}
         onEndReachedThreshold={0.6}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadFirst(); setRefreshing(false); }} tintColor={colors.gold} />}
@@ -211,7 +213,7 @@ function Viewer({ photos, index, onClose }) {
             )}
           />
         ) : null}
-        <Glass style={[styles.viewerBar, { top: insets.top + space.sm }]}>
+        <Glass style={[styles.viewerBar, { top: insets.top + space.sm, left: insets.left + space.md, right: insets.right + space.md }]}>
           <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
             <Text style={styles.viewerAction}>Done</Text>
           </Pressable>

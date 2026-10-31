@@ -61,6 +61,8 @@ export async function unregisterPush() {
 // Opening a notification goes to its chat: data.url is mcrgents://chat/<roomId>.
 export function notificationPath(response) {
   const data = response?.notification?.request?.content?.data || {};
+  // Admin alerts (RSVPs, new members, chat reports) name the screen to open.
+  if (typeof data.path === 'string' && data.path.startsWith('/')) return data.path;
   if (data.roomId) return `/chat/${encodeURIComponent(data.roomId)}`;
   if (data.eventId) return `/event/${encodeURIComponent(data.eventId)}`;
   return null;

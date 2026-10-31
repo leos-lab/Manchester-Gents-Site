@@ -9,6 +9,7 @@ import { Button } from '../../../src/components/Button';
 import { Icon } from '../../../src/components/Icon';
 import { messageTime } from '../../../src/lib/format';
 import { colors, fonts, radius, space, MAX_CONTENT_WIDTH } from '../../../src/theme';
+import { useGutter } from '../../../src/lib/layout';
 
 export default function Chats() {
   const router = useRouter();
@@ -21,11 +22,13 @@ export default function Chats() {
     }, [refreshRooms])
   );
 
+  const gutter = useGutter();
+
   return (
     <FlatList
       style={styles.list}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, gutter]}
       data={rooms}
       keyExtractor={(r) => r.id}
       refreshControl={

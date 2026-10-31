@@ -12,6 +12,7 @@
     "doctor": "npx expo-doctor"
   },
   "dependencies": {
+    "@react-native-community/datetimepicker": "9.2.1",
     "expo": "~58.0.0",
     "expo-calendar": "~58.0.6",
     "expo-clipboard": "~58.0.4",
@@ -42,5 +43,8 @@
   },
   "engines": {
     "node": ">=22.13"
+  },
+  "overrides": {
+    "react-dom": "19.3.0"
   }
 }

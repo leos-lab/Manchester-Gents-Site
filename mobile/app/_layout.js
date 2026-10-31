@@ -51,8 +51,13 @@ function Navigator() {
         <Stack.Screen name="new-message" options={{ ...sheetOptions, title: 'New message', sheetAllowedDetents: [0.6, 1] }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
-        <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+        <Stack.Screen name="welcome" options={{ headerShown: false }} />
+        <Stack.Screen name="sign-in" options={{ title: '' }} />
+        <Stack.Screen name="register" options={{ title: 'Join' }} />
+        <Stack.Screen name="forgot-password" options={{ ...sheetOptions, title: 'Reset password' }} />
       </Stack.Protected>
+      {/* Guidelines, privacy and the photography notice: open to everyone. */}
+      <Stack.Screen name="info/[page]" options={{ ...sheetOptions, title: '' }} />
     </Stack>
   );
 }

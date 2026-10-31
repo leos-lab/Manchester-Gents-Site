@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react';
-import { ActionSheetIOS, Alert, Linking, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../src/context/AuthContext';
 import { api, uploadToPinstripe } from '../../../src/lib/api';
 import { memberSince } from '../../../src/lib/format';
-import { API_URL } from '../../../src/config';
 import { Avatar } from '../../../src/components/Avatar';
 import { Button } from '../../../src/components/Button';
 import { Chip } from '../../../src/components/Chip';
@@ -85,6 +84,9 @@ export default function Profile() {
     }
   };
 
+  // Members whose agreement predates the current terms re-accept them.
+  const acceptTerms = () => router.push('/info/guidelines?accept=1');
+
   const confirmSignOut = () =>
     Alert.alert('Sign out?', undefined, [
       { text: 'Cancel', style: 'cancel' },
@@ -128,10 +130,22 @@ export default function Profile() {
 
         {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
 
+        {user.termsAgreed === false ? (
+          <View style={styles.notice}>
+            <Text style={styles.noticeText}>Please review and accept the community guidelines before you can reserve spots.</Text>
+            <Button title="Review guidelines" onPress={acceptTerms} />
+          </View>
+        ) : null}
+
         <View style={styles.group}>
           <Row label="Edit profile" onPress={() => router.push('/edit-profile')} />
-          <Row label="Privacy & photo consents" onPress={() => Linking.openURL(`${API_URL}/profile`)} external />
-          <Row label="Community guidelines" onPress={() => Linking.openURL(`${API_URL}/privacy`)} external />
+          {user.isAdmin ? <Row label="Admin dashboard" onPress={() => router.push('/admin')} /> : null}
+        </View>
+
+        <View style={styles.group}>
+          <Row label="Community guidelines" onPress={() => router.push('/info/guidelines')} />
+          <Row label="Photography notice" onPress={() => router.push('/info/photography')} />
+          <Row label="Privacy policy" onPress={() => router.push('/info/privacy')} />
         </View>
 
         <View style={styles.group}>
@@ -179,6 +193,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: 16
   },
+  notice: { alignSelf: 'stretch', gap: space.md, backgroundColor: 'rgba(255, 212, 96, 0.12)', borderRadius: radius.md, padding: space.lg },
+  noticeText: { color: colors.text, fontSize: 15, lineHeight: 21 },
   rowPressed: { backgroundColor: colors.cardPressed },
   rowLabel: { color: colors.text, fontSize: 16 },
   rowChevron: { color: colors.textFaint, fontSize: 18 }

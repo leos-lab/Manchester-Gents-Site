@@ -340,7 +340,7 @@ export default function ChatRoom() {
           <FlatList
             inverted
             style={styles.list}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingLeft: insets.left, paddingRight: insets.right }]}
             data={rows}
             keyExtractor={(r) => r.key}
             keyboardDismissMode="interactive"
@@ -374,7 +374,7 @@ export default function ChatRoom() {
         )}
 
         {room ? (
-          <View style={[styles.composerWrap, { paddingBottom: Math.max(insets.bottom, space.sm) }]}>
+          <View style={[styles.composerWrap, { paddingBottom: Math.max(insets.bottom, space.sm), paddingLeft: insets.left + space.md, paddingRight: insets.right + space.md }]}>
             {typing ? <Text style={styles.typing}>{typing} is typing…</Text> : null}
             {status !== 'ready' ? <Text style={styles.offline}>Reconnecting… messages will send when you’re back online.</Text> : null}
             {room.canPost ? (

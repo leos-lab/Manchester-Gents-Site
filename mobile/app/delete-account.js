@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { useAuth } from '../src/context/AuthContext';
 import { Button } from '../src/components/Button';
 import { colors, radius, space } from '../src/theme';
+import { useGutter } from '../src/lib/layout';
 
 // In-app account deletion (required by the App Store).
 export default function DeleteAccount() {
@@ -29,7 +30,7 @@ export default function DeleteAccount() {
     ]);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, useGutter(space.xl)]} keyboardShouldPersistTaps="handled">
       <Text style={styles.text}>
         Deleting your account removes your profile, your RSVPs, your photos and your place in event chats. Messages you’ve sent stay in
         chats without your name.
