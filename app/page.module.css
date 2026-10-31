@@ -326,3 +326,18 @@
 .webNote a {
   color: inherit;
 }
+
+/* Admin mode (components/home/HomeAdmin.js). */
+.heroEdit {
+  margin-bottom: 1rem;
+}
+
+.marqueeEdit {
+  padding: 1rem clamp(1.25rem, 4vw, 3rem) 0;
+}
+
+.sectionActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+}

@@ -1,0 +1,129 @@
+.toggle {
+  position: fixed;
+  right: clamp(1rem, 3vw, 2rem);
+  bottom: clamp(1rem, 3vw, 2rem);
+  z-index: 60;
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 96, 0.6);
+  background: rgba(20, 29, 41, 0.92);
+  color: #ffd460;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.toggleOn {
+  background: #ffd460;
+  color: #1c2837;
+}
+
+.edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 0;
+  background: #ffd460;
+  color: #1c2837;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.adminOnly {
+  outline: 2px dashed rgba(255, 212, 96, 0.5);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.adminNote {
+  margin: 0 0 0.6rem;
+  color: #ffd460;
+  font-size: 0.85rem;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.panel {
+  width: min(720px, 100%);
+  height: 100%;
+  background: #1c2837;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.panelHead,
+.panelFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panelFoot {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 0;
+}
+
+.panelHead h2 {
+  margin: 0;
+  color: #ffd460;
+  font-size: 1.3rem;
+}
+
+.panelBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.4rem;
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+}
+
+.panelBody label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.panelBody input,
+.panelBody textarea {
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f7f4ed;
+  font: inherit;
+  font-weight: 400;
+}
+
+.close {
+  background: none;
+  border: 0;
+  color: #f7f4ed;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.save {
+  padding: 0.7rem 1.6rem;
+  border-radius: 999px;
+  border: 0;
+  background: #ffd460;
+  color: #1c2837;
+  font-weight: 700;
+  cursor: pointer;
+}

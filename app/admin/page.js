@@ -26,15 +26,9 @@ export default async function AdminPage() {
           <span className={styles.cardCta}>Create →</span>
         </Link>
 
-        <Link href="/admin/home" className={`${styles.card} glass-panel`}>
-          <h2>Home page</h2>
-          <p>Choose the hero photo and its words, and the photos that scroll past for visitors.</p>
-          <span className={styles.cardCta}>Edit home page</span>
-        </Link>
-
         <Link href="/admin/photos" className={`${styles.card} glass-panel`}>
           <h2>Photos</h2>
-          <p>Feature the best photos from each event, or hide ones that shouldn’t be in the gallery.</p>
+          <p>Feature the best photos from each event, or hide ones that shouldn’t be in the gallery. Edit the home page itself in admin mode, from the home page.</p>
           <span className={styles.cardCta}>Curate photos</span>
         </Link>
 

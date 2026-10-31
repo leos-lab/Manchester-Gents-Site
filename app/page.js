@@ -6,6 +6,9 @@ import EventCard from '@/components/EventCard';
 import HomeHero from '@/components/HomeHero';
 import PhotoMarquee from '@/components/PhotoMarquee';
 import { getHomeContent } from '@/lib/homeContent';
+import { galleryEvents } from '@/lib/adminGallery';
+import { PINSTRIPE_SITE_SLUG } from '@/lib/pinstripe';
+import { AdminModeOnly, AdminModeProvider, EditButton } from '@/components/home/HomeAdmin';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { getGalleryHighlights } from '@/lib/galleryHighlights';
@@ -63,8 +66,41 @@ export default async function HomePage() {
   const heroPhoto = home.heroPhoto || (covers[0] ? { src: covers[0] } : null);
   // Gallery photos are for members only.
   const highlights = signedIn && lastEvent ? await getGalleryHighlights(lastEvent, 8) : [];
+  // Admins edit sections in place (admin mode); they pick photos from galleries.
+  const isAdmin = session?.user?.role === 'ADMIN';
+  const picker = isAdmin
+    ? {
+        events: await galleryEvents(),
+        apiBase: (process.env.NEXT_PUBLIC_PINSTRIPE_API_URL || '').replace(/\/+$/, ''),
+        siteSlug: PINSTRIPE_SITE_SLUG
+      }
+    : null;
+  const appSection = (
+    <div className={styles.apps}>
+      <div className={styles.appButtons}>
+        {home.iosAppUrl ? (
+          <a href={home.iosAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
+            Get the app for iPhone
+          </a>
+        ) : null}
+        {home.androidAppUrl ? (
+          <a href={home.androidAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
+            Get the app for Android
+          </a>
+        ) : null}
+        <EditButton section="apps" label="Edit app links" />
+      </div>
+      <p className={styles.appNote}>
+        Event chats have moved off Instagram and into the app, along with RSVPs, messages and photos from every social.
+      </p>
+      <p className={styles.webNote}>
+        Can’t use the app? <Link href="/chat">Chats also work on the website.</Link>
+      </p>
+    </div>
+  );
 
   return (
+    <AdminModeProvider isAdmin={isAdmin} picker={picker}>
     <div className={styles.page}>
       <NavBar />
       <main>
@@ -74,6 +110,7 @@ export default async function HomePage() {
               <span>New</span> Get the Manchester Gents app for iPhone and Android
             </p>
           ) : null}
+          <EditButton section="hero" label="Edit hero" className={styles.heroEdit} />
           <h1 className={`heading-font ${styles.wordmark}`}>{home.headline}</h1>
           {home.lede ? <p className={styles.lede}>{home.lede}</p> : null}
           <div className={styles.actions}>
@@ -89,31 +126,25 @@ export default async function HomePage() {
             ) : null}
           </div>
           {home.iosAppUrl || home.androidAppUrl ? (
-            <div className={styles.apps}>
-              <div className={styles.appButtons}>
-                {home.iosAppUrl ? (
-                  <a href={home.iosAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
-                    Get the app for iPhone
-                  </a>
-                ) : null}
-                {home.androidAppUrl ? (
-                  <a href={home.androidAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
-                    Get the app for Android
-                  </a>
-                ) : null}
-              </div>
-              <p className={styles.appNote}>
-                Event chats have moved off Instagram and into the app, along with RSVPs, messages and photos from every
-                social.
-              </p>
-              <p className={styles.webNote}>
-                Can’t use the app? <Link href="/chat">Chats also work on the website.</Link>
-              </p>
-            </div>
-          ) : null}
+            appSection
+          ) : (
+            <AdminModeOnly note="App download buttons are hidden until you add a link.">
+              <EditButton section="apps" label="Add app links" />
+            </AdminModeOnly>
+          )}
         </HomeHero>
-        {/* Photos from past socials for visitors (chosen in Admin → Home page). */}
-        {!signedIn ? <PhotoMarquee photos={home.showcase} /> : null}
+        {/* Photos from past socials, for visitors who aren't signed in. Admins
+            see it in admin mode to edit it. */}
+        {!signedIn ? (
+          <PhotoMarquee photos={home.showcase} />
+        ) : (
+          <AdminModeOnly note="Visitors who aren’t signed in see these photos scroll past.">
+            <div className={styles.marqueeEdit}>
+              <EditButton section="showcase" label="Edit scrolling photos" />
+            </div>
+            <PhotoMarquee photos={home.showcase} />
+          </AdminModeOnly>
+        )}
 
         <div className={styles.inner}>
           <section className={styles.section} aria-labelledby="next-social">
@@ -152,7 +183,10 @@ export default async function HomePage() {
             <section className={styles.section} aria-labelledby="last-social">
               <div className={styles.sectionHead}>
                 <h2 id="last-social" className={styles.sectionTitle}>From {lastEvent.title}</h2>
-                <Link href={`/events/${lastEvent.slug}/photos`} className={styles.textLink}>See every photo</Link>
+                <span className={styles.sectionActions}>
+                  <EditButton section="featured" eventId={lastEvent.id} label="Choose photos" />
+                  <Link href={`/events/${lastEvent.slug}/photos`} className={styles.textLink}>See every photo</Link>
+                </span>
               </div>
               <ul className={styles.mosaic}>
                 {highlights.slice(0, highlights.length >= 9 ? 9 : 5).map((photo, i) => (
@@ -212,5 +246,6 @@ export default async function HomePage() {
       </main>
       <Footer />
     </div>
+    </AdminModeProvider>
   );
 }
