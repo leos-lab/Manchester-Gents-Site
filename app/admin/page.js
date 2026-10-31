@@ -26,6 +26,12 @@ export default async function AdminPage() {
           <span className={styles.cardCta}>Create →</span>
         </Link>
 
+        <Link href="/admin/announcements" className={`${styles.card} glass-panel`}>
+          <h2>Announcements</h2>
+          <p>Push an announcement to all members, those going to an event, or those yet to RSVP.</p>
+          <span className={styles.cardCta}>Make an announcement</span>
+        </Link>
+
         <Link href="/admin/photos" className={`${styles.card} glass-panel`}>
           <h2>Photos</h2>
           <p>Feature the best photos from each event, or hide ones that shouldn’t be in the gallery. Edit the home page itself in admin mode, from the home page.</p>
