@@ -219,3 +219,21 @@ test('website moderation: deleted message broadcast live, ban applies to open co
   await say(alex, { type: 'send', roomId, clientId: 'm3', body: 'sorry all' });
   assert.equal(alex.last('sent').message.body, 'sorry all');
 });
+
+test('reports alert admins without quoting the message', async () => {
+  const { connect, say, pushes } = await setup();
+  await sql(`INSERT INTO "PushToken" ("id","userId","token","platform","updatedAt") VALUES ('p3','admin','ExponentPushToken[leo]','ios',now())`);
+  const alex = await connect('alex');
+  const sam = await connect('sam');
+  for (const c of [alex, sam]) await say(c, { type: 'join', eventId: 'ev1' });
+  const roomId = alex.last('joined').roomId;
+  await say(alex, { type: 'send', roomId, clientId: 'r1', body: 'something private' });
+  await say(sam, { type: 'report', messageId: alex.last('sent').message.id, reason: 'rude' });
+  await new Promise((r) => setImmediate(r));
+  const alert = pushes.at(-1);
+  assert.deepEqual(alert.targets.map((t) => t.userId), ['admin']);
+  assert.equal(alert.msg.title, 'Message reported');
+  assert.equal(alert.msg.body, 'Reason: rude');
+  assert.ok(!JSON.stringify(alert.msg).includes('something private'));
+  assert.equal(alert.msg.data.path, '/admin/reports');
+});
