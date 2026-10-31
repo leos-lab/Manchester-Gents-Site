@@ -7,8 +7,9 @@ import { Button } from '../src/components/Button';
 import { Content } from '../src/components/Content';
 import { colors, fonts, space } from '../src/theme';
 
-// Signed-out landing screen: event photos cut along the logo's lapels with
-// gold seams (as on the website's home page), then the wordmark and the way in.
+// Signed-out landing screen: the website's hero photo (chosen by admins in
+// admin mode, cropped around its focus point, with its caption), then the
+// wordmark and the way in.
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -18,7 +19,7 @@ export default function Welcome() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} bounces={false}>
-      <LapelHero covers={content?.covers || []} height={heroHeight} />
+      <Hero hero={content?.hero} height={heroHeight} />
       <Content style={[styles.content, { paddingBottom: insets.bottom + space.xl }]}>
         <Image source={require('../assets/images/splash-icon.png')} style={styles.logo} contentFit="contain" />
         <Text style={styles.wordmark}>Manchester Gents</Text>
@@ -41,39 +42,25 @@ export default function Welcome() {
   );
 }
 
-const SKEW = 10; // degrees, matching the lapel angle of the logo
-
-function LapelHero({ covers, height }) {
-  const { width } = useWindowDimensions();
-  const photos = covers.slice(0, 3);
-  const slice = width / Math.max(photos.length, 1);
-  // A skewed panel leans by this much at its top and bottom edges.
-  const lean = Math.tan((SKEW * Math.PI) / 180) * (height / 2);
-
+function Hero({ hero, height }) {
+  const insets = useSafeAreaInsets();
   return (
     <View style={[styles.hero, { height }]} accessible={false}>
-      {photos.map((uri, i) => (
-        <View
-          key={uri}
-          style={[
-            styles.panel,
-            {
-              left: i * slice - (i === 0 ? lean : 0),
-              width: slice + (i === 0 ? lean : 0) + (i === photos.length - 1 ? lean : 0),
-              transform: [{ skewX: `-${SKEW}deg` }]
-            },
-            i > 0 && styles.seam
-          ]}
-        >
-          <Image
-            source={{ uri }}
-            style={[StyleSheet.absoluteFill, { left: -lean, right: -lean, transform: [{ skewX: `${SKEW}deg` }] }]}
-            contentFit="cover"
-            transition={300}
-          />
-        </View>
-      ))}
+      {hero?.src ? (
+        <Image
+          source={{ uri: hero.src }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          contentPosition={hero.focus ? { left: `${hero.focus.x}%`, top: `${hero.focus.y}%` } : 'center'}
+          transition={300}
+        />
+      ) : null}
       <View style={styles.fade} />
+      {hero?.caption ? (
+        <View style={[styles.captionWrap, { top: insets.top + space.md }]}>
+          <Text style={styles.caption}>{hero.caption}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -82,8 +69,18 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.navy },
   scroll: { flexGrow: 1 },
   hero: { overflow: 'hidden', backgroundImage: `linear-gradient(180deg, ${colors.slate}, ${colors.navy})` },
-  panel: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden' },
-  seam: { borderLeftWidth: 2, borderLeftColor: colors.gold },
+  captionWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  caption: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(28, 40, 55, 0.55)'
+  },
   fade: {
     ...StyleSheet.absoluteFillObject,
     backgroundImage: `linear-gradient(180deg, rgba(28, 40, 55, 0.05) 45%, ${colors.navy} 100%)`
