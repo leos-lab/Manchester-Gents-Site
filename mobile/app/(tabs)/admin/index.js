@@ -67,6 +67,7 @@ export default function AdminHome() {
         ) : null}
 
         <ListGroup title="Workspaces">
+          <ListRow symbol="megaphone" title="Make an announcement" subtitle="Push to all members, those going, or those yet to RSVP" onPress={() => router.push('/admin/announce')} />
           <ListRow symbol="calendar" title="Events" subtitle="Drafts, published events, guest lists" onPress={() => router.push('/admin/events')} />
           <ListRow symbol="plus.circle" title="Create event" onPress={() => router.push('/admin/event-form')} />
           <ListRow symbol="person.2" title="Members" subtitle="Directory, details, placeholders" onPress={() => router.push('/admin/members')} />

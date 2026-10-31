@@ -3,6 +3,17 @@
 import { randomBytes } from 'node:crypto';
 
 export const PAGE_SIZE = 50;
+export const COMMUNITY_ROOM_ID = 'community';
+// Event chats go read-only 48 hours after the event ends (an event with no end
+// time is treated as lasting 6 hours).
+export const EVENT_CHAT_OPEN_AFTER_MS = 48 * 3600 * 1000;
+const DEFAULT_EVENT_MS = 6 * 3600 * 1000;
+
+export function eventChatClosesAt(startTime, endTime) {
+  if (!startTime) return null;
+  const end = endTime ? new Date(endTime).getTime() : new Date(startTime).getTime() + DEFAULT_EVENT_MS;
+  return new Date(end + EVENT_CHAT_OPEN_AFTER_MS);
+}
 
 export function newId() {
   return 'c' + Date.now().toString(36) + randomBytes(8).toString('hex');
@@ -54,6 +65,10 @@ export function shapeMessage(row) {
     kind: row.kind,
     body: deleted ? null : row.body,
     imageUrl: deleted ? null : row.imageUrl,
+    location:
+      !deleted && row.kind === 'LOCATION'
+        ? { latitude: row.latitude, longitude: row.longitude, name: row.placeName || null }
+        : null,
     replyToId: row.replyToId,
     clientId: row.clientId,
     createdAt: row.createdAt,
@@ -100,6 +115,14 @@ export function createStore(pool) {
       return one(`SELECT * FROM "ChatRoom" WHERE "eventId" = $1`, [eventId]);
     },
 
+    async communityRoom() {
+      await pool.query(
+        `INSERT INTO "ChatRoom" ("id", "kind") VALUES ($1, 'COMMUNITY') ON CONFLICT ("id") DO NOTHING`,
+        [COMMUNITY_ROOM_ID]
+      );
+      return one(`SELECT * FROM "ChatRoom" WHERE "id" = $1`, [COMMUNITY_ROOM_ID]);
+    },
+
     async directRoom(userA, userB) {
       const key = directKey(userA, userB);
       await pool.query(
@@ -134,7 +157,7 @@ export function createStore(pool) {
     // { room, canRead, canPost, isAdmin, muted, title, otherUserId }
     async getAccess(user, roomId) {
       const row = await one(
-        `SELECT r.*, e."title", e."chatEnabled", e."chatLockedAt",
+        `SELECT r.*, e."title", e."chatEnabled", e."chatLockedAt", e."startTime", e."endTime",
                 s."status" AS "signupStatus", m."muted", m."userId" AS "memberId"
            FROM "ChatRoom" r
            LEFT JOIN "Event" e ON e."id" = r."eventId"
@@ -148,11 +171,18 @@ export function createStore(pool) {
       const isAdmin = user.role === 'ADMIN';
       const muted = Boolean(row.muted);
 
+      if (row.kind === 'COMMUNITY') {
+        const canRead = !user.isPlaceholder;
+        return { room: row, canRead, canPost: canRead && !user.chatBannedAt, isAdmin, muted, title: 'Community' };
+      }
+
       if (row.kind === 'EVENT') {
         const isMember = row.signupStatus === 'CONFIRMED';
         const canRead = isAdmin || (isMember && row.chatEnabled);
-        const canPost = isAdmin || (canRead && !row.chatLockedAt && !user.chatBannedAt);
-        return { room: row, canRead, canPost, isAdmin, muted, title: row.title, eventId: row.eventId };
+        const closesAt = eventChatClosesAt(row.startTime, row.endTime);
+        const closed = Boolean(closesAt && closesAt < new Date());
+        const canPost = !closed && (isAdmin || (canRead && !row.chatLockedAt && !user.chatBannedAt));
+        return { room: row, canRead, canPost, closed, closesAt, isAdmin, muted, title: row.title, eventId: row.eventId };
       }
 
       // DIRECT: only the two members; nobody else, admins included.
@@ -172,8 +202,21 @@ export function createStore(pool) {
     // Event chats the member can see plus their DMs, newest activity first.
     async listRooms(user) {
       const isAdmin = user.role === 'ADMIN';
+      // Every event has a chat; make sure the member's events have their room
+      // so it's listed before anyone has posted.
+      await pool.query(
+        `INSERT INTO "ChatRoom" ("id", "kind", "eventId")
+         SELECT 'evt_' || e."id", 'EVENT', e."id" FROM "Event" e
+           JOIN "EventSignup" s ON s."eventId" = e."id" AND s."userId" = $1 AND s."status" = 'CONFIRMED'
+          WHERE e."chatEnabled" AND NOT EXISTS (SELECT 1 FROM "ChatRoom" r WHERE r."eventId" = e."id")
+         ON CONFLICT DO NOTHING`,
+        [user.id]
+      );
+      if (!user.isPlaceholder) await this.communityRoom();
       const { rows } = await pool.query(
         `WITH visible AS (
+           SELECT r.* FROM "ChatRoom" r WHERE r."kind" = 'COMMUNITY' AND NOT $3::boolean
+           UNION ALL
            SELECT r.* FROM "ChatRoom" r
              JOIN "Event" e ON e."id" = r."eventId"
              LEFT JOIN "EventSignup" s ON s."eventId" = e."id" AND s."userId" = $1
@@ -184,7 +227,7 @@ export function createStore(pool) {
             WHERE r."kind" = 'DIRECT' AND r."lastMessageAt" IS NOT NULL
          )
          SELECT v."id", v."kind", v."eventId", v."lastMessageAt",
-                e."title", e."slug", e."startTime", e."coverImageUrl",
+                e."title", e."slug", e."startTime", e."endTime", e."coverImageUrl",
                 me."muted",
                 o."id" AS "otherId", o."firstName" AS "otherFirstName", o."lastName" AS "otherLastName",
                 o."preferredName" AS "otherPreferredName", o."shareFirstName" AS "otherShareFirstName",
@@ -205,14 +248,16 @@ export function createStore(pool) {
               WHERE m."roomId" = v."id" AND m."deletedAt" IS NULL
               ORDER BY m."createdAt" DESC LIMIT 1
            ) lm ON true
-          ORDER BY COALESCE(v."lastMessageAt", e."startTime") DESC`,
-        [user.id, isAdmin]
+          ORDER BY (v."kind" = 'COMMUNITY') DESC, COALESCE(v."lastMessageAt", e."startTime") DESC`,
+        [user.id, isAdmin, Boolean(user.isPlaceholder)]
       );
+      const now = new Date();
       return rows.map((r) => ({
         id: r.id,
         kind: r.kind,
         eventId: r.eventId,
-        title: r.kind === 'EVENT' ? r.title : shapePerson(r, 'other')?.name,
+        title: r.kind === 'EVENT' ? r.title : r.kind === 'COMMUNITY' ? 'Community' : shapePerson(r, 'other')?.name,
+        closed: r.kind === 'EVENT' ? (eventChatClosesAt(r.startTime, r.endTime) ?? now) < now : false,
         slug: r.slug,
         startTime: r.startTime,
         coverImageUrl: r.coverImageUrl,
@@ -238,13 +283,17 @@ export function createStore(pool) {
       return rows.reverse().map(shapeMessage);
     },
 
-    async insertMessage({ roomId, userId, kind = 'TEXT', body, imageUrl, replyToId, clientId }) {
+    async insertMessage({ roomId, userId, kind = 'TEXT', body, imageUrl, replyToId, clientId, location }) {
       const inserted = await one(
-        `INSERT INTO "ChatMessage" ("id", "roomId", "userId", "kind", "body", "imageUrl", "replyToId", "clientId")
-         VALUES ($1, $2, $3, $4::"ChatMessageKind", $5, $6, $7, $8)
+        `INSERT INTO "ChatMessage" ("id", "roomId", "userId", "kind", "body", "imageUrl", "replyToId", "clientId",
+                                    "latitude", "longitude", "placeName")
+         VALUES ($1, $2, $3, $4::"ChatMessageKind", $5, $6, $7, $8, $9, $10, $11)
          ON CONFLICT ("roomId", "clientId") DO NOTHING
          RETURNING "id"`,
-        [newId(), roomId, userId, kind, body ?? null, imageUrl ?? null, replyToId ?? null, clientId ?? null]
+        [
+          newId(), roomId, userId, kind, body ?? null, imageUrl ?? null, replyToId ?? null, clientId ?? null,
+          location?.latitude ?? null, location?.longitude ?? null, location?.name ?? null
+        ]
       );
       if (inserted) {
         await pool.query(`UPDATE "ChatRoom" SET "lastMessageAt" = now() WHERE "id" = $1`, [roomId]);
@@ -257,6 +306,15 @@ export function createStore(pool) {
         inserted ? [inserted.id] : [roomId, clientId]
       );
       return { message: shapeMessage(full), duplicate: !inserted };
+    },
+
+    async messageWithSender(messageId) {
+      const row = await one(
+        `SELECT m.*, ${SENDER_COLUMNS} FROM "ChatMessage" m
+           LEFT JOIN "User" u ON u."id" = m."userId" WHERE m."id" = $1`,
+        [messageId]
+      );
+      return row ? shapeMessage(row) : null;
     },
 
     async getMessage(messageId) {
@@ -321,7 +379,9 @@ export function createStore(pool) {
       const recipients = isEvent
         ? `SELECT s."userId" FROM "EventSignup" s
             WHERE s."eventId" = $5 AND s."status" = 'CONFIRMED'`
-        : `SELECT m."userId" FROM "ChatRoomMember" m WHERE m."roomId" = $1`;
+        : access.room.kind === 'COMMUNITY'
+          ? `SELECT u."id" AS "userId" FROM "User" u WHERE NOT u."isPlaceholder"`
+          : `SELECT m."userId" FROM "ChatRoomMember" m WHERE m."roomId" = $1`;
       const args = [access.room.id, senderId, includeMuted, excludeUserIds];
       if (isEvent) args.push(access.room.eventId);
       const { rows } = await pool.query(

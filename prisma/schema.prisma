@@ -69,6 +69,7 @@ model User {
   chatMessages            ChatMessage[]
   chatRooms               ChatRoomMember[]
   pushTokens              PushToken[]
+  announcementsMade       Announcement[]
   chatReportsFiled        ChatReport[]         @relation("ChatReportReporter")
   blocking                UserBlock[]          @relation("UserBlockBlocker")
   blockedBy               UserBlock[]          @relation("UserBlockBlocked")
@@ -82,8 +83,8 @@ model User {
 }
 
 model Event {
-  id               String        @id @default(cuid())
-  slug             String        @unique
+  id               String         @id @default(cuid())
+  slug             String         @unique
   title            String
   subtitle         String?
   description      String?
@@ -91,8 +92,8 @@ model Event {
   startTime        DateTime
   endTime          DateTime?
   groupChatLink    String?
-  threadId         String?       @map("thread_id")
-  galleryUrl       String?       @map("galleryurl")
+  threadId         String?        @map("thread_id")
+  galleryUrl       String?        @map("galleryurl")
   primaryColor     String?
   secondaryColor   String?
   accentColor      String?
@@ -104,13 +105,14 @@ model Event {
   photosOgDetail   String?
   signupDeadline   DateTime?
   capacity         Int?
-  published        Boolean       @default(true)
-  chatEnabled      Boolean       @default(true)
+  published        Boolean        @default(true)
+  chatEnabled      Boolean        @default(true)
   chatLockedAt     DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   attendees        EventSignup[]
   chatRoom         ChatRoom?
+  announcements    Announcement[]
 }
 
 model EventSignup {
@@ -154,6 +156,7 @@ enum ChatMessageKind {
   IMAGE
   ANNOUNCEMENT
   SYSTEM
+  LOCATION
 }
 
 enum ChatReportStatus {
@@ -165,6 +168,7 @@ enum ChatReportStatus {
 enum ChatRoomKind {
   EVENT
   DIRECT
+  COMMUNITY // one room for every member
 }
 
 // EVENT rooms: one per event. Who can read/post is derived from a CONFIRMED
@@ -211,6 +215,10 @@ model ChatMessage {
   imageUrl  String?
   replyToId String?
   clientId  String?
+  // LOCATION messages
+  latitude  Float?
+  longitude Float?
+  placeName String?
   createdAt DateTime        @default(now())
   editedAt  DateTime?
   deletedAt DateTime?
@@ -255,4 +263,22 @@ model UserBlock {
   createdAt DateTime @default(now())
 
   @@id([blockerId, blockedId])
+}
+
+// Push announcements from admins. Audience: ALL members, those GOING to the
+// event, or those who have NOT_RSVPED to it. Also posted in the community
+// chat (ALL) or the event chat (GOING).
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  event       Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId     String?
+  audience    String
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  recipients  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
 }

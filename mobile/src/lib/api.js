@@ -84,6 +84,12 @@ export const api = {
     form.append('variant', 'original');
     return request('/api/profile/photo', { method: 'POST', form });
   },
+  // A photo for a chat message: returns { imageUrl } to send with it.
+  uploadChatImage: ({ uri, mimeType = 'image/jpeg', fileName = 'photo.jpg' }) => {
+    const form = new FormData();
+    form.append('file', { uri, type: mimeType, name: fileName });
+    return request('/api/v1/chat/images', { method: 'POST', form });
+  },
   register: (details) => request('/api/register', { method: 'POST', body: details, token: null }),
   forgotPassword: (identifier) =>
     request('/api/auth/forgot-password', { method: 'POST', body: { identifier }, token: null }),
@@ -120,6 +126,8 @@ export const api = {
     sendReminder: (eventId, userId) =>
       request('/api/admin/rsvp-reminders/send', { method: 'POST', body: { eventId, userId } }),
 
+    announcements: () => request('/api/v1/admin/announcements'),
+    announce: (announcement) => request('/api/v1/admin/announcements', { method: 'POST', body: announcement }),
     settings: () => request('/api/v1/admin/settings'),
     setComingSoon: (enabled, disableAt = null) =>
       request('/api/admin/coming-soon', { method: 'POST', body: { enabled, disableAt } }),
@@ -147,8 +155,9 @@ export async function uploadToPinstripe(target, { uri, mimeType = 'image/jpeg', 
       headers: { Authorization: `Bearer ${target.token}` },
       body: form
     });
-  } catch {
-    throw new ApiError('Upload failed. Check your connection.', 0);
+  } catch (error) {
+    console.warn('Pinstripe upload failed', target.url, error);
+    throw new ApiError(`Upload failed (${error?.message || 'network error'}). Check your connection.`, 0);
   }
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json.success === false) throw new ApiError(json.error || 'Upload failed.', res.status);

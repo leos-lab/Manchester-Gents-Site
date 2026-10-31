@@ -1,12 +1,23 @@
 // Transport-agnostic chat logic. A "conn" is anything with send(obj) and close().
 // server.js plugs real WebSockets in; tests plug in fakes.
 import { verifyChatToken } from './token.js';
-import { displayName } from './store.js';
+import { COMMUNITY_ROOM_ID, displayName } from './store.js';
 
 const MAX_BODY = 2000;
 const RATE_WINDOW_MS = 10_000;
 const RATE_MAX = 12;
 const TYPING_TTL_MS = 4000;
+
+// { latitude, longitude, name? } with sane coordinates, or null.
+function parseLocation(loc) {
+  if (!loc || typeof loc !== 'object') return null;
+  const latitude = Number(loc.latitude);
+  const longitude = Number(loc.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  const name = typeof loc.name === 'string' ? loc.name.trim().slice(0, 120) || null : null;
+  return { latitude, longitude, name };
+}
 
 export class ChatHub {
   constructor({ store, sendPush, secret, log = console }) {
@@ -113,6 +124,7 @@ export class ChatHub {
   async join(conn, req) {
     let roomId = req.roomId;
     if (!roomId && req.eventId) roomId = (await this.store.eventRoom(req.eventId))?.id;
+    if (roomId === COMMUNITY_ROOM_ID) await this.store.communityRoom();
     const access = roomId ? await this.store.getAccess(conn.state.user, roomId) : { canRead: false };
     if (!access.canRead) return this.fail(conn, req, 'forbidden', 'RSVP to join this chat.');
     if (!this.rooms.has(roomId)) this.rooms.set(roomId, new Set());
@@ -127,6 +139,10 @@ export class ChatHub {
       title: access.title || null,
       otherUserId: access.otherUserId || null,
       canPost: access.canPost,
+      // Event chats close 48h after the event; the app points people to the
+      // community chat or DMs.
+      closed: Boolean(access.closed),
+      closesAt: access.closesAt || null,
       muted: access.muted,
       messages: this.filterBlocked(conn, messages)
     });
@@ -175,23 +191,28 @@ export class ChatHub {
   async sendMessage(conn, req, kind = 'TEXT') {
     const user = conn.state.user;
     const body = typeof req.body === 'string' ? req.body.trim() : '';
-    const imageUrl = typeof req.imageUrl === 'string' && /^https:\/\//.test(req.imageUrl) ? req.imageUrl : null;
-    if (!body && !imageUrl) return this.fail(conn, req, 'empty', 'Message is empty.');
+    // Photos are uploaded through the website first (stored privately on
+    // Pinstripe as "pinstripe:<id>"; only people in the chat can load them).
+    const imageUrl =
+      typeof req.imageUrl === 'string' && /^(https:\/\/|pinstripe:[A-Za-z0-9_-]+$)/.test(req.imageUrl) ? req.imageUrl : null;
+    const location = parseLocation(req.location);
+    if (!body && !imageUrl && !location) return this.fail(conn, req, 'empty', 'Message is empty.');
     if (body.length > MAX_BODY) return this.fail(conn, req, 'too_long', `Keep it under ${MAX_BODY} characters.`);
     if (this.rateLimited(conn)) return this.fail(conn, req, 'rate_limited', 'Slow down a little.');
 
     const access = await this.store.getAccess(user, req.roomId);
     if (!access.canPost) return this.fail(conn, req, 'forbidden', 'You can’t post in this chat.');
-    if (kind === 'ANNOUNCEMENT' && (!access.isAdmin || access.room.kind !== 'EVENT')) {
-      return this.fail(conn, req, 'forbidden', 'Announcements are for admins in event chats.');
+    if (kind === 'ANNOUNCEMENT' && (!access.isAdmin || access.room.kind === 'DIRECT')) {
+      return this.fail(conn, req, 'forbidden', 'Announcements are for admins in event and community chats.');
     }
 
     const { message, duplicate } = await this.store.insertMessage({
       roomId: req.roomId,
       userId: user.id,
-      kind: kind === 'TEXT' && imageUrl ? 'IMAGE' : kind,
+      kind: kind === 'TEXT' && location ? 'LOCATION' : kind === 'TEXT' && imageUrl ? 'IMAGE' : kind,
       body: body || null,
       imageUrl,
+      location,
       replyToId: req.replyToId || null,
       clientId: typeof req.clientId === 'string' ? req.clientId.slice(0, 64) : null
     });
@@ -200,16 +221,18 @@ export class ChatHub {
     this.broadcast(req.roomId, { type: 'message', message }, { except: conn });
 
     const isAnnouncement = kind === 'ANNOUNCEMENT';
+    // The community chat is busy; only announcements there send a push.
+    if (access.room.kind === 'COMMUNITY' && !isAnnouncement) return;
     const targets = await this.store.pushTargets(access, user.id, {
       includeMuted: isAnnouncement,
       excludeUserIds: this.onlineUserIds(req.roomId)
     });
     if (targets.length && this.sendPush) {
       const sender = message.sender?.name || 'Manchester Gents';
-      const text = body || 'sent a photo';
+      const text = body || (location ? `shared a location${location.name ? `: ${location.name}` : ''}` : 'sent a photo');
       const isDm = access.room.kind === 'DIRECT';
       this.sendPush(targets, {
-        title: isDm ? sender : isAnnouncement ? `📣 ${access.title}` : access.title,
+        title: isDm ? sender : isAnnouncement ? `📣 ${access.title || 'Manchester Gents'}` : access.title,
         body: isDm || isAnnouncement ? text : `${sender}: ${text}`,
         data: { roomId: req.roomId, messageId: message.id, url: `mcrgents://chat/${req.roomId}` },
         threadId: `room-${req.roomId}`
@@ -300,6 +323,15 @@ export class ChatHub {
   }
 
   // From the website (admin moderation): a message was removed.
+  // From the website: a message it posted (an admin announcement) goes out
+  // live, and everyone's chat list updates.
+  async onMessageCreated({ roomId, messageId }) {
+    const message = await this.store.messageWithSender(messageId);
+    if (!message || message.roomId !== roomId) return;
+    this.broadcast(roomId, { type: 'message', message });
+    this.conns.forEach((c) => c.state.user && c.send({ type: 'rooms_changed' }));
+  }
+
   onMessageDeleted({ roomId, messageId }) {
     if (roomId && messageId) this.broadcast(roomId, { type: 'deleted', roomId, messageId });
   }

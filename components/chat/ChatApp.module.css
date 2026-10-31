@@ -479,3 +479,20 @@
     opacity: 1;
   }
 }
+
+.chatImage {
+  display: block;
+  max-width: min(260px, 100%);
+  border-radius: 12px;
+  margin-bottom: 0.35rem;
+}
+
+.linkButton {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--gold, #ffd460);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

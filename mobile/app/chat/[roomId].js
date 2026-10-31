@@ -16,6 +16,8 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-rou
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useChat } from '../../src/context/ChatContext';
 import { api } from '../../src/lib/api';
 import { Avatar } from '../../src/components/Avatar';
@@ -47,6 +49,7 @@ export default function ChatRoom() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [noMoreHistory, setNoMoreHistory] = useState(false);
   const [other, setOther] = useState(null); // the other member in a DM
+  const [attaching, setAttaching] = useState(false);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
   const roomId = room?.roomId;
@@ -174,6 +177,77 @@ export default function ChatRoom() {
     setMessages((list) => [...list, optimistic]);
     setText('');
     setAnnounce(false);
+  };
+
+  // Photos go up through the website first (stored privately), then send.
+  const sendPhoto = async (source) => {
+    const options = { mediaTypes: ['images'], quality: 0.8 };
+    if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) return;
+    const result =
+      source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) return;
+    setAttaching(true);
+    try {
+      const { imageUrl } = await api.uploadChatImage({
+        uri: asset.uri,
+        mimeType: asset.mimeType || 'image/jpeg',
+        fileName: asset.fileName || 'photo.jpg'
+      });
+      const body = text.trim() || undefined;
+      const optimistic = client.send(roomId, { body, imageUrl });
+      setMessages((list) => [...list, { ...optimistic, localUri: asset.uri }]);
+      setText('');
+    } catch (e) {
+      Alert.alert('Couldn’t send the photo', e.message);
+    } finally {
+      setAttaching(false);
+    }
+  };
+
+  const sendLocation = async () => {
+    const permission = await Location.requestForegroundPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Location is off', 'Allow location access for MCR Gents in Settings to share where you are.');
+      return;
+    }
+    setAttaching(true);
+    try {
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const { latitude, longitude } = position.coords;
+      const place = (await Location.reverseGeocodeAsync({ latitude, longitude }).catch(() => []))[0];
+      const name = place ? [place.name, place.city].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ') : null;
+      const confirmed = await new Promise((resolve) =>
+        Alert.alert('Share your location?', name || 'Your current location', [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Share', onPress: () => resolve(true) }
+        ])
+      );
+      if (!confirmed) return;
+      const optimistic = client.send(roomId, { location: { latitude, longitude, name } });
+      setMessages((list) => [...list, optimistic]);
+    } catch (e) {
+      Alert.alert('Couldn’t get your location', e.message);
+    } finally {
+      setAttaching(false);
+    }
+  };
+
+  const attach = () => {
+    const actions = [
+      { label: 'Photo library', run: () => sendPhoto('library') },
+      { label: 'Take photo', run: () => sendPhoto('camera') },
+      ...(room?.kind === 'DIRECT' ? [{ label: 'Share my location', run: sendLocation }] : [])
+    ];
+    if (Platform.OS === 'ios') {
+      const labels = [...actions.map((a) => a.label), 'Cancel'];
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: labels, cancelButtonIndex: labels.length - 1, userInterfaceStyle: 'dark' },
+        (i) => actions[i]?.run()
+      );
+    } else {
+      Alert.alert('Send', undefined, [...actions.map((a) => ({ text: a.label, onPress: a.run })), { text: 'Cancel', style: 'cancel' }]);
+    }
   };
 
   const onChangeText = (value) => {
@@ -379,7 +453,22 @@ export default function ChatRoom() {
             {status !== 'ready' ? <Text style={styles.offline}>Reconnecting… messages will send when you’re back online.</Text> : null}
             {room.canPost ? (
               <Glass style={styles.composer} interactive>
-                {client?.user?.isAdmin && room.kind === 'EVENT' ? (
+                <Pressable
+                  onPress={attach}
+                  disabled={attaching || announce}
+                  style={styles.attachButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={isDm ? 'Send a photo or your location' : 'Send a photo'}
+                >
+                  {attaching ? (
+                    <ActivityIndicator color={colors.gold} />
+                  ) : Platform.OS === 'ios' ? (
+                    <Icon name="plus.circle.fill" size={24} color={colors.gold} />
+                  ) : (
+                    <Text style={styles.announceText}>+</Text>
+                  )}
+                </Pressable>
+                {client?.user?.isAdmin && room.kind !== 'DIRECT' ? (
                   <Pressable
                     onPress={() => setAnnounce((a) => !a)}
                     style={[styles.announceToggle, announce && styles.announceOn]}
@@ -396,7 +485,7 @@ export default function ChatRoom() {
                 ) : null}
                 <TextInput
                   style={styles.input}
-                  placeholder={announce ? 'Announcement to everyone going…' : 'Message'}
+                  placeholder={announce ? (room.kind === 'COMMUNITY' ? 'Announcement to every member…' : 'Announcement to everyone going…') : 'Message'}
                   placeholderTextColor={colors.textFaint}
                   value={text}
                   onChangeText={onChangeText}
@@ -418,6 +507,16 @@ export default function ChatRoom() {
                   )}
                 </Pressable>
               </Glass>
+            ) : room.closed ? (
+              // Event chats close 48 hours after the social.
+              <View style={styles.closed}>
+                <Text style={styles.readOnly}>
+                  This chat closed 48 hours after the social. Keep talking in the community chat, or message someone directly.
+                </Text>
+                <Pressable onPress={() => router.replace('/chat/community')} accessibilityRole="button" style={styles.closedButton}>
+                  <Text style={styles.closedButtonText}>Go to the community chat</Text>
+                </Pressable>
+              </View>
             ) : (
               <Text style={styles.readOnly}>{isDm ? 'You can’t message this member.' : 'This chat is read-only.'}</Text>
             )}
@@ -456,6 +555,10 @@ const styles = StyleSheet.create({
   announceText: { fontSize: 16 },
   typing: { color: colors.textMuted, fontSize: 13, marginLeft: space.md, marginBottom: 4 },
   offline: { color: colors.gold, fontSize: 13, textAlign: 'center', marginBottom: 6 },
+  attachButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', marginBottom: 1 },
+  closed: { gap: space.sm, alignItems: 'center', paddingBottom: space.sm },
+  closedButton: { paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, backgroundColor: colors.gold },
+  closedButtonText: { color: colors.navy, fontWeight: '700' },
   readOnly: { color: colors.textMuted, textAlign: 'center', paddingVertical: space.md },
   headerAction: { color: colors.gold, fontWeight: '600' },
   dmHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm, maxWidth: 240 },

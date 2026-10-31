@@ -24,8 +24,8 @@ module.exports = ({ config }) => ({
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
       LSApplicationQueriesSchemes: ['instagram'],
-      NSPhotoLibraryUsageDescription: 'Choose a profile picture or share photos to event galleries.',
-      NSCameraUsageDescription: 'Take a profile picture.',
+      NSPhotoLibraryUsageDescription: 'Choose photos to send in chats, share to event galleries or use as your profile picture.',
+      NSCameraUsageDescription: 'Take photos to send in chats or use as your profile picture.',
       NSPhotoLibraryAddUsageDescription: 'Save event photos to your library.',
       NSCalendarsWriteOnlyAccessUsageDescription: 'Add Manchester Gents events to your calendar.'
     },
@@ -69,11 +69,12 @@ module.exports = ({ config }) => ({
     [
       'expo-image-picker',
       {
-        photosPermission: 'Choose a profile picture.',
-        cameraPermission: 'Take a profile picture.'
+        photosPermission: 'Choose photos to send in chats or use as your profile picture.',
+        cameraPermission: 'Take photos to send in chats or use as your profile picture.'
       }
     ],
     ['expo-calendar', { calendarPermission: 'Add Manchester Gents events to your calendar.' }],
+    ['expo-location', { locationWhenInUsePermission: 'Share where you are with a member you’re messaging.' }],
     ['expo-media-library', { savePhotosPermission: 'Save event photos to your library.', isAccessMediaLocationEnabled: false }]
   ],
   experiments: {

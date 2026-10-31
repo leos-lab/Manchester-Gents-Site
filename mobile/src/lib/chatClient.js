@@ -210,16 +210,20 @@ export class ChatClient {
   }
 
   // Optimistic send: returns the pending message immediately.
-  send(roomId, { body, replyToId, kind = 'send' }) {
+  // body, and/or imageUrl ("pinstripe:<id>" from /api/v1/chat/images), or a
+  // location { latitude, longitude, name }.
+  send(roomId, { body, replyToId, imageUrl, location, kind = 'send' }) {
     const clientId = makeClientId();
-    const payload = { kind, roomId, clientId, body, replyToId: replyToId || undefined };
+    const payload = { kind, roomId, clientId, body, replyToId: replyToId || undefined, imageUrl, location };
     this.outbox.set(clientId, payload);
     const optimistic = {
       id: `pending:${clientId}`,
       clientId,
       roomId,
-      kind: kind === 'announce' ? 'ANNOUNCEMENT' : 'TEXT',
+      kind: kind === 'announce' ? 'ANNOUNCEMENT' : location ? 'LOCATION' : imageUrl ? 'IMAGE' : 'TEXT',
       body,
+      imageUrl: imageUrl || null,
+      location: location || null,
       replyToId: replyToId || null,
       createdAt: new Date().toISOString(),
       sender: this.user ? { id: this.user.id, name: this.user.name, isAdmin: this.user.isAdmin } : null,

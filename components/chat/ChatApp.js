@@ -277,7 +277,9 @@ export default function ChatApp({ me, initialOpen }) {
                   className={`${styles.room} ${open?.roomId === room.id ? styles.roomActive : ''}`}
                   aria-current={open?.roomId === room.id ? 'true' : undefined}
                 >
-                  {room.kind === 'EVENT' ? (
+                  {room.kind === 'COMMUNITY' ? (
+                    <span className={`${styles.roomThumb} ${styles.roomThumbCloth}`} aria-hidden="true" />
+                  ) : room.kind === 'EVENT' ? (
                     room.coverImageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={room.coverImageUrl} alt="" className={styles.roomThumb} />
@@ -290,8 +292,11 @@ export default function ChatApp({ me, initialOpen }) {
                   <span className={styles.roomText}>
                     <span className={`${styles.roomTitle} ${unread ? styles.unread : ''}`}>{room.title}</span>
                     <span className={styles.roomPreview}>
-                      {room.lastKind === 'ANNOUNCEMENT' ? '📣 ' : ''}
-                      {room.lastBody || (room.kind === 'EVENT' ? 'Event chat' : 'Say hello')}
+                      {room.lastKind === 'ANNOUNCEMENT' ? '📣 ' : room.lastKind === 'LOCATION' ? '📍 ' : room.lastKind === 'IMAGE' ? '📷 ' : ''}
+                      {room.lastBody ||
+                        (room.lastKind === 'LOCATION' ? 'Location' : room.lastKind === 'IMAGE' ? 'Photo' : null) ||
+                        (room.kind === 'COMMUNITY' ? 'Everyone at Manchester Gents' : room.kind === 'EVENT' ? 'Event chat' : 'Say hello')}
+                      {room.closed ? ' · Closed' : ''}
                     </span>
                   </span>
                   <span className={styles.roomMeta}>
@@ -362,6 +367,25 @@ export default function ChatApp({ me, initialOpen }) {
                     ) : null}
                     <div className={styles.bubbleRow}>
                       <p className={`${styles.bubble} ${m.status ? styles.pending : ''}`}>
+                        {!m.deleted && m.imageUrl && !m.status ? (
+                          // Private photo: the website checks you're in this chat.
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={m.imageUrl.startsWith('pinstripe:') ? `/api/v1/chat/messages/${encodeURIComponent(m.id)}/image?v=medium` : m.imageUrl}
+                            alt="Photo"
+                            className={styles.chatImage}
+                            loading="lazy"
+                          />
+                        ) : null}
+                        {!m.deleted && m.location ? (
+                          <a
+                            href={`https://maps.apple.com/?ll=${m.location.latitude},${m.location.longitude}&q=${encodeURIComponent(m.location.name || 'Shared location')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            📍 {m.location.name || 'Shared location'}
+                          </a>
+                        ) : null}
                         {m.deleted ? <em>Message deleted</em> : m.body}
                       </p>
                       {!m.deleted && !m.status ? (
@@ -397,7 +421,7 @@ export default function ChatApp({ me, initialOpen }) {
             {typing ? <p className={styles.typing}>{typing} is typing…</p> : null}
             {open.canPost ? (
               <form className={styles.composer} onSubmit={send}>
-                {me.isAdmin && open.kind === 'EVENT' ? (
+                {me.isAdmin && open.kind !== 'DIRECT' ? (
                   <label className={styles.announceToggle}>
                     <input type="checkbox" checked={announce} onChange={(e) => setAnnounce(e.target.checked)} />
                     Announcement
@@ -417,7 +441,21 @@ export default function ChatApp({ me, initialOpen }) {
                 </button>
               </form>
             ) : (
-              <p className={styles.readOnly}>{open.kind === 'DIRECT' ? 'You can’t message this member.' : 'This chat is read-only.'}</p>
+              <p className={styles.readOnly}>
+                {open.closed ? (
+                  <>
+                    This chat closed 48 hours after the social. Keep talking in the{' '}
+                    <button type="button" className={styles.linkButton} onClick={() => openRoom({ roomId: 'community' })}>
+                      community chat
+                    </button>
+                    , or message someone directly.
+                  </>
+                ) : open.kind === 'DIRECT' ? (
+                  'You can’t message this member.'
+                ) : (
+                  'This chat is read-only.'
+                )}
+              </p>
             )}
           </>
         ) : (

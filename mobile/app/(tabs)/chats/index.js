@@ -69,7 +69,14 @@ export default function Chats() {
 function RoomRow({ room, onPress }) {
   const unread = room.unread > 0 && !room.muted;
   const preview =
-    room.lastKind === 'ANNOUNCEMENT' ? `📣 ${room.lastBody || ''}` : room.lastBody || (room.kind === 'EVENT' ? 'Event chat' : 'Say hello');
+    room.lastKind === 'ANNOUNCEMENT'
+      ? `📣 ${room.lastBody || ''}`
+      : room.lastKind === 'LOCATION'
+        ? '📍 Location'
+        : room.lastKind === 'IMAGE' && !room.lastBody
+          ? '📷 Photo'
+          : room.lastBody ||
+            (room.kind === 'COMMUNITY' ? 'Everyone at Manchester Gents' : room.kind === 'EVENT' ? 'Event chat' : 'Say hello');
   return (
     <Pressable
       onPress={onPress}
@@ -77,7 +84,11 @@ function RoomRow({ room, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={`${room.title}${unread ? `, ${room.unread} unread` : ''}`}
     >
-      {room.kind === 'EVENT' ? (
+      {room.kind === 'COMMUNITY' ? (
+        <View style={[styles.thumb, styles.thumbFallback]}>
+          <Icon name="person.3.fill" size={22} color={colors.gold} />
+        </View>
+      ) : room.kind === 'EVENT' ? (
         room.coverImageUrl ? (
           <Image source={{ uri: room.coverImageUrl }} style={styles.thumb} contentFit="cover" />
         ) : (
@@ -90,7 +101,10 @@ function RoomRow({ room, onPress }) {
       )}
       <View style={styles.text}>
         <View style={styles.topLine}>
-          <Text style={[styles.title, unread && styles.titleUnread]} numberOfLines={1}>{room.title}</Text>
+          <Text style={[styles.title, unread && styles.titleUnread]} numberOfLines={1}>
+            {room.title}
+            {room.closed ? <Text style={styles.closedTag}>  Closed</Text> : null}
+          </Text>
           {room.lastMessageAt ? <Text style={styles.time}>{messageTime(room.lastMessageAt)}</Text> : null}
         </View>
         <View style={styles.topLine}>
@@ -109,6 +123,7 @@ function RoomRow({ room, onPress }) {
 }
 
 const styles = StyleSheet.create({
+  closedTag: { color: colors.textFaint, fontSize: 13, fontWeight: '400' },
   list: { flex: 1, backgroundColor: colors.navy },
   container: { paddingVertical: space.sm, paddingBottom: 120, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
   status: { color: colors.gold, textAlign: 'center', paddingVertical: space.sm, fontSize: 13 },

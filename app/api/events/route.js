@@ -51,6 +51,8 @@ export async function POST(request) {
     const event = await prisma.event.create({
       data: normalizeEventInput(parsed)
     });
+    // Every event has a group chat; members going are in it automatically.
+    await prisma.chatRoom.create({ data: { id: `evt_${event.id}`, kind: 'EVENT', eventId: event.id } });
     await announceNewEvent(event).catch((error) => console.error('New event push failed', error));
     return Response.json({ event }, { status: 201 });
   } catch (error) {

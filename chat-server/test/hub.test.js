@@ -100,11 +100,12 @@ test('event chat: RSVPed members only, offline members get a push, unread counts
   assert.equal(sam.last('message').message.body, 'See you there');
   assert.equal(pushes.length, 1, 'no push to someone already in the room');
 
+  const eventRoom = () => sam.last('rooms').rooms.find((r) => r.id === roomId);
   await say(sam, { type: 'rooms' });
-  assert.equal(sam.last('rooms').rooms[0].unread, 2);
+  assert.equal(eventRoom().unread, 2);
   await say(sam, { type: 'read', roomId });
   await say(sam, { type: 'rooms' });
-  assert.equal(sam.last('rooms').rooms[0].unread, 0);
+  assert.equal(eventRoom().unread, 0);
 });
 
 test('DMs: anyone can message anyone, private from admins, block stops it', async () => {
@@ -236,4 +237,56 @@ test('reports alert admins without quoting the message', async () => {
   assert.equal(alert.msg.body, 'Reason: rude');
   assert.ok(!JSON.stringify(alert.msg).includes('something private'));
   assert.equal(alert.msg.data.path, '/admin/reports');
+});
+
+test('community chat: every member, listed first, no push except announcements', async () => {
+  const { connect, say, pushes, hub } = await setup();
+  const outsider = await connect('outsider');
+  await say(outsider, { type: 'rooms' });
+  assert.equal(outsider.last('rooms').rooms[0].kind, 'COMMUNITY');
+  await say(outsider, { type: 'join', roomId: 'community' });
+  assert.equal(outsider.last('joined').title, 'Community');
+  const alex = await connect('alex');
+  await say(alex, { type: 'join', roomId: 'community' });
+  await say(alex, { type: 'send', roomId: 'community', clientId: 'c1', body: 'Anyone for a pint?' });
+  assert.equal(outsider.last('message').message.body, 'Anyone for a pint?');
+  assert.equal(pushes.length, 0, 'ordinary community messages do not push');
+
+  // An announcement posted by the website arrives live.
+  await sql(`INSERT INTO "ChatMessage" ("id","roomId","userId","kind","body") VALUES ('ann1','community','admin','ANNOUNCEMENT','Doors at 7')`);
+  await hub.onMessageCreated({ roomId: 'community', messageId: 'ann1' });
+  assert.equal(outsider.last('message').message.kind, 'ANNOUNCEMENT');
+});
+
+test('locations and private photos in DMs', async () => {
+  const { connect, say } = await setup();
+  const alex = await connect('alex');
+  await say(alex, { type: 'dm', userId: 'sam' });
+  const roomId = alex.last('joined').roomId;
+  await say(alex, { type: 'send', roomId, clientId: 'l1', location: { latitude: 53.4794, longitude: -2.2453, name: 'The Lodge' } });
+  const sent = alex.last('sent').message;
+  assert.equal(sent.kind, 'LOCATION');
+  assert.deepEqual(sent.location, { latitude: 53.4794, longitude: -2.2453, name: 'The Lodge' });
+  await say(alex, { type: 'send', roomId, clientId: 'l2', location: { latitude: 999, longitude: 0 } });
+  assert.equal(alex.last('error').code, 'empty');
+  await say(alex, { type: 'send', roomId, clientId: 'p1', imageUrl: 'pinstripe:abc123' });
+  assert.equal(alex.last('sent').message.kind, 'IMAGE');
+  await say(alex, { type: 'send', roomId, clientId: 'p2', imageUrl: 'javascript:alert(1)' });
+  assert.equal(alex.last('error').code, 'empty');
+});
+
+test('event chats are listed before anyone posts and close 48h after the event', async () => {
+  const { connect, say } = await setup();
+  const sam = await connect('sam');
+  await say(sam, { type: 'rooms' });
+  assert.ok(sam.last('rooms').rooms.some((r) => r.kind === 'EVENT' && r.eventId === 'ev1' && !r.closed));
+
+  await sql(`INSERT INTO "Event" ("id","slug","title","startTime","endTime","updatedAt") VALUES ('old','old','Old social', now() - interval '4 days', now() - interval '3 days', now());
+             INSERT INTO "EventSignup" ("id","userId","eventId") VALUES ('s9','sam','old')`);
+  await say(sam, { type: 'join', eventId: 'old' });
+  const joined = sam.last('joined');
+  assert.equal(joined.closed, true);
+  assert.equal(joined.canPost, false);
+  await say(sam, { type: 'send', roomId: joined.roomId, clientId: 'x', body: 'still here?' });
+  assert.equal(sam.last('error').code, 'forbidden');
 });
