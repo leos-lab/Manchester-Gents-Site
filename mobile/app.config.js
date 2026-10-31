@@ -89,8 +89,8 @@ module.exports = ({ config }) => ({
     typedRoutes: false
   },
   extra: {
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || (IS_UAT ? 'https://uat.manchestergents.com' : 'https://manchestergents.com'),
-    chatUrl: process.env.EXPO_PUBLIC_CHAT_URL || (IS_UAT ? 'wss://chat-uat.manchestergents.com/ws' : null),
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || `https://${IS_DEV ? 'dev.' : IS_UAT ? 'uat.' : ''}manchestergents.com`,
+    chatUrl: process.env.EXPO_PUBLIC_CHAT_URL || (IS_DEV ? 'wss://chat-dev.manchestergents.com/ws' : IS_UAT ? 'wss://chat-uat.manchestergents.com/ws' : null),
     eas: { projectId: process.env.EAS_PROJECT_ID }
   }
 });
