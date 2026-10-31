@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { api } from '../../../src/lib/api';
 import { loadPhotos } from '../../../src/lib/gallery';
-import { useGutter } from '../../../src/lib/layout';
+import { useSheetPadding } from '../../../src/lib/layout';
 import { Button } from '../../../src/components/Button';
 import { colors, radius, space } from '../../../src/theme';
 
@@ -18,7 +18,7 @@ export default function CoverPicker() {
   const { eventId, current } = useLocalSearchParams();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const gutter = useGutter(space.lg);
+  const gutter = useSheetPadding(space.lg);
   const [sections, setSections] = useState(null);
   const [saving, setSaving] = useState(null); // url being set
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../src/lib/api';
-import { useGutter } from '../src/lib/layout';
+import { useSheetPadding } from '../src/lib/layout';
 import { Button } from '../src/components/Button';
 import { colors, radius, space } from '../src/theme';
 import { useKeyboardDone } from '../src/components/KeyboardDone';
@@ -12,7 +12,7 @@ import { useKeyboardDone } from '../src/components/KeyboardDone';
 export default function ForgotPassword() {
   const keyboard = useKeyboardDone();
   const router = useRouter();
-  const gutter = useGutter(space.xl);
+  const gutter = useSheetPadding(space.xl);
   const [identifier, setIdentifier] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);

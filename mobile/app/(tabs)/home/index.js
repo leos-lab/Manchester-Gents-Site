@@ -140,7 +140,7 @@ export default function Home() {
 
           {admin ? (
             <Rise index={order++}>
-              <AdminTodo admin={admin} onOpen={(path) => router.push(path)} />
+              <AdminTodo admin={admin} onOpen={(path) => router.push(path, { withAnchor: true })} />
             </Rise>
           ) : null}
 

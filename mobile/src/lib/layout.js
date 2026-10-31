@@ -13,6 +13,13 @@ export function useGutter(base = 0) {
   return { paddingLeft: base + left, paddingRight: base + right };
 }
 
+// Padding for a sheet's scrolling content: the side gutter plus room at the
+// bottom for the home indicator, so the last button is never against the edge.
+export function useSheetPadding(base = 0) {
+  const { left, right, bottom } = useSafeAreaInsets();
+  return { paddingLeft: base + left, paddingRight: base + right, paddingBottom: Math.max(bottom, 16) + 32 };
+}
+
 // Adds the side insets to whatever horizontal padding a style already has.
 export function withSideInsets(style, { left, right }) {
   const flat = StyleSheet.flatten(style) || {};

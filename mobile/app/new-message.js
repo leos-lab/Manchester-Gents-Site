@@ -5,7 +5,7 @@ import { api } from '../src/lib/api';
 import { Avatar } from '../src/components/Avatar';
 import { Icon } from '../src/components/Icon';
 import { colors, radius, space } from '../src/theme';
-import { useGutter } from '../src/lib/layout';
+import { useSheetPadding } from '../src/lib/layout';
 import { useKeyboardDone } from '../src/components/KeyboardDone';
 
 // Find any member to message.
@@ -41,7 +41,7 @@ export default function NewMessage() {
     router.push(`/chat/new?userId=${encodeURIComponent(member.id)}`);
   };
 
-  const gutter = useGutter(space.lg);
+  const gutter = useSheetPadding(space.lg);
 
   // One list with the search field as its header, so results always sit
   // below it (in a form sheet a separate list could be laid over the field).

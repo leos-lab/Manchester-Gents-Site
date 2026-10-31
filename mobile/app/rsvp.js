@@ -1,24 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { api } from '../src/lib/api';
 import { loadContent } from '../src/lib/content';
 import { useAuth } from '../src/context/AuthContext';
-import { useGutter } from '../src/lib/layout';
+import { useSheetPadding } from '../src/lib/layout';
 import { Button } from '../src/components/Button';
+import { Field } from '../src/components/Form';
 import { Icon } from '../src/components/Icon';
 import { colors, radius, space } from '../src/theme';
 
-// Before reserving: a reminder of the community guidelines (and the
-// photography notice when admins have it switched on), then confirm.
+// Reserving a spot, in two steps: a reminder of the community guidelines (and
+// the photography notice when admins have it switched on) to confirm, then an
+// optional note for the hosts.
 export default function ConfirmRsvp() {
-  const { id, requests = '' } = useLocalSearchParams();
+  const { id } = useLocalSearchParams();
   const router = useRouter();
-  const gutter = useGutter(space.lg);
+  const gutter = useSheetPadding(space.lg);
   const { user, refreshMe } = useAuth();
   const [content, setContent] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState('guidelines'); // then 'note'
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     loadContent()
@@ -32,14 +36,14 @@ export default function ConfirmRsvp() {
   // accepted this version of it yet.
   const needsNotice = Boolean(notice?.required) && !(agreedAt && (!notice.updatedAt || agreedAt >= new Date(notice.updatedAt)));
 
-  const confirm = async () => {
+  const reserve = async () => {
     setBusy(true);
     try {
       if (needsNotice) {
         await api.updateMe({ photoNoticeAgreed: true });
         await refreshMe().catch(() => {});
       }
-      await api.rsvp(id, String(requests).trim());
+      await api.rsvp(id, note.trim());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       router.back();
     } catch (e) {
@@ -48,8 +52,21 @@ export default function ConfirmRsvp() {
     }
   };
 
+  if (step === 'note') {
+    return (
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} contentInsetAdjustmentBehavior="never" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+        <Stack.Screen options={{ title: 'A note for the hosts' }} />
+        <Text style={styles.lede}>Anything the hosts should know: dietary needs, accessibility, or that you’re bringing a friend to join. Optional.</Text>
+        <Field label="Note for the hosts" value={note} onChangeText={setNote} multiline maxLength={500} placeholder="Optional" autoFocus />
+        <Button title="Reserve my spot" onPress={reserve} loading={busy} />
+        <Button title="Back" variant="secondary" onPress={() => setStep('guidelines')} disabled={busy} />
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} contentInsetAdjustmentBehavior="never">
+      <Stack.Screen options={{ title: 'Before you RSVP' }} />
       <Text style={styles.lede}>A quick reminder of what every gent agrees to. By confirming, you agree to them for this social.</Text>
       {(content?.guidelines || []).map((g) => (
         <View key={g.key} style={styles.item}>
@@ -73,8 +90,8 @@ export default function ConfirmRsvp() {
       <Text style={styles.link} onPress={() => router.push('/info/guidelines')} accessibilityRole="link">
         Read the full community guidelines
       </Text>
-      <Button title="Confirm my spot" onPress={confirm} loading={busy} disabled={!content} />
-      <Button title="Not now" variant="secondary" onPress={() => router.back()} disabled={busy} />
+      <Button title="Confirm my spot" onPress={() => setStep('note')} disabled={!content} />
+      <Button title="Not now" variant="secondary" onPress={() => router.back()} />
     </ScrollView>
   );
 }

@@ -30,7 +30,7 @@ function Navigator() {
     registerForPush().catch((error) => console.warn('Push registration failed', error));
     const open = (response) => {
       const path = notificationPath(response);
-      if (path) router.push(path);
+      if (path) router.push(path, { withAnchor: true });
     };
     Notifications.getLastNotificationResponseAsync().then((response) => response && open(response)).catch(() => {});
     const sub = Notifications.addNotificationResponseReceivedListener(open);

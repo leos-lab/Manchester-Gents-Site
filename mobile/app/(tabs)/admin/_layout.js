@@ -1,6 +1,10 @@
 import { Stack } from 'expo-router';
 import { stackScreenOptions, sheetOptions } from '../../../src/navigation';
 
+// Opening an admin screen from elsewhere (a notification, a push) keeps the
+// Admin home beneath it, so there's always a back button.
+export const unstable_settings = { initialRouteName: 'index' };
+
 // Admin dashboard (the tab only shows for admins; the API checks too).
 export default function AdminStack() {
   return (

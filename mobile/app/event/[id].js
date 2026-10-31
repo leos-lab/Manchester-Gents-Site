@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 // The add-to-calendar sheet lives in the legacy API since SDK 58.
@@ -14,11 +14,9 @@ import { Content } from '../../src/components/Content';
 import { EmptyState } from '../../src/components/EmptyState';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { Icon } from '../../src/components/Icon';
-import { colors, fonts, radius, space, WIDE_BREAKPOINT } from '../../src/theme';
-import { useKeyboardDone } from '../../src/components/KeyboardDone';
+import { colors, fonts, space, WIDE_BREAKPOINT } from '../../src/theme';
 
 export default function EventDetail() {
-  const keyboard = useKeyboardDone();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -27,8 +25,6 @@ export default function EventDetail() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [requests, setRequests] = useState('');
-  const [showRequests, setShowRequests] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -50,12 +46,10 @@ export default function EventDetail() {
   const full = event?.spotsLeft === 0 && !going;
   const closed = event?.signupDeadline && new Date(event.signupDeadline) < new Date();
 
-  // Reserving goes through a reminder of the guidelines (and the photography
-  // notice when it's on), where they confirm. The screen reloads on return.
-  const rsvp = () => {
-    setShowRequests(false);
-    router.push({ pathname: '/rsvp', params: { id, requests } });
-  };
+  // Reserving goes through a sheet: the guidelines (and the photography notice
+  // when it's on) to confirm, then an optional note for the hosts. The screen
+  // reloads on return.
+  const rsvp = () => router.push({ pathname: '/rsvp', params: { id } });
 
   const cancel = () =>
     Alert.alert('Cancel your spot?', 'You’ll also leave the event chat.', [
@@ -159,25 +153,7 @@ export default function EventDetail() {
               ) : full ? (
                 <Text style={styles.note}>This event is fully booked.</Text>
               ) : (
-                <>
-                  {showRequests ? (
-                    <TextInput
-                        {...keyboard.inputProps}
-                      style={styles.input}
-                      placeholder="Anything we should know? (optional)"
-                      placeholderTextColor={colors.textFaint}
-                      value={requests}
-                      onChangeText={setRequests}
-                      multiline
-                      maxLength={500}
-                    />
-                  ) : null}
-                  {keyboard.bar}
-                  <Button title="Reserve my spot" onPress={rsvp} loading={busy} />
-                  {!showRequests ? (
-                    <Button title="Add a note for the hosts" variant="ghost" onPress={() => setShowRequests(true)} />
-                  ) : null}
-                </>
+                <Button title="Reserve my spot" onPress={rsvp} loading={busy} />
               )}
             </View>
           ) : null}
@@ -233,15 +209,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: space.md },
   flex: { flex: 1, paddingHorizontal: space.md },
   note: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
-  input: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    color: colors.text,
-    fontSize: 16,
-    padding: space.lg,
-    minHeight: 80,
-    textAlignVertical: 'top'
-  },
   description: { color: colors.text, fontSize: 16, lineHeight: 24 },
   section: { gap: space.md },
   sectionTitle: { color: colors.gold, fontSize: 13, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },

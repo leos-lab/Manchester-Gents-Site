@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { useAuth } from '../src/context/AuthContext';
 import { api, privateImage } from '../src/lib/api';
 import { pickImage } from '../src/lib/pickImage';
-import { useGutter } from '../src/lib/layout';
+import { useSheetPadding } from '../src/lib/layout';
 import { HeaderAction } from '../src/components/HeaderAction';
 import { Field, SectionTitle, ToggleRow } from '../src/components/Form';
 import { colors, radius, space } from '../src/theme';
@@ -15,7 +15,7 @@ import { colors, radius, space } from '../src/theme';
 export default function EditProfile() {
   const router = useRouter();
   const { user, refreshMe } = useAuth();
-  const gutter = useGutter(space.xl);
+  const gutter = useSheetPadding(space.xl);
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',

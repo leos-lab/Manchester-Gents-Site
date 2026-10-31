@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { api } from '../../../src/lib/api';
-import { useGutter } from '../../../src/lib/layout';
+import { useSheetPadding } from '../../../src/lib/layout';
 import { HeaderAction } from '../../../src/components/HeaderAction';
 import { Field, SectionTitle, ToggleRow } from '../../../src/components/Form';
 import { colors, radius, space } from '../../../src/theme';
@@ -28,7 +28,7 @@ function nextSocial() {
 export default function EventForm() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const gutter = useGutter(space.xl);
+  const gutter = useSheetPadding(space.xl);
   const [loading, setLoading] = useState(Boolean(id));
   const [busy, setBusy] = useState(false);
   const [slugTouched, setSlugTouched] = useState(Boolean(id));

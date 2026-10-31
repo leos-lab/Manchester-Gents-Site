@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useContent } from '../../src/lib/content';
-import { useGutter } from '../../src/lib/layout';
+import { useSheetPadding } from '../../src/lib/layout';
 import { Button } from '../../src/components/Button';
 import { colors, fonts, radius, space } from '../../src/theme';
 
@@ -14,7 +14,7 @@ export default function InfoPage() {
   const { page, accept } = useLocalSearchParams();
   const router = useRouter();
   const { signedIn, refreshMe } = useAuth();
-  const gutter = useGutter(space.xl);
+  const gutter = useSheetPadding(space.xl);
   const { content, error, retry } = useContent();
   const [saving, setSaving] = useState(false);
 

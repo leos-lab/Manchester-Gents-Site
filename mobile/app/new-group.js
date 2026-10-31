@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../src/lib/api';
 import { useChat } from '../src/context/ChatContext';
 import { eventWhen } from '../src/lib/format';
-import { useGutter } from '../src/lib/layout';
+import { useSheetPadding } from '../src/lib/layout';
 import { Avatar } from '../src/components/Avatar';
 import { Button } from '../src/components/Button';
 import { Icon } from '../src/components/Icon';
@@ -18,7 +18,7 @@ export default function NewGroup() {
   const { roomId } = useLocalSearchParams();
   const adding = Boolean(roomId);
   const router = useRouter();
-  const gutter = useGutter(space.lg);
+  const gutter = useSheetPadding(space.lg);
   const { client, refreshRooms } = useChat();
   const [title, setTitle] = useState('');
   const [events, setEvents] = useState([]);

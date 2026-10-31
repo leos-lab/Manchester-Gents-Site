@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../src/lib/api';
-import { useGutter } from '../../../src/lib/layout';
+import { useSheetPadding } from '../../../src/lib/layout';
 import { MemberAvatar } from '../../../src/components/MemberAvatar';
 import { Button } from '../../../src/components/Button';
 import { Icon } from '../../../src/components/Icon';
@@ -15,7 +15,7 @@ export default function AddGuests() {
   const keyboard = useKeyboardDone();
   const { eventId } = useLocalSearchParams();
   const router = useRouter();
-  const gutter = useGutter(space.lg);
+  const gutter = useSheetPadding(space.lg);
   const [q, setQ] = useState('');
   const [members, setMembers] = useState([]);
   const [existing, setExisting] = useState(new Set());
@@ -71,7 +71,7 @@ export default function AddGuests() {
         autoCorrect={false}
         clearButtonMode="while-editing"
       />
-        {keyboard.bar}
+      {keyboard.bar}
       <FlatList
         style={styles.list}
         data={members.filter((m) => !existing.has(m.id))}
