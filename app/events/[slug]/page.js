@@ -242,7 +242,7 @@ export default async function EventDetailPage({ params }) {
                         <li key={photo.id}>
                           <Link href={`/events/${event.slug}/photos`} aria-label="Open the photo gallery">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={photo.src} alt="" loading="lazy" decoding="async" />
+                            <img src={photo.src} srcSet={photo.srcSet} sizes="(min-width: 900px) 160px, 33vw" alt="" loading="lazy" decoding="async" />
                           </Link>
                         </li>
                       ))}

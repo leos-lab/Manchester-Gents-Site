@@ -1,0 +1,62 @@
+.hero {
+  position: relative;
+  min-height: min(88vh, 820px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  isolation: isolate;
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.photo img,
+.cloth {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(18, 26, 37, 0.35) 0%, rgba(18, 26, 37, 0.05) 30%, rgba(18, 26, 37, 0.92) 100%);
+}
+
+.cloth {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 26px, rgba(255, 212, 96, 0.07) 26px 27px),
+    var(--color-steel);
+}
+
+.caption {
+  position: absolute;
+  top: clamp(5.5rem, 12vh, 7.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1240px, 100%);
+  margin: 0;
+  padding: 0 clamp(1.25rem, 4vw, 3rem);
+  color: rgba(247, 244, 237, 0.85);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.content {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 3rem) clamp(2.5rem, 7vh, 5rem);
+}
+
+@media (max-width: 700px) {
+  .hero {
+    min-height: 82vh;
+  }
+}

@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import EventCard from '@/components/EventCard';
-import LapelHero from '@/components/LapelHero';
+import HomeHero from '@/components/HomeHero';
+import PhotoMarquee from '@/components/PhotoMarquee';
+import { getHomeContent } from '@/lib/homeContent';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { getGalleryHighlights } from '@/lib/galleryHighlights';
@@ -31,7 +33,7 @@ async function getHomeData(userId) {
       prisma.event.findFirst({
         where: { published: true, startTime: { lt: now } },
         orderBy: { startTime: 'desc' },
-        select: { id: true, slug: true, title: true, startTime: true, galleryUrl: true }
+        select: { id: true, slug: true, title: true, startTime: true, galleryUrl: true, featuredPhotoIds: true }
       }),
       userId
         ? prisma.eventSignup.findMany({ where: { userId, status: 'CONFIRMED' }, select: { eventId: true } })
@@ -53,7 +55,12 @@ async function getHomeData(userId) {
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
   const signedIn = Boolean(session?.user);
-  const { nextEvent, moreEvents, covers, lastEvent, going } = await getHomeData(session?.user?.id);
+  const [{ nextEvent, moreEvents, covers, lastEvent, going }, home] = await Promise.all([
+    getHomeData(session?.user?.id),
+    getHomeContent()
+  ]);
+  // Admins choose the hero photo; until then, the latest event cover.
+  const heroPhoto = home.heroPhoto || (covers[0] ? { src: covers[0] } : null);
   // Gallery photos are for members only.
   const highlights = signedIn && lastEvent ? await getGalleryHighlights(lastEvent, 8) : [];
 
@@ -61,12 +68,9 @@ export default async function HomePage() {
     <div className={styles.page}>
       <NavBar />
       <main>
-        <LapelHero photos={covers}>
-          <h1 className={`heading-font ${styles.wordmark}`}>Manchester Gents</h1>
-          <p className={styles.lede}>
-            Relaxed socials at The Lodge for gents who like to dress well. Suits on, good drinks,
-            easy conversation.
-          </p>
+        <HomeHero photo={heroPhoto} caption={home.heroPhoto ? home.heroCaption : null}>
+          <h1 className={`heading-font ${styles.wordmark}`}>{home.headline}</h1>
+          {home.lede ? <p className={styles.lede}>{home.lede}</p> : null}
           <div className={styles.actions}>
             {nextEvent ? (
               <Link href={`/events/${nextEvent.slug}`} className={styles.primary}>
@@ -83,7 +87,9 @@ export default async function HomePage() {
               </Link>
             )}
           </div>
-        </LapelHero>
+        </HomeHero>
+        {/* Photos from past socials for visitors (chosen in Admin → Home page). */}
+        {!signedIn ? <PhotoMarquee photos={home.showcase} /> : null}
 
         <div className={styles.inner}>
           <section className={styles.section} aria-labelledby="next-social">
@@ -129,7 +135,14 @@ export default async function HomePage() {
                   <li key={photo.id} className={i === 0 ? styles.mosaicLead : undefined}>
                     <Link href={`/events/${lastEvent.slug}/photos`} aria-label={`Open the ${lastEvent.title} gallery`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo.src} alt="" loading="lazy" decoding="async" />
+                      <img
+                        src={photo.src}
+                        srcSet={photo.srcSet}
+                        sizes={i === 0 ? '(min-width: 900px) 50vw, 100vw' : '(min-width: 900px) 25vw, 50vw'}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </Link>
                   </li>
                 ))}

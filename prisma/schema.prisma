@@ -107,6 +107,8 @@ model Event {
   backgroundColor  String?
   textColor        String?
   coverImageUrl    String?
+  // Gallery photos admins featured (Pinstripe ids, in order): shown first.
+  featuredPhotoIds String[]       @default([])
   photosOgTitle    String?
   photosOgSubtitle String?
   photosOgDetail   String?
