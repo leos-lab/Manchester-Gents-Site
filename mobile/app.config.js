@@ -42,6 +42,9 @@ module.exports = ({ config }) => ({
   },
   plugins: [
     'expo-router',
+    'expo-status-bar',
+    'expo-image',
+    'expo-web-browser',
     'expo-secure-store',
     [
       'expo-splash-screen',
