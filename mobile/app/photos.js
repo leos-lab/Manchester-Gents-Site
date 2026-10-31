@@ -49,10 +49,13 @@ export default function PhotoViewer() {
         <Stack.Toolbar.Spacer />
         {/* Who shared it, in the bottom toolbar between Share and Save. */}
         {photo?.uploaderName ? (
-          <Stack.Toolbar.View>
-            <Text style={styles.caption} numberOfLines={1}>
-              Shared by {photo.uploaderName}
-            </Text>
+          // Toolbar items need an explicit size, or the text has no room.
+          <Stack.Toolbar.View hidesSharedBackground>
+            <View style={styles.captionBox}>
+              <Text style={styles.caption} numberOfLines={1}>
+                Shared by {photo.uploaderName}
+              </Text>
+            </View>
           </Stack.Toolbar.View>
         ) : null}
         <Stack.Toolbar.Spacer />
@@ -89,5 +92,6 @@ export default function PhotoViewer() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
-  caption: { color: colors.text, fontSize: 13, maxWidth: 200 }
+  captionBox: { width: 180, height: 36, alignItems: 'center', justifyContent: 'center' },
+  caption: { color: colors.text, fontSize: 13 }
 });
