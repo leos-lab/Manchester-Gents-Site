@@ -221,6 +221,15 @@ export default function EventPhotosClient({
   const { data: session, status: sessionStatus } = useSession();
   const [photos, setPhotos] = useState([]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [columnCount, setColumnCount] = useState(3);
+
+  useEffect(() => {
+    const narrow = window.matchMedia('(max-width: 900px)');
+    const update = () => setColumnCount(narrow.matches ? 2 : 3);
+    update();
+    narrow.addEventListener('change', update);
+    return () => narrow.removeEventListener('change', update);
+  }, []);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState(null);
@@ -545,6 +554,80 @@ export default function EventPhotosClient({
     if (canGoPrev) setSelectedPhoto(photos[selectedIndex - 1]);
   }
 
+  // One photo card in the grid.
+  const renderCard = (photo) => {
+    const isSelected = selectedIds.has(photo.id);
+    return (
+      <article key={photo.id} className={styles.photoCard}>
+        <label className={styles.checkboxWrapper}>
+          <input
+            type="checkbox"
+            className={styles.photoCheckbox}
+            checked={isSelected}
+            onChange={() => toggleSelect(photo.id)}
+            aria-label={`Select ${photo.originalFilename}`}
+          />
+        </label>
+        <button
+          type="button"
+          className={`${styles.photoImageButton} ${isSelected ? styles.photoSelected : ''}`}
+          onClick={() => (selectedIds.size ? toggleSelect(photo.id) : setSelectedPhoto(photo))}
+          aria-label={`Open ${photo.originalFilename}`}
+        >
+          <img
+                src={photo.thumbUrl}
+                alt=""
+                className={styles.photoImage}
+                loading="lazy"
+                decoding="async"
+                width={photo.width || undefined}
+                height={photo.height || undefined}
+                style={photo.width && photo.height ? { aspectRatio: `${photo.width} / ${photo.height}` } : undefined}
+                onError={(e) => swapToBackup(e, photo.backupThumbUrl)}
+              />
+        </button>
+        <div className={styles.photoMeta}>
+          <div className={styles.photoUploader}>{photo.uploaderName || 'Unknown'}</div>
+          <div className={styles.photoDateTime}>
+            <span>{formatDate(photo.dateTaken)}</span>
+            <span>{formatTime(photo.dateTaken)}</span>
+          </div>
+          {showAdminActions && (
+            <div className={styles.adminPhotoActions}>
+              <button
+                type="button"
+                onClick={() => handleSetCover(photo)}
+                disabled={busyPhotoId === photo.id}
+              >
+                Set cover
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeletePhoto(photo)}
+                disabled={busyPhotoId === photo.id}
+                className={styles.deletePhotoButton}
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </article>
+    );
+};
+
+  // Columns for the grid: 3, or 2 on narrow screens.
+  const masonryColumns = useMemo(() => {
+    const columns = Array.from({ length: columnCount }, () => []);
+    const heights = new Array(columnCount).fill(0);
+    for (const photo of photos) {
+      const i = heights.indexOf(Math.min(...heights));
+      columns[i].push(photo);
+      heights[i] += photo.width && photo.height ? photo.height / photo.width : 1.25;
+    }
+    return columns;
+  }, [photos, columnCount]);
+
   return (
     <section className={styles.galleryPage}>
       {uploading && (
@@ -665,57 +748,14 @@ export default function EventPhotosClient({
         <div className={styles.emptyState}>Loading gallery...</div>
       ) : photos.length ? (
         <>
+          {/* Staggered columns, filled in order (each photo goes in the shortest
+              column) so the grid reads left to right, then down. */}
           <section className={styles.masonryGrid} aria-label={`${eventTitle} photos`}>
-            {photos.map((photo) => {
-              const isSelected = selectedIds.has(photo.id);
-              return (
-                <article key={photo.id} className={styles.photoCard}>
-                  <label className={styles.checkboxWrapper}>
-                    <input
-                      type="checkbox"
-                      className={styles.photoCheckbox}
-                      checked={isSelected}
-                      onChange={() => toggleSelect(photo.id)}
-                      aria-label={`Select ${photo.originalFilename}`}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className={`${styles.photoImageButton} ${isSelected ? styles.photoSelected : ''}`}
-                    onClick={() => (selectedIds.size ? toggleSelect(photo.id) : setSelectedPhoto(photo))}
-                    aria-label={`Open ${photo.originalFilename}`}
-                  >
-                    <img src={photo.thumbUrl} alt="" className={styles.photoImage} loading="lazy" onError={(e) => swapToBackup(e, photo.backupThumbUrl)} />
-                  </button>
-                  <div className={styles.photoMeta}>
-                    <div className={styles.photoUploader}>{photo.uploaderName || 'Unknown'}</div>
-                    <div className={styles.photoDateTime}>
-                      <span>{formatDate(photo.dateTaken)}</span>
-                      <span>{formatTime(photo.dateTaken)}</span>
-                    </div>
-                    {showAdminActions && (
-                      <div className={styles.adminPhotoActions}>
-                        <button
-                          type="button"
-                          onClick={() => handleSetCover(photo)}
-                          disabled={busyPhotoId === photo.id}
-                        >
-                          Set cover
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePhoto(photo)}
-                          disabled={busyPhotoId === photo.id}
-                          className={styles.deletePhotoButton}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
+            {masonryColumns.map((column, i) => (
+              <div key={i} className={styles.masonryColumn}>
+                {column.map(renderCard)}
+              </div>
+            ))}
           </section>
           {hasMore && (
             <button

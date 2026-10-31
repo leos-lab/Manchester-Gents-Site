@@ -229,16 +229,23 @@
 }
 
 .masonryGrid {
-  column-count: 3;
-  column-gap: clamp(0.75rem, 2vw, 1rem);
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.75rem, 2vw, 1rem);
+}
+
+.masonryColumn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2vw, 1rem);
 }
 
 .photoCard {
   position: relative;
-  display: inline-block;
+  display: block;
   width: 100%;
-  margin: 0 0 clamp(0.75rem, 2vw, 1rem);
-  break-inside: avoid;
   overflow: hidden;
   border-radius: 10px;
   background: rgba(12, 22, 35, 0.72);
@@ -640,9 +647,6 @@
 }
 
 @media (max-width: 900px) {
-  .masonryGrid {
-    column-count: 2;
-  }
 }
 
 @media (max-width: 560px) {
@@ -681,12 +685,12 @@
     right: -5px;
   }
 
-  .masonryGrid {
-    column-gap: 0.65rem;
+  .masonryGrid,
+  .masonryColumn {
+    gap: 0.65rem;
   }
 
   .photoCard {
-    margin-bottom: 0.65rem;
     border-radius: 9px;
   }
 
