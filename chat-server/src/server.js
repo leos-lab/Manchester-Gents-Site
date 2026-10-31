@@ -69,8 +69,14 @@ const wss = new WebSocketServer({
   server,
   path: '/ws',
   maxPayload: 64 * 1024,
-  // Native apps send no Origin; browsers must be on the allow-list.
-  verifyClient: ({ origin }) => !origin || origins.length === 0 || origins.includes(origin)
+  // Browsers must be on the allow-list. Native apps send no Origin, except
+  // iOS, whose WebSocket sends the chat server's own address; no web page is
+  // served from here, so that origin is the app too.
+  verifyClient: ({ origin, req }) =>
+    !origin ||
+    origins.length === 0 ||
+    origins.includes(origin) ||
+    origin === `https://${req.headers['x-forwarded-host'] || req.headers.host}`
 });
 
 wss.on('connection', (socket) => {
