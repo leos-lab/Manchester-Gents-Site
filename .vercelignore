@@ -1,0 +1,6 @@
+# The website deploys alone: the app and chat server are built elsewhere.
+mobile
+chat-server
+documentation
+.next
+._*
