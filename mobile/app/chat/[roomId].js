@@ -1,0 +1,430 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from 'react-native';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
+import { useChat } from '../../src/context/ChatContext';
+import { useAuth } from '../../src/context/AuthContext';
+import { setActiveRoom } from '../../src/lib/push';
+import { dayDivider } from '../../src/lib/format';
+import { MessageBubble } from '../../src/components/MessageBubble';
+import { EmptyState } from '../../src/components/EmptyState';
+import { Glass } from '../../src/components/Glass';
+import { Icon } from '../../src/components/Icon';
+import { colors, radius, space, MAX_CONTENT_WIDTH } from '../../src/theme';
+
+const GROUP_GAP_MS = 5 * 60 * 1000;
+
+// Opened as /chat/<roomId>, or /chat/new?eventId=<id> for an event's chat.
+export default function ChatRoom() {
+  const params = useLocalSearchParams();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { client, status, refreshRooms, configured } = useChat();
+  const { user } = useAuth();
+  const [room, setRoom] = useState(null); // joined reply
+  const [messages, setMessages] = useState([]); // oldest -> newest
+  const [error, setError] = useState(null);
+  const [text, setText] = useState('');
+  const [announce, setAnnounce] = useState(false);
+  const [typing, setTyping] = useState(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [noMoreHistory, setNoMoreHistory] = useState(false);
+  const typingTimer = useRef(null);
+  const lastTypingSent = useRef(0);
+  const roomId = room?.roomId;
+  const myId = client?.user?.id || user?.id;
+
+  // Join (and re-join after reconnects).
+  useEffect(() => {
+    if (!client) return undefined;
+    let cancelled = false;
+    const target = params.roomId && params.roomId !== 'new' ? { roomId: params.roomId } : { eventId: params.eventId };
+    client
+      .join(target)
+      .then((reply) => {
+        if (cancelled) return;
+        setRoom(reply);
+        setMessages(reply.messages || []);
+        setNoMoreHistory((reply.messages || []).length < 50);
+        setError(null);
+      })
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
+  }, [client, params.roomId, params.eventId]);
+
+  useEffect(() => {
+    if (!client || !roomId) return undefined;
+    const upsert = (incoming) =>
+      setMessages((list) => {
+        const i = list.findIndex((m) => m.id === incoming.id || (incoming.clientId && m.clientId === incoming.clientId));
+        if (i === -1) return [...list, incoming];
+        const next = list.slice();
+        next[i] = { ...incoming, status: undefined };
+        return next;
+      });
+    const offs = [
+      client.on('message', ({ message }) => {
+        if (message.roomId !== roomId) return;
+        upsert(message);
+        setTyping(null);
+        client.request('read', { roomId }).catch(() => {});
+      }),
+      client.on('sent', ({ message }) => message.roomId === roomId && upsert(message)),
+      client.on('send_failed', ({ clientId, roomId: r, message }) => {
+        if (r !== roomId) return;
+        setMessages((list) => list.map((m) => (m.clientId === clientId ? { ...m, status: 'failed' } : m)));
+        Alert.alert('Message not sent', message);
+      }),
+      client.on('deleted', ({ roomId: r, messageId }) => {
+        if (r !== roomId) return;
+        setMessages((list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null } : m)));
+      }),
+      client.on('typing', ({ roomId: r, user: who }) => {
+        if (r !== roomId) return;
+        setTyping(who.name);
+        clearTimeout(typingTimer.current);
+        typingTimer.current = setTimeout(() => setTyping(null), 4000);
+      }),
+      client.on('rejoined', (reply) => {
+        if (reply.roomId !== roomId) return;
+        // Merge anything missed while offline, keep unsent messages.
+        setMessages((list) => {
+          const unsent = list.filter((m) => m.status === 'pending' || m.status === 'failed');
+          const seen = new Set(reply.messages.map((m) => m.clientId).filter(Boolean));
+          const older = list.filter((m) => !m.status && m.createdAt < (reply.messages[0]?.createdAt || ''));
+          return [...older, ...reply.messages, ...unsent.filter((m) => !seen.has(m.clientId))];
+        });
+      }),
+      client.on('removed', ({ roomId: r }) => {
+        if (r !== roomId) return;
+        Alert.alert('You’ve left this chat', 'Your RSVP was cancelled, so you’re no longer in the event chat.');
+        router.back();
+      })
+    ];
+    return () => {
+      offs.forEach((off) => off());
+      clearTimeout(typingTimer.current);
+      client.leave(roomId); // screen closed: stop live updates for this room
+    };
+  }, [client, roomId, router]);
+
+  // While this screen is visible: mark read and hide pushes for this room.
+  useFocusEffect(
+    useCallback(() => {
+      if (!client || !roomId) return undefined;
+      setActiveRoom(roomId);
+      client.request('read', { roomId }).then(refreshRooms).catch(() => {});
+      return () => {
+        setActiveRoom(null);
+        refreshRooms();
+      };
+    }, [client, roomId, refreshRooms])
+  );
+
+  const loadOlder = async () => {
+    if (!client || !roomId || loadingOlder || noMoreHistory || !messages.length) return;
+    setLoadingOlder(true);
+    try {
+      const reply = await client.request('history', { roomId, before: messages[0].createdAt });
+      if (reply.messages.length < 50) setNoMoreHistory(true);
+      setMessages((list) => [...reply.messages, ...list]);
+    } catch {
+      // try again on next scroll
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
+  const send = () => {
+    const body = text.trim();
+    if (!body || !client || !roomId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const optimistic = client.send(roomId, { body, kind: announce ? 'announce' : 'send' });
+    setMessages((list) => [...list, optimistic]);
+    setText('');
+    setAnnounce(false);
+  };
+
+  const onChangeText = (value) => {
+    setText(value);
+    const now = Date.now();
+    if (client && roomId && value && now - lastTypingSent.current > 2500) {
+      lastTypingSent.current = now;
+      client.raw({ type: 'typing', roomId });
+    }
+  };
+
+  const toggleMute = async () => {
+    try {
+      const reply = await client.request('mute', { roomId, muted: !room.muted });
+      setRoom((r) => ({ ...r, muted: reply.muted }));
+      refreshRooms();
+    } catch (e) {
+      Alert.alert('Couldn’t change notifications', e.message);
+    }
+  };
+
+  const messageActions = (message) => {
+    if (message.deleted || message.status) return;
+    const mine = message.sender?.id === myId;
+    const isAdmin = Boolean(client?.user?.isAdmin);
+    const options = [{ label: 'Copy', run: () => Clipboard.setStringAsync(message.body || '') }];
+    if (message.sender && !mine) {
+      options.push({ label: `View ${message.sender.name}`, run: () => router.push(`/member/${message.sender.id}`) });
+      options.push({ label: 'Report message', destructive: true, run: () => report(message) });
+      options.push({ label: `Block ${message.sender.name}`, destructive: true, run: () => block(message.sender) });
+    }
+    if (mine || (isAdmin && room?.kind === 'EVENT')) {
+      options.push({ label: 'Delete message', destructive: true, run: () => remove(message) });
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (Platform.OS === 'ios') {
+      const labels = [...options.map((o) => o.label), 'Cancel'];
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: labels,
+          cancelButtonIndex: labels.length - 1,
+          destructiveButtonIndex: options.map((o, i) => (o.destructive ? i : -1)).filter((i) => i >= 0),
+          userInterfaceStyle: 'dark'
+        },
+        (index) => options[index]?.run()
+      );
+    } else {
+      Alert.alert('Message', undefined, [
+        ...options.map((o) => ({ text: o.label, style: o.destructive ? 'destructive' : 'default', onPress: o.run })),
+        { text: 'Cancel', style: 'cancel' }
+      ]);
+    }
+  };
+
+  const report = (message) =>
+    Alert.alert('Report this message?', 'The Manchester Gents team will review it.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Report',
+        style: 'destructive',
+        onPress: () =>
+          client
+            .request('report', { messageId: message.id, reason: 'Reported from app' })
+            .then(() => Alert.alert('Thanks', 'We’ll take a look.'))
+            .catch((e) => Alert.alert('Couldn’t report', e.message))
+      }
+    ]);
+
+  const block = (sender) =>
+    Alert.alert(`Block ${sender.name}?`, 'You won’t see their messages in group chats. You can unblock them from their profile.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Block',
+        style: 'destructive',
+        onPress: () =>
+          client
+            .request('block', { userId: sender.id })
+            .then(() => setMessages((list) => list.filter((m) => m.sender?.id !== sender.id)))
+            .catch((e) => Alert.alert('Couldn’t block', e.message))
+      }
+    ]);
+
+  const remove = (message) =>
+    Alert.alert('Delete this message?', undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => client.request('delete', { messageId: message.id }).catch((e) => Alert.alert('Couldn’t delete', e.message))
+      }
+    ]);
+
+  const retry = (message) => {
+    setMessages((list) => list.map((m) => (m.clientId === message.clientId ? { ...m, status: 'pending' } : m)));
+    client.retry(message.clientId, roomId, message.body);
+  };
+
+  // Newest first for the inverted list, with day dividers and sender grouping.
+  const rows = useMemo(() => {
+    const out = [];
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      const prev = messages[i - 1];
+      const startsGroup =
+        !prev ||
+        prev.sender?.id !== m.sender?.id ||
+        prev.kind === 'ANNOUNCEMENT' ||
+        new Date(m.createdAt) - new Date(prev.createdAt) > GROUP_GAP_MS;
+      out.push({ type: 'message', key: m.id, message: m, showSender: startsGroup });
+      const day = dayDivider(m.createdAt);
+      if (!prev || dayDivider(prev.createdAt) !== day) out.push({ type: 'day', key: `day-${m.id}`, label: day });
+    }
+    return out;
+  }, [messages]);
+
+  const title = room?.title || 'Chat';
+
+  if (!configured) {
+    return (
+      <View style={styles.screen}>
+        <EmptyState symbol="bubble.left.and.exclamationmark.bubble.right" title="Chat isn’t set up" message="The chat server address is missing from the app’s settings." />
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <Stack.Screen
+        options={{
+          title,
+          headerRight: room
+            ? () => (
+                <Pressable onPress={toggleMute} hitSlop={12} accessibilityRole="button" accessibilityLabel={room.muted ? 'Unmute notifications' : 'Mute notifications'}>
+                  {Platform.OS === 'ios' ? (
+                    <Icon name={room.muted ? 'bell.slash' : 'bell'} size={20} color={colors.gold} />
+                  ) : (
+                    <Text style={styles.headerAction}>{room.muted ? 'Unmute' : 'Mute'}</Text>
+                  )}
+                </Pressable>
+              )
+            : undefined
+        }}
+      />
+      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+        {error ? (
+          <EmptyState symbol="lock" title="Can’t open this chat" message={error} />
+        ) : !room ? (
+          <View style={styles.center}>
+            <ActivityIndicator color={colors.gold} />
+          </View>
+        ) : (
+          <FlatList
+            inverted
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            data={rows}
+            keyExtractor={(r) => r.key}
+            keyboardDismissMode="interactive"
+            onEndReached={loadOlder}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={loadingOlder ? <ActivityIndicator color={colors.gold} style={styles.older} /> : null}
+            ListEmptyComponent={
+              <View style={styles.flipped}>
+                <EmptyState symbol="hand.wave" title="Say hello" message="Messages here are seen by everyone going to this event." />
+              </View>
+            }
+            renderItem={({ item }) =>
+              item.type === 'day' ? (
+                <Text style={styles.day}>{item.label}</Text>
+              ) : (
+                <MessageBubble
+                  message={item.message}
+                  mine={item.message.sender?.id === myId}
+                  showSender={item.showSender}
+                  onLongPress={() => messageActions(item.message)}
+                  onPressSender={() => item.message.sender && router.push(`/member/${item.message.sender.id}`)}
+                  onRetry={() => retry(item.message)}
+                />
+              )
+            }
+          />
+        )}
+
+        {room ? (
+          <View style={[styles.composerWrap, { paddingBottom: Math.max(insets.bottom, space.sm) }]}>
+            {typing ? <Text style={styles.typing}>{typing} is typing…</Text> : null}
+            {status !== 'ready' ? <Text style={styles.offline}>Reconnecting… messages will send when you’re back online.</Text> : null}
+            {room.canPost ? (
+              <Glass style={styles.composer} interactive>
+                {client?.user?.isAdmin && room.kind === 'EVENT' ? (
+                  <Pressable
+                    onPress={() => setAnnounce((a) => !a)}
+                    style={[styles.announceToggle, announce && styles.announceOn]}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: announce }}
+                    accessibilityLabel="Send as announcement"
+                  >
+                    {Platform.OS === 'ios' ? (
+                      <Icon name="megaphone.fill" size={16} color={announce ? colors.navy : colors.gold} />
+                    ) : (
+                      <Text style={[styles.announceText, announce && { color: colors.navy }]}>📣</Text>
+                    )}
+                  </Pressable>
+                ) : null}
+                <TextInput
+                  style={styles.input}
+                  placeholder={announce ? 'Announcement to everyone going…' : 'Message'}
+                  placeholderTextColor={colors.textFaint}
+                  value={text}
+                  onChangeText={onChangeText}
+                  multiline
+                  maxLength={2000}
+                  accessibilityLabel="Message"
+                />
+                <Pressable
+                  onPress={send}
+                  disabled={!text.trim()}
+                  style={[styles.sendButton, !text.trim() && styles.sendDisabled]}
+                  accessibilityRole="button"
+                  accessibilityLabel={announce ? 'Send announcement' : 'Send message'}
+                >
+                  {Platform.OS === 'ios' ? (
+                    <Icon name="arrow.up" size={18} color={colors.navy} />
+                  ) : (
+                    <Text style={styles.sendText}>Send</Text>
+                  )}
+                </Pressable>
+              </Glass>
+            ) : (
+              <Text style={styles.readOnly}>This chat is read-only.</Text>
+            )}
+          </View>
+        ) : null}
+      </KeyboardAvoidingView>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.navy },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  list: { flex: 1 },
+  listContent: { paddingVertical: space.md, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
+  flipped: { transform: [{ scaleY: -1 }] },
+  older: { marginVertical: space.lg },
+  day: { color: colors.textFaint, fontSize: 12, fontWeight: '600', textAlign: 'center', marginVertical: space.md },
+  composerWrap: { paddingHorizontal: space.md, paddingTop: space.xs, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
+  composer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    borderRadius: radius.lg,
+    paddingLeft: space.md,
+    paddingRight: 6,
+    paddingVertical: 6,
+    gap: space.sm,
+    overflow: 'hidden'
+  },
+  input: { flex: 1, color: colors.text, fontSize: 16, maxHeight: 140, paddingTop: 9, paddingBottom: 9 },
+  sendButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  sendDisabled: { opacity: 0.4 },
+  sendText: { color: colors.navy, fontWeight: '700', fontSize: 12 },
+  announceToggle: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 1 },
+  announceOn: { backgroundColor: colors.gold },
+  announceText: { fontSize: 16 },
+  typing: { color: colors.textMuted, fontSize: 13, marginLeft: space.md, marginBottom: 4 },
+  offline: { color: colors.gold, fontSize: 13, textAlign: 'center', marginBottom: 6 },
+  readOnly: { color: colors.textMuted, textAlign: 'center', paddingVertical: space.md },
+  headerAction: { color: colors.gold, fontWeight: '600' }
+});
