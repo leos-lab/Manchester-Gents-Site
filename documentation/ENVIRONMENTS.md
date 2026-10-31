@@ -4,6 +4,7 @@ Three environments, each with its own database, chat server, photo site and app 
 
 | | Dev | UAT | Prod |
 |---|---|---|---|
+| Git branch | `dev` | `uat` | `main` |
 | Website | Vercel `mg-dev` → dev.manchestergents.com (and `next dev` on your Mac) | Vercel `mg-uat` → uat.manchestergents.com | Vercel `mg-new` → manchestergents.com |
 | Database (Neon) | branch `dev` (ep-raspy-silence) | branch `uat` (ep-autumn-surf) | branch `production` (ep-square-truth) |
 | Chat server (N100, `mg-chat`) | `chat-dev` service + `tunnel-dev`, chat-dev.manchestergents.com | `chat-uat` service + `tunnel-uat`, chat-uat.manchestergents.com | not set up yet (chat.manchestergents.com is kept for it) |
@@ -14,6 +15,8 @@ Three environments, each with its own database, chat server, photo site and app 
 All apps are called MCR Gents and install side by side.
 
 ## Rules
+
+- Changes move `dev` → `uat` → `main`. Work on `dev`. To promote, merge `dev` into `uat` and deploy `mg-uat`, then merge `uat` into `main` for prod.
 
 - Never run migrations against `production`. Migrate dev, then UAT, over the direct (non-pooler) URL. Before each one, check the host.
 - Dev and UAT hold real member emails. `EMAIL_REDIRECT_TO` must stay set on both so test emails never reach members.
