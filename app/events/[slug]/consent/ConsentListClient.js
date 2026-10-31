@@ -55,6 +55,7 @@ export default function ConsentList({ rows = [], showPhotos = false }) {
                   >
                     <Image
                       src={row.photoUrl}
+                      unoptimized
                       alt={`Reference photo for ${row.displayName}`}
                       width={48}
                       height={48}

@@ -6,7 +6,7 @@
 - **Database:** Hosted PostgreSQL (Neon or similar), accessed via Prisma Client.
 - **Authentication:** NextAuth with credential-based login (email or Instagram handle + password).
 - **Styling:** Global styles in `app/globals.css`, component-level CSS Modules for server-rendered pages, and minimal `styled-jsx` for client components.
-- **Media storage:** Cloudinary handles private member reference photos and cropped, low-resolution avatars via the profile photo upload endpoint.
+- **Media storage:** Everything goes through the self-hosted Pinstripe API: event galleries, public avatars (hosted on ImgBB), and private member reference photos (home server disk only, served via `/api/member-photos/:id` to the member and admins). User rows store private photos as `pinstripe:<photoId>`; see `lib/memberPhotoRef.js` and `lib/pinstripeMedia.js`.
 
 ## Key Modules
 | Area | Location | Purpose |
@@ -38,7 +38,7 @@
 ## Environment & Config
 - **`next.config.js`:** CommonJS export with image remote patterns and server action origins.
 - **`package.json`:** `"type"` intentionally omitted to stay in CommonJS (NextAuth compatibility).
-- **`.env` / `.env.local`:** Must include `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, Cloudinary credentials (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`), and optional `SEED_ADMIN_*`. `NEXTAUTH_URL` supports comma-separated domains for multi-host setups.
+- **`.env` / `.env.local`:** Must include `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, Pinstripe settings (`NEXT_PUBLIC_PINSTRIPE_API_URL`, `PINSTRIPE_MANAGEMENT_TOKEN`), chat settings (`CHAT_TOKEN_SECRET`, `CHAT_SERVER_URL`), and optional `SEED_ADMIN_*`. `NEXTAUTH_URL` supports comma-separated domains for multi-host setups.
 - **Prisma commands:** Provided via npm scripts (`prisma:generate`, `prisma:migrate`, `prisma:seed`).
 
 ## Build & Deployment Notes

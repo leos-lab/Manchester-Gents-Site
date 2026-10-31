@@ -9,6 +9,12 @@ import { format } from 'date-fns';
 import consentItems from './consentItems';
 import ClientConsentDisplay from './ClientConsentDisplay';
 import styles from './page.module.css';
+import { photoSrc, isPinstripeRef } from '@/lib/memberPhotoRef';
+
+function originalPhotoSrc(value) {
+  if (!value) return null;
+  return isPinstripeRef(value) ? photoSrc(value, 'original') : value;
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -44,9 +50,8 @@ function buildConsentRow(signup) {
     groupFaceConsent: user.groupFaceConsent,
     otherFaceConsent: user.otherFaceConsent,
     taggingConsent: user.taggingConsent,
-    photoUrl: user.profilePhotoUrl || null,
-    originalPhotoUrl:
-      user.profilePhotoOriginalUrl || user.profilePhotoUrl || null,
+    photoUrl: photoSrc(user.profilePhotoUrl, 'thumb'),
+    originalPhotoUrl: originalPhotoSrc(user.profilePhotoOriginalUrl || user.profilePhotoUrl),
     initials,
     score,
     hasUnset,

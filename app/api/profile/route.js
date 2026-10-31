@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { profileUpdateSchema } from '@/lib/validators';
 import { getDisplayName } from '@/lib/displayName';
+import { assertProfilePhotos, deleteReplacedPhotos, PhotoRefError } from '@/lib/memberPhotoClaims';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,6 +29,14 @@ export async function PATCH(request) {
     });
     const consentTimestamp = new Date();
 
+    const current = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { profilePhotoUrl: true, profilePhotoOriginalUrl: true }
+    });
+    const previousPhotos = [current?.profilePhotoUrl, current?.profilePhotoOriginalUrl];
+    const nextPhotos = [data.profilePhotoUrl ?? null, data.profilePhotoOriginalUrl ?? null];
+    await assertProfilePhotos(nextPhotos, previousPhotos, session.user.id);
+
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
@@ -52,8 +61,13 @@ export async function PATCH(request) {
       }
     });
 
+    await deleteReplacedPhotos(previousPhotos, nextPhotos);
+
     return Response.json({ success: true });
   } catch (error) {
+    if (error instanceof PhotoRefError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
     if (error?.name === 'ZodError') {
       return Response.json(
         { error: error.issues?.[0]?.message || 'Invalid profile update.' },

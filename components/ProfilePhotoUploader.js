@@ -6,6 +6,7 @@ import Cropper from 'react-easy-crop';
 import 'react-easy-crop/react-easy-crop.css';
 import { getCroppedImage } from '@/lib/cropImage';
 import Image from 'next/image';
+import { photoSrc } from '@/lib/memberPhotoRef';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -23,6 +24,15 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
   const [isPortalReady, setIsPortalReady] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [originalUpload, setOriginalUpload] = useState(null);
+  // Fresh uploads come back with a short-lived preview link; saved photos are
+  // shown through /api/member-photos (see photoSrc).
+  const [previews, setPreviews] = useState({});
+  const viewUrl = (ref, size = 'display') => (ref ? previews[ref] || photoSrc(ref, size) : null);
+  const uploadPhoto = async (file, variant) => {
+    const result = await uploadMemberPhotoFile(file, variant);
+    if (result?.previewUrl) setPreviews((current) => ({ ...current, [result.url]: result.previewUrl }));
+    return result;
+  };
 
   useEffect(() => () => {
     if (cropSource && cropSourceIsObjectUrl) {
@@ -99,7 +109,7 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
       let originalUrl = value?.originalUrl || originalUpload?.url || null;
       if (selectedFile) {
         setIsOriginalUploading(true);
-        const uploadedOriginal = await uploadToCloudinary(selectedFile, 'original');
+        const uploadedOriginal = await uploadPhoto(selectedFile, 'original');
         originalUrl = uploadedOriginal.url;
         setOriginalUpload(uploadedOriginal);
         setSelectedFile(null);
@@ -110,7 +120,7 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
         height: 400
       });
       const file = new File([blob], 'profile-cropped.png', { type: 'image/png' });
-      const croppedUpload = await uploadToCloudinary(file, 'cropped');
+      const croppedUpload = await uploadPhoto(file, 'cropped');
       onChange({
         originalUrl: originalUrl || value?.originalUrl || '',
         croppedUrl: croppedUpload.url
@@ -147,7 +157,7 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
       if (cropSource && cropSourceIsObjectUrl) {
         URL.revokeObjectURL(cropSource);
       }
-      setCropSource(value.originalUrl);
+      setCropSource(viewUrl(value.originalUrl));
       setCropSourceIsObjectUrl(false);
       setZoom(1);
       setCrop({ x: 0, y: 0 });
@@ -195,7 +205,8 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
         {value?.croppedUrl ? (
           <div className="preview">
             <Image
-              src={value.croppedUrl}
+              src={viewUrl(value.croppedUrl, 'medium')}
+              unoptimized
               alt="Profile reference"
               width={96}
               height={96}
@@ -295,7 +306,7 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
   );
 }
 
-async function uploadToCloudinary(file, variant) {
+async function uploadMemberPhotoFile(file, variant) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('variant', variant);

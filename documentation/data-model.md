@@ -18,8 +18,9 @@ Stores member identity, authentication, and consent preferences.
 | `fullName` | `String?` | Convenience string combining first and last name. |
 | `shareFirstName` | `Boolean` | Whether first name can be shown to other members. |
 | `phoneNumber` | `String?` | Optional contact number. |
-| `profilePhotoUrl` | `String?` | Cropped Cloudinary avatar (400×400 PNG) used in admin/member UI. |
-| `profilePhotoOriginalUrl` | `String?` | Full-resolution Cloudinary upload kept private for the admin team when editing imagery. |
+| `profilePhotoUrl` | `String?` | `pinstripe:<id>` — cropped private reference photo (400×400 PNG), shown only to the member and admins. |
+| `profilePhotoOriginalUrl` | `String?` | `pinstripe:<id>` — full-resolution private reference photo for the admin team. |
+| `avatarUrl` / `avatarPhotoId` | `String?` | Public profile picture (Pinstripe → ImgBB) shown on member profiles and in chat. |
 | `generalPhotoConsent` | `Boolean?` | Consent for any media capture (may be `null` for placeholders or when not set). |
 | `groupFaceConsent` | `Boolean?` | Consent for including face in group shots (nullable for placeholders). |
 | `otherFaceConsent` | `Boolean?` | Consent for close-ups / individual shots (nullable). |

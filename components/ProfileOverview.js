@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import ProfileForm from "./ProfileForm";
 import { getDisplayName } from "@/lib/displayName";
+import { photoSrc } from '@/lib/memberPhotoRef';
 
 export default function ProfileOverview({ user }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -60,7 +61,8 @@ export default function ProfileOverview({ user }) {
         <div className="hero-photo">
           {user.profilePhotoUrl ? (
             <Image
-              src={user.profilePhotoUrl}
+              src={photoSrc(user.profilePhotoUrl, 'medium')}
+              unoptimized
               alt={
                 displayName
                   ? `Reference photo for ${displayName}`

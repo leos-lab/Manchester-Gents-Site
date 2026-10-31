@@ -7,7 +7,8 @@ CREATE TYPE "ChatRoomKind" AS ENUM ('EVENT', 'DIRECT');
 
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN "chatBannedAt" TIMESTAMP(3),
-                   ADD COLUMN "avatarUrl" TEXT;
+                   ADD COLUMN "avatarUrl" TEXT,
+                   ADD COLUMN "avatarPhotoId" TEXT;
 ALTER TABLE "Event" ADD COLUMN "chatEnabled" BOOLEAN NOT NULL DEFAULT true,
                     ADD COLUMN "chatLockedAt" TIMESTAMP(3);
 

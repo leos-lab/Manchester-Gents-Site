@@ -2,6 +2,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { v1, ApiError } from '@/lib/apiV1';
 import { verifyPassword } from '@/lib/password';
+import { deleteAllMemberPhotos } from '@/lib/pinstripeMedia';
 import { PUBLIC_MEMBER_SELECT, toPublicMember, eventsAttendedWhere } from '@/lib/publicProfile';
 
 export const dynamic = 'force-dynamic';
@@ -57,13 +58,18 @@ export const PATCH = v1(async ({ request, user }) => {
 
 // In-app account deletion (required by the App Store). Signups, chat
 // memberships, push tokens and blocks cascade; chat messages stay but show
-// no author.
+// no author. Their photos (avatar + private reference photo) are removed
+// from Pinstripe first.
 export const DELETE = v1(async ({ request, user }) => {
   const { password } = (await request.json().catch(() => ({}))) || {};
   const account = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
   if (!account || !password || !(await verifyPassword(password, account.passwordHash))) {
     throw new ApiError('Enter your password to delete your account.', 403);
   }
+  await deleteAllMemberPhotos(user.id).catch((error) => {
+    console.error('Deleting member photos failed', error);
+    throw new ApiError('Could not delete your photos just now. Please try again.', 503);
+  });
   await prisma.user.delete({ where: { id: user.id } });
   return { deleted: true };
 });

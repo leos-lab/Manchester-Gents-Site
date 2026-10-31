@@ -54,9 +54,9 @@ All endpoints live under `app/api`. Requests/Responses use JSON. Errors return `
 - **Payload:** `multipart/form-data` with fields:
   - `file` – JPEG/PNG/WebP ≤ 5 MB.
   - `variant` – either `original` (default) or `cropped`.
-- **Behaviour:** Streams uploads to Cloudinary under `manchester-gents/profiles/{variant}`. `original` retains the member’s full-resolution suited reference; `cropped` normalises to a 400×400 PNG used for avatars.
+- **Behaviour:** Uploads to Pinstripe as a `private` member photo (stored on the home server's disk only, never on ImgBB). Signed-in members upload under their own id; sign-up uploads are held under `registration` and moved to the new member when the account is created. `original` is the full-resolution suited reference; `cropped` is the 400×400 circular PNG.
 - **Responses:**
-  - `201` `{ url, publicId, variant }`
+  - `201` `{ url: "pinstripe:<photoId>", previewUrl, variant }`; save `url` on the profile, use `previewUrl` (valid 30 minutes) to show it straight away.
   - `400` when file missing/invalid.
   - `500` on storage failure.
 

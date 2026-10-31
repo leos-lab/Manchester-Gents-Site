@@ -26,7 +26,7 @@
 - `termsAgreed` signals that all guideline flags are `true`.
 - `termsSignedAt` captures the latest acknowledgement timestamp.
 - `consentUpdatedAt` tracks the most recent profile update.
-- `profilePhotoOriginalUrl` stores the full-resolution upload; `profilePhotoUrl` stores the cropped, low-resolution Cloudinary asset used for previews (never shared with members).
+- `profilePhotoOriginalUrl` stores the full-resolution upload; `profilePhotoUrl` stores the cropped, low-resolution version used for previews (never shared with other members). Both are `pinstripe:<photoId>` references to private photos on the home server.
 
 ### Updating Consents
 - **Profile Page:** `/profile` surfaces `ProfileOverview` for read-only context and an edit CTA. Selecting edit reveals `ProfileForm`, prefilled from Prisma, allowing updates to names, phone, private photo, and consent toggles.

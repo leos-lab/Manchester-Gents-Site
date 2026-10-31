@@ -34,7 +34,7 @@ Administrators can:
 - `lib/` – Prisma client, auth helpers, validation, and consent copy.
 - `prisma/` – Schema, migrations, and seed script.
 - `documentation/` – This knowledge base for LLMs/contributors.
-- `public/` – Static assets (logos, fonts). Member photo uploads are stored externally in Cloudinary.
+- `public/` – Static assets (logos, fonts). Member photos are stored in the self-hosted Pinstripe API.
 
 ## Documentation Set
 This overview is part of a larger documentation bundle located under `/documentation`. The bundle includes:

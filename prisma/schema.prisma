@@ -76,6 +76,7 @@ model User {
   // Public avatar shown on member profiles and in chat. Separate from the
   // private reference photo (profilePhotoUrl), which stays admin/self only.
   avatarUrl               String?
+  avatarPhotoId           String?
   createdAt               DateTime             @default(now())
   updatedAt               DateTime             @updatedAt
 }

@@ -66,7 +66,7 @@
 - Table collapses to cards on mobile; each row links to the member detail view.
 - Name column bundles handle, sharing preference, and placeholder badge.
 - Consent column displays four gold-icon pills with white “Yes/No” labels for readability.
-- Photos remain private to admins even though stored in Cloudinary.
+- Reference photos remain private to the member and admins; they're stored on the Pinstripe home server and never on a public host.
 
 ### Member detail (`app/admin/members/[handle]/page.js`)
 - Accessible by Instagram handle or user ID (fallback for members without Instagram).

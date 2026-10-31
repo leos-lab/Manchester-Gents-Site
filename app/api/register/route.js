@@ -6,6 +6,11 @@ import { getDisplayName } from "@/lib/displayName";
 import { sendMakeWebhook, buildMemberSignupPayload } from "@/lib/makeWebhook";
 import { getBaseUrl } from "@/lib/appUrl";
 import { sendInstagramDm } from "@/lib/instagramAutomation";
+import {
+  assertRegistrationPhotos,
+  claimRegistrationPhotos,
+  PhotoRefError,
+} from "@/lib/memberPhotoClaims";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -85,6 +90,9 @@ export async function POST(request) {
       name: data.preferredName,
     });
 
+    const photoRefs = [data.profilePhotoUrl, data.profilePhotoOriginalUrl];
+    await assertRegistrationPhotos(photoRefs);
+
     const baseUserData = {
       email,
       instagramHandle: handle,
@@ -136,6 +144,11 @@ export async function POST(request) {
       });
     }
 
+    // Move the sign-up photos from the "registration" holding area to this member.
+    await claimRegistrationPhotos(photoRefs, user.id).catch((error) =>
+      console.error("Claiming registration photos failed", error)
+    );
+
     await sendMakeWebhook(
       buildMemberSignupPayload({
         memberId: user.id,
@@ -172,6 +185,9 @@ export async function POST(request) {
 
     return Response.json({ user }, { status: 201 });
   } catch (error) {
+    if (error instanceof PhotoRefError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
     console.error("Register error", error);
     return Response.json(
       { error: "Unable to create account." },

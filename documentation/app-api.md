@@ -16,7 +16,11 @@ suited.social (via account linking). Keep `/api/v1` backwards compatible; add
 ## Me
 - `GET /api/v1/me` → own profile, incl. `eventsAttended`.
 - `PATCH /api/v1/me` `{ bio?, preferredName?, shareFirstName?, instagramHandle? }`
-- `DELETE /api/v1/me` `{ password }` → deletes the account (App Store requirement).
+- `DELETE /api/v1/me` `{ password }` → deletes the account and the member's photos (App Store requirement).
+- Avatar (public profile picture, via Pinstripe):
+  1. `POST /api/v1/me/avatar` → `{ upload: { url, token, kind, field } }`
+  2. POST the image to `upload.url` as multipart (`file`, `kind=avatar`) with `Authorization: Bearer <upload.token>` — straight to Pinstripe
+  3. `PUT /api/v1/me/avatar` `{ photoId }` → sets it; `DELETE` removes it
 - `POST /api/v1/push-tokens` `{ token, platform: "ios"|"android" }` / `DELETE` `{ token }`
 
 ## Events

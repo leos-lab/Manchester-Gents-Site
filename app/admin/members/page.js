@@ -5,6 +5,7 @@ import { FaPeopleGroup, FaPerson, FaUserTag } from 'react-icons/fa6';
 import prisma from '@/lib/prisma';
 import AdminPlaceholderForm from '@/components/AdminPlaceholderForm';
 import styles from './members.module.css';
+import { photoSrc } from '@/lib/memberPhotoRef';
 
 async function getMembers() {
   return prisma.user.findMany({
@@ -200,7 +201,8 @@ function MemberRow({ member, consentColumns }) {
       <td className={styles.avatarCell} data-label="Profile">
         {member.profilePhotoUrl ? (
           <Image
-            src={member.profilePhotoUrl}
+            src={photoSrc(member.profilePhotoUrl, 'thumb')}
+            unoptimized
             alt={`Reference for ${displayName}`}
             width={56}
             height={56}

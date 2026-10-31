@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
-import cloudinary from '@/lib/cloudinary';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { uploadMemberPhoto, memberPhotoFileUrl } from '@/lib/pinstripeMedia';
+import { toPinstripeRef } from '@/lib/memberPhotoRef';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -7,78 +9,45 @@ export const runtime = 'nodejs';
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-async function uploadToCloudinary(buffer, folder, fileType, options = {}) {
-  const base64 = buffer.toString('base64');
-  const dataUri = `data:${fileType};base64,${base64}`;
-  return cloudinary.uploader.upload(dataUri, {
-    folder,
-    resource_type: 'image',
-    overwrite: true,
-    quality: 'auto:eco',
-    ...options
-  });
-}
-
+// Private reference photo upload (registration and profile editing). Stored in
+// Pinstripe as a "private" member photo: on the home server's disk only.
+// Returns a "pinstripe:<id>" reference to save on the User, plus a short-lived
+// preview URL for the form.
 export async function POST(request) {
-  const requiredEnv = [
-    'CLOUDINARY_CLOUD_NAME',
-    'CLOUDINARY_API_KEY',
-    'CLOUDINARY_API_SECRET'
-  ];
-  const missingEnv = requiredEnv.filter((key) => !process.env[key]);
-  if (missingEnv.length) {
-    console.error('Profile photo upload error: missing Cloudinary env vars', missingEnv);
-    return NextResponse.json(
-      { error: `Cloudinary configuration missing: ${missingEnv.join(', ')}` },
-      { status: 500 }
-    );
-  }
-
   try {
+    const session = await getServerSession(authOptions);
     const formData = await request.formData();
     const file = formData.get('file');
-    const variant = formData.get('variant') || 'original';
 
     if (!file || typeof file.arrayBuffer !== 'function') {
-      return NextResponse.json({ error: 'No image provided.' }, { status: 400 });
+      return Response.json({ error: 'No image provided.' }, { status: 400 });
     }
-
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'Image must be 5MB or smaller.' }, { status: 400 });
+      return Response.json({ error: 'Image must be 5MB or smaller.' }, { status: 400 });
     }
-
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Only JPEG, PNG, or WebP images are accepted.' }, { status: 400 });
+      return Response.json({ error: 'Only JPEG, PNG, or WebP images are accepted.' }, { status: 400 });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const folder =
-      variant === 'cropped'
-        ? 'manchester-gents/profiles/cropped'
-        : 'manchester-gents/profiles/original';
+    // Signed-in members upload under their own id; sign-up uploads are parked
+    // under "registration" and moved to the new member when the account is created.
+    const memberRef = session?.user?.id || 'registration';
+    const photo = await uploadMemberPhoto(memberRef, 'private', {
+      buffer: Buffer.from(await file.arrayBuffer()),
+      filename: file.name || 'photo.png',
+      mimeType: file.type
+    });
 
-    const result = await uploadToCloudinary(
-      buffer,
-      folder,
-      file.type,
-      variant === 'cropped' ? { format: 'png' } : {}
-    );
-
-    return NextResponse.json(
+    return Response.json(
       {
-        url: result.secure_url,
-        publicId: result.public_id,
-        variant
+        url: toPinstripeRef(photo.id),
+        previewUrl: memberPhotoFileUrl(photo.id, 'display', 30 * 60),
+        variant: formData.get('variant') || 'original'
       },
       { status: 201 }
     );
   } catch (error) {
     console.error('Profile photo upload error:', error);
-    const message =
-      typeof error === 'object' && error !== null && 'message' in error
-        ? String(error.message)
-        : 'Unable to upload image.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return Response.json({ error: error.status === 503 ? error.message : 'Unable to upload image.' }, { status: 500 });
   }
 }

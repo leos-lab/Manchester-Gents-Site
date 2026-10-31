@@ -6,6 +6,7 @@ import { getDisplayName } from '@/lib/displayName';
 import AdminMemberEditor from '@/components/AdminMemberEditor';
 import AdminMemberEventManager from '@/components/AdminMemberEventManager';
 import styles from './member.module.css';
+import { photoSrc } from '@/lib/memberPhotoRef';
 
 async function getMember(identifier) {
   const lower = identifier.toLowerCase();
@@ -114,7 +115,8 @@ export default async function MemberDetailPage({ params }) {
           <div className={styles.profileCard}>
             {member.profilePhotoUrl ? (
               <Image
-                src={member.profilePhotoUrl}
+                src={photoSrc(member.profilePhotoUrl, 'medium')}
+                unoptimized
                 alt={`Reference for ${displayName}`}
                 width={160}
                 height={160}

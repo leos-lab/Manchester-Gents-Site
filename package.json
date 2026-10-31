@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
-    "cloudinary": "^1.41.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.0",
     "date-fns": "^3.2.0",

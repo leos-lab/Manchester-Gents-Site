@@ -80,6 +80,7 @@ export default function ConsentTable({ rows = [], showPhotos = false }) {
                     >
                       <Image
                         src={row.photoUrl}
+                        unoptimized
                         alt={`Reference photo for ${row.displayName}`}
                         width={44}
                         height={44}

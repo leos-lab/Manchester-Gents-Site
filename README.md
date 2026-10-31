@@ -39,7 +39,8 @@ cp .env.example .env.local
 - `NEXTAUTH_SECRET` — A 32+ character string (generate with `openssl rand -base64 32`).
 - `NEXTAUTH_URL` — `http://localhost:3000` for local development. In production, you can supply a comma-separated list to support multiple domains (e.g. `https://manchestergents.com,https://www.manchestergents.com,https://mcr.gents`).
 - `NEXT_PUBLIC_APP_URL` — Canonical public URL for metadata/OG images. If you provide multiple (comma-separated), `manchestergents.com` is preferred when present; otherwise the first valid entry is used.
-- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — credentials for storing private member reference photos.
+- `NEXT_PUBLIC_PINSTRIPE_API_URL`, `PINSTRIPE_MANAGEMENT_TOKEN` — Pinstripe API for event galleries and member photos (avatars, private reference photos kept on the home server's disk).
+- `CHAT_TOKEN_SECRET`, `CHAT_SERVER_URL` — in-app chat and app sign-in (see `chat-server/` and `documentation/app-api.md`).
 - Optional seed helpers (`SEED_ADMIN_*`) customise the seeded admin account.
 
 ### Database setup
