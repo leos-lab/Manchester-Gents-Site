@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChatClient } from '@/lib/chatClient';
+import { ChatInfoPanel, NewGroupPanel } from './GroupPanels';
 import styles from './ChatApp.module.css';
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
@@ -51,6 +52,7 @@ export default function ChatApp({ me, initialOpen }) {
   const [typing, setTyping] = useState(null);
   const [error, setError] = useState(null);
   const [noMore, setNoMore] = useState(false);
+  const [panel, setPanel] = useState(null); // 'newGroup' | 'info'
   const listRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTyping = useRef(0);
@@ -157,6 +159,11 @@ export default function ChatApp({ me, initialOpen }) {
       }),
       client.on('deleted', ({ roomId: r, messageId }) => {
         if (r === roomId) setMessages((list) => list.map((m) => (m.id === messageId ? { ...m, deleted: true, body: null } : m)));
+      }),
+      // Renamed or new picture (groups, community).
+      client.on('room_updated', (update) => {
+        if (update.roomId !== roomId) return;
+        setOpen((o) => (o ? { ...o, ...(update.title ? { title: update.title } : {}), ...('photoUrl' in update ? { photoUrl: update.photoUrl } : {}) } : o));
       }),
       client.on('typing', ({ roomId: r, user }) => {
         if (r !== roomId) return;
@@ -318,7 +325,12 @@ export default function ChatApp({ me, initialOpen }) {
       <aside className={styles.sidebar} aria-label="Your chats">
         <div className={styles.sidebarHead}>
           <h1 className="heading-font">Chats</h1>
-          <Link href="/members" className={styles.newButton}>New message</Link>
+          <span className={styles.newButtons}>
+            <button type="button" className={styles.newButton} onClick={() => setPanel('newGroup')}>
+              New group
+            </button>
+            <Link href="/members" className={styles.newButton}>New message</Link>
+          </span>
         </div>
         {status !== 'ready' ? <p className={styles.status}>{status === 'connecting' ? 'Connecting…' : 'Reconnecting…'}</p> : null}
         <div className={styles.folders} role="tablist" aria-label="Chat folders">
@@ -355,7 +367,10 @@ export default function ChatApp({ me, initialOpen }) {
                   className={`${styles.room} ${open?.roomId === room.id ? styles.roomActive : ''}`}
                   aria-current={open?.roomId === room.id ? 'true' : undefined}
                 >
-                  {room.kind === 'COMMUNITY' ? (
+                  {room.photoUrl || (room.kind === 'EVENT' && room.coverImageUrl) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={room.photoUrl || room.coverImageUrl} alt="" className={styles.roomThumb} />
+                  ) : room.kind === 'COMMUNITY' || room.kind === 'GROUP' ? (
                     <span className={`${styles.roomThumb} ${styles.roomThumbCloth}`} aria-hidden="true" />
                   ) : room.kind === 'EVENT' ? (
                     room.coverImageUrl ? (
@@ -373,7 +388,15 @@ export default function ChatApp({ me, initialOpen }) {
                       {room.lastKind === 'ANNOUNCEMENT' ? '📣 ' : room.lastKind === 'LOCATION' ? '📍 ' : room.lastKind === 'IMAGE' ? '📷 ' : ''}
                       {room.lastBody ||
                         (room.lastKind === 'LOCATION' ? 'Location' : room.lastKind === 'IMAGE' ? 'Photo' : null) ||
-                        (room.kind === 'COMMUNITY' ? 'Everyone at Manchester Gents' : room.kind === 'EVENT' ? 'Event chat' : 'Say hello')}
+                        (room.kind === 'COMMUNITY'
+                          ? 'Everyone at Manchester Gents'
+                          : room.kind === 'EVENT'
+                            ? 'Event chat'
+                            : room.kind === 'GROUP'
+                              ? room.regarding
+                                ? `About ${room.regarding.title}`
+                                : 'Group chat'
+                              : 'Say hello')}
                       {room.closed ? ' · Closed' : ''}
                     </span>
                   </span>
@@ -401,7 +424,30 @@ export default function ChatApp({ me, initialOpen }) {
       </aside>
 
       <section className={styles.conversation} aria-label={open ? openTitle : 'Conversation'}>
-        {open ? (
+        {panel === 'newGroup' && clientRef.current ? (
+          <NewGroupPanel
+            client={clientRef.current}
+            onClose={() => setPanel(null)}
+            onCreated={(reply) => {
+              setPanel(null);
+              openRoom({ roomId: reply.roomId });
+            }}
+          />
+        ) : null}
+        {panel === 'info' && open && clientRef.current ? (
+          <ChatInfoPanel
+            key={open.roomId}
+            client={clientRef.current}
+            room={open}
+            me={me}
+            onClose={() => setPanel(null)}
+            onLeft={() => {
+              setPanel(null);
+              setOpen(null);
+            }}
+          />
+        ) : null}
+        {open && panel !== 'newGroup' ? (
           <>
             <header className={styles.convHead}>
               <button type="button" className={styles.back} onClick={() => setOpen(null)}>
@@ -415,6 +461,11 @@ export default function ChatApp({ me, initialOpen }) {
               ) : (
                 <h2 className={styles.convTitle}>{openTitle}</h2>
               )}
+              {open.kind !== 'DIRECT' ? (
+                <button type="button" className={styles.headButton} onClick={() => setPanel(panel === 'info' ? null : 'info')} aria-pressed={panel === 'info'}>
+                  Info
+                </button>
+              ) : null}
               <button type="button" className={styles.headButton} onClick={toggleMute}>
                 {open.muted ? 'Unmute' : 'Mute'}
               </button>
@@ -432,6 +483,14 @@ export default function ChatApp({ me, initialOpen }) {
                 const mine = m.sender?.id === me.id;
                 const startsGroup =
                   !prev || prev.sender?.id !== m.sender?.id || new Date(m.createdAt) - new Date(prev.createdAt) > GROUP_GAP_MS;
+                // Group events: created, added, left, renamed, admins.
+                if (m.kind === 'SYSTEM') {
+                  return (
+                    <p key={m.id} className={styles.system}>
+                      {m.body}
+                    </p>
+                  );
+                }
                 if (m.kind === 'ANNOUNCEMENT') {
                   return (
                     <div key={m.id} className={styles.announcement}>
@@ -575,9 +634,9 @@ export default function ChatApp({ me, initialOpen }) {
               </p>
             )}
           </>
-        ) : (
+        ) : panel === 'newGroup' ? null : (
           <div className={styles.placeholder}>
-            <p>Pick a chat, or start a new message.</p>
+            <p>Pick a chat, start a new message, or make a group.</p>
           </div>
         )}
         {error ? (

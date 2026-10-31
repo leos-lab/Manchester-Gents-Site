@@ -124,7 +124,7 @@ export function createStore(pool) {
     },
 
     async eventSummary(eventId) {
-      return one(`SELECT "id", "title", "startTime" FROM "Event" WHERE "id" = $1`, [eventId]);
+      return one(`SELECT "id", "slug", "title", "startTime" FROM "Event" WHERE "id" = $1`, [eventId]);
     },
 
     // Members' own group chats. Placeholders can't be added.
@@ -315,7 +315,7 @@ export function createStore(pool) {
             WHERE (r."kind" = 'DIRECT' AND r."lastMessageAt" IS NOT NULL) OR r."kind" = 'GROUP'
          )
          SELECT v."id", v."kind", v."eventId", v."lastMessageAt", v."title" AS "groupTitle", v."createdAt", v."photoUrl",
-                re."id" AS "regardingId", re."title" AS "regardingTitle",
+                re."id" AS "regardingId", re."title" AS "regardingTitle", re."slug" AS "regardingSlug",
                 e."title", e."slug", e."startTime", e."endTime", e."coverImageUrl",
                 me."muted",
                 o."id" AS "otherId", o."firstName" AS "otherFirstName", o."lastName" AS "otherLastName",
@@ -354,7 +354,7 @@ export function createStore(pool) {
               : r.kind === 'GROUP'
                 ? r.groupTitle || 'Group'
                 : shapePerson(r, 'other')?.name,
-        regarding: r.regardingId ? { id: r.regardingId, title: r.regardingTitle } : null,
+        regarding: r.regardingId ? { id: r.regardingId, title: r.regardingTitle, slug: r.regardingSlug } : null,
         photoUrl: r.photoUrl || null,
         closed: r.kind === 'EVENT' ? (eventChatClosesAt(r.startTime, r.endTime) ?? now) < now : false,
         slug: r.slug,
