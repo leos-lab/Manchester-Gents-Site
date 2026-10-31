@@ -35,15 +35,6 @@
   color: var(--color-gold);
 }
 
-.newButton {
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--color-navy);
-  background: var(--color-gold);
-  padding: 0.45rem 0.95rem;
-  border-radius: 999px;
-}
-
 .status {
   margin: 0 0.75rem 0.5rem;
   color: var(--color-gold);
@@ -545,14 +536,83 @@
 }
 
 /* Group chats: new group and chat info panels. */
-.newButtons {
-  display: inline-flex;
-  gap: 0.4rem;
+/* The pen: start a new chat (a member, or a group). */
+.composeButton {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 212, 96, 0.14);
+  color: var(--color-gold);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-button.newButton {
+.composeButton:hover,
+.composeButton:focus-visible {
+  background: rgba(255, 212, 96, 0.24);
+}
+
+.composeButton:active {
+  transform: scale(0.94);
+}
+
+.panel .newChatSearch {
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+}
+
+.newChatList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.newChatList button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: #f7f4ed;
   font: inherit;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
+}
+
+.newChatList button:hover,
+.newChatList button:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.newChatList small {
+  display: block;
+  font-weight: 400;
+  color: rgba(247, 244, 237, 0.55);
+}
+
+.newGroupIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-gold);
+  color: var(--color-navy);
+}
+
+.newChatHint {
+  margin: 0;
+  color: rgba(247, 244, 237, 0.55);
 }
 
 .system {

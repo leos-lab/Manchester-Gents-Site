@@ -48,6 +48,75 @@ function MemberPicker({ picked, setPicked, exclude = [] }) {
   );
 }
 
+// New chat: search for a member to message, or start a group (like the app).
+export function NewChatPanel({ Avatar, onPick, onNewGroup, onClose }) {
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  useEffect(() => {
+    if (q.trim().replace(/^@/, '').length < 2) {
+      setResults([]);
+      return undefined;
+    }
+    setSearching(true);
+    const timer = setTimeout(() => {
+      fetch(`/api/v1/members?q=${encodeURIComponent(q.trim())}`)
+        .then((res) => res.json())
+        .then((json) => setResults(json.members || []))
+        .catch(() => {})
+        .finally(() => setSearching(false));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [q]);
+
+  return (
+    <div className={styles.panel}>
+      <header className={styles.panelHead}>
+        <h2>New chat</h2>
+        <button type="button" onClick={onClose}>
+          Cancel
+        </button>
+      </header>
+      <input
+        className={styles.newChatSearch}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search by name or @instagram"
+        aria-label="Search members"
+        autoFocus
+      />
+      <ul className={styles.newChatList}>
+        <li>
+          <button type="button" onClick={onNewGroup}>
+            <span className={styles.newGroupIcon} aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <circle cx="9" cy="8" r="3.5" />
+                <path d="M2 19c0-3.6 3.1-6 7-6s7 2.4 7 6v1H2z" />
+                <circle cx="17" cy="9" r="2.8" />
+                <path d="M17.5 13.2c2.8.3 4.5 2.4 4.5 5V20h-4.4v-1c0-2.3-.8-4.3-2.3-5.6.7-.2 1.4-.2 2.2-.2z" />
+              </svg>
+            </span>
+            <span>New group</span>
+          </button>
+        </li>
+        {results.map((m) => (
+          <li key={m.id}>
+            <button type="button" onClick={() => onPick(m)}>
+              <Avatar name={m.name} src={m.avatarUrl} size={40} />
+              <span>
+                {m.name}
+                {m.instagram ? <small>@{m.instagram.handle}</small> : null}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {q.trim().length >= 2 && !searching && !results.length ? <p className={styles.newChatHint}>No members found.</p> : null}
+      {q.trim().length < 2 ? <p className={styles.newChatHint}>Type a name to find someone to message.</p> : null}
+    </div>
+  );
+}
+
 // New group chat: a name, optionally the event it's about, and people.
 export function NewGroupPanel({ client, onCreated, onClose }) {
   const [title, setTitle] = useState('');

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChatClient } from '@/lib/chatClient';
-import { ChatInfoPanel, NewGroupPanel } from './GroupPanels';
+import { ChatInfoPanel, NewChatPanel, NewGroupPanel } from './GroupPanels';
 import styles from './ChatApp.module.css';
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
@@ -52,7 +52,7 @@ export default function ChatApp({ me, initialOpen }) {
   const [typing, setTyping] = useState(null);
   const [error, setError] = useState(null);
   const [noMore, setNoMore] = useState(false);
-  const [panel, setPanel] = useState(null); // 'newGroup' | 'info'
+  const [panel, setPanel] = useState(null); // 'newChat' | 'newGroup' | 'info'
   const listRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTyping = useRef(0);
@@ -104,6 +104,7 @@ export default function ChatApp({ me, initialOpen }) {
     const client = clientRef.current;
     if (!client) return;
     if (openRef.current) client.leave(openRef.current.roomId);
+    setPanel(null);
     setError(null);
     try {
       const reply = await client.join(target);
@@ -321,16 +322,16 @@ export default function ChatApp({ me, initialOpen }) {
   }
 
   return (
-    <main className={`${styles.app} ${open ? styles.hasOpen : ''}`}>
+    <main className={`${styles.app} ${open || panel ? styles.hasOpen : ''}`}>
       <aside className={styles.sidebar} aria-label="Your chats">
         <div className={styles.sidebarHead}>
           <h1 className="heading-font">Chats</h1>
-          <span className={styles.newButtons}>
-            <button type="button" className={styles.newButton} onClick={() => setPanel('newGroup')}>
-              New group
-            </button>
-            <Link href="/members" className={styles.newButton}>New message</Link>
-          </span>
+          <button type="button" className={styles.composeButton} onClick={() => setPanel('newChat')} aria-label="New chat" title="New chat">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" />
+              <path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L12 14.8l-3.6.9.9-3.6z" />
+            </svg>
+          </button>
         </div>
         {status !== 'ready' ? <p className={styles.status}>{status === 'connecting' ? 'Connecting…' : 'Reconnecting…'}</p> : null}
         <div className={styles.folders} role="tablist" aria-label="Chat folders">
@@ -424,6 +425,17 @@ export default function ChatApp({ me, initialOpen }) {
       </aside>
 
       <section className={styles.conversation} aria-label={open ? openTitle : 'Conversation'}>
+        {panel === 'newChat' ? (
+          <NewChatPanel
+            Avatar={Avatar}
+            onClose={() => setPanel(null)}
+            onNewGroup={() => setPanel('newGroup')}
+            onPick={(member) => {
+              setPanel(null);
+              openRoom({ userId: member.id });
+            }}
+          />
+        ) : null}
         {panel === 'newGroup' && clientRef.current ? (
           <NewGroupPanel
             client={clientRef.current}
@@ -447,7 +459,7 @@ export default function ChatApp({ me, initialOpen }) {
             }}
           />
         ) : null}
-        {open && panel !== 'newGroup' ? (
+        {open && panel !== 'newGroup' && panel !== 'newChat' ? (
           <>
             <header className={styles.convHead}>
               <button type="button" className={styles.back} onClick={() => setOpen(null)}>
@@ -634,9 +646,9 @@ export default function ChatApp({ me, initialOpen }) {
               </p>
             )}
           </>
-        ) : panel === 'newGroup' ? null : (
+        ) : panel === 'newGroup' || panel === 'newChat' ? null : (
           <div className={styles.placeholder}>
-            <p>Pick a chat, start a new message, or make a group.</p>
+            <p>Pick a chat, or tap the pen to start a new one.</p>
           </div>
         )}
         {error ? (

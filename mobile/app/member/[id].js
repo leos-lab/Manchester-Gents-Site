@@ -65,7 +65,7 @@ export default function MemberProfile() {
         <Content style={styles.content}>
           <Avatar name={member.name} uri={member.avatarUrl} size={128} ring />
           <Text style={styles.name}>{member.name}</Text>
-          {member.isAdmin ? <Chip label="Manchester Gents team" tone="gold" symbol="star.fill" /> : null}
+          {member.isAdmin ? <Chip label="Manchester Gents team" tone="gold" symbol="star.fill" style={{ alignSelf: 'center' }} /> : null}
 
           <View style={styles.stats}>
             <Stat value={member.eventsAttended} label={member.eventsAttended === 1 ? 'Event attended' : 'Events attended'} />
