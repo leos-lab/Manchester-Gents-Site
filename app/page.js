@@ -71,7 +71,7 @@ export default async function HomePage() {
         <HomeHero photo={heroPhoto} caption={home.heroPhoto ? home.heroCaption : null}>
           {home.iosAppUrl || home.androidAppUrl ? (
             <p className={styles.newApp}>
-              <span>New</span> The Manchester Gents app is now on iPhone and Android
+              <span>New</span> Get the Manchester Gents app for iPhone and Android
             </p>
           ) : null}
           <h1 className={`heading-font ${styles.wordmark}`}>{home.headline}</h1>
@@ -97,19 +97,21 @@ export default async function HomePage() {
               <div className={styles.appButtons}>
                 {home.iosAppUrl ? (
                   <a href={home.iosAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
-                    Download for iPhone
+                    Get the app for iPhone
                   </a>
                 ) : null}
                 {home.androidAppUrl ? (
                   <a href={home.androidAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
-                    Download for Android
+                    Get the app for Android
                   </a>
                 ) : null}
               </div>
               <p className={styles.appNote}>
-                Rather not download an app? Everything works here on the website too: RSVPs, event chats and messages.
-                Event group chats have moved off Instagram: join the conversation in the app or{' '}
-                <Link href="/chat">on the website</Link>.
+                Event chats have moved off Instagram and into the app, along with RSVPs, messages and photos from every
+                social.
+              </p>
+              <p className={styles.webNote}>
+                Can’t use the app? <Link href="/chat">Chats also work on the website.</Link>
               </p>
             </div>
           ) : null}
