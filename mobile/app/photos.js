@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Alert, FlatList, Platform, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getViewerSession, savePhotoToLibrary } from '../src/lib/gallery';
 import { BackupImage } from '../src/components/BackupImage';
-import { colors, space } from '../src/theme';
+import { colors } from '../src/theme';
 
 // Full-screen photo viewer with native toolbars: Done in the header, Share and
 // Save in the bottom toolbar. Swipe between photos.
@@ -16,6 +16,8 @@ export default function PhotoViewer() {
   const [current, setCurrent] = useState(index);
   const [saving, setSaving] = useState(false);
   const photo = photos[current];
+  const insets = useSafeAreaInsets();
+  const captionWidth = Math.max(120, width - insets.left - insets.right - 180);
 
   const save = async () => {
     if (!photo || saving) return;
@@ -48,6 +50,18 @@ export default function PhotoViewer() {
           Share
         </Stack.Toolbar.Button>
         <Stack.Toolbar.Spacer />
+        {/* Who shared it, in line with Share and Save. Toolbar items need an
+            explicit size: everything left once the two buttons are placed. */}
+        {photo?.uploaderName ? (
+          <Stack.Toolbar.View hidesSharedBackground>
+            <View style={[styles.captionBox, { width: captionWidth }]}>
+              <Text style={styles.caption} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+                Shared by {photo.uploaderName}
+              </Text>
+            </View>
+          </Stack.Toolbar.View>
+        ) : null}
+        <Stack.Toolbar.Spacer />
         <Stack.Toolbar.Button icon="square.and.arrow.down" onPress={save} disabled={saving} tintColor={colors.gold}>
           {saving ? 'Saving' : 'Save to Photos'}
         </Stack.Toolbar.Button>
@@ -75,31 +89,12 @@ export default function PhotoViewer() {
           />
         )}
       />
-      {/* Who shared it, just above the bottom toolbar: the native safe area
-          includes the toolbar, so the chip sits on it wherever it is. */}
-      {photo?.uploaderName ? (
-        <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.captionArea} pointerEvents="none">
-          <Text style={styles.caption} numberOfLines={2}>
-            Shared by {photo.uploaderName}
-          </Text>
-        </SafeAreaView>
-      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
-  captionArea: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: space.xl },
-  caption: {
-    color: colors.text,
-    fontSize: 14,
-    textAlign: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: space.sm
-  }
+  captionBox: { height: 40, alignItems: 'center', justifyContent: 'center' },
+  caption: { color: colors.text, fontSize: 13, textAlign: 'center' }
 });
