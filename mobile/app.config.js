@@ -5,10 +5,11 @@ const fs = require('fs');
 // APP_VARIANT: "development" (local dev client), "uat" (TestFlight / Play
 // testing, talks to uat.manchestergents.com) or unset for the store app. Each
 // installs side by side under its own bundle id; all are called MCR Gents, and
-// the UAT build has a UAT badge on its icon.
+// the dev and UAT builds have a DEV / UAT badge on their icons.
 const VARIANT = process.env.APP_VARIANT;
 const IS_DEV = VARIANT === 'development';
 const IS_UAT = VARIANT === 'uat';
+const ICON_SUFFIX = IS_DEV ? '-dev' : IS_UAT ? '-uat' : '';
 const BUNDLE_ID = IS_DEV ? 'com.manchestergents.app.dev' : IS_UAT ? 'com.manchestergents.app.uat' : 'com.manchestergents.app';
 // Android push needs Firebase's google-services.json (download from Firebase).
 const GOOGLE_SERVICES = process.env.GOOGLE_SERVICES_JSON || './google-services.json';
@@ -20,7 +21,7 @@ module.exports = ({ config }) => ({
   scheme: 'mcrgents',
   version: '1.0.0',
   orientation: 'default', // iOS 27 apps are resizable; layouts adapt (incl. iPhone Duo)
-  icon: IS_UAT ? './assets/images/icon-uat.png' : './assets/images/icon.png',
+  icon: `./assets/images/icon${ICON_SUFFIX}.png`,
   userInterfaceStyle: 'dark',
   backgroundColor: '#1c2837',
   newArchEnabled: true,
@@ -41,7 +42,7 @@ module.exports = ({ config }) => ({
   android: {
     package: BUNDLE_ID,
     adaptiveIcon: {
-      foregroundImage: IS_UAT ? './assets/images/adaptive-icon-uat.png' : './assets/images/adaptive-icon.png',
+      foregroundImage: `./assets/images/adaptive-icon${ICON_SUFFIX}.png`,
       backgroundColor: '#1c2837'
     },
     edgeToEdgeEnabled: true,
