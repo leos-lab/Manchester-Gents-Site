@@ -296,12 +296,18 @@ export class ChatHub {
     await this.store.report(msg.id, conn.state.user.id, req.reason);
     this.reply(conn, req, { type: 'ok' });
     // Alert admins without quoting the message: it may be a private DM.
+    const alert = {
+      title: 'Message reported',
+      body: req.reason ? `Reason: ${String(req.reason).slice(0, 120)}` : 'A member reported a chat message.'
+    };
+    await this.store
+      .saveNotifications(await this.store.adminIds(), { ...alert, path: '/admin/reports' })
+      .catch((error) => this.log.error('saving report notification failed', error?.message || error));
     if (this.sendPush) {
       const admins = await this.store.adminPushTargets();
       if (admins.length) {
         this.sendPush(admins, {
-          title: 'Message reported',
-          body: req.reason ? `Reason: ${String(req.reason).slice(0, 120)}` : 'A member reported a chat message.',
+          ...alert,
           data: { path: '/admin/reports' }
         }).catch((error) => this.log.error('report push failed', error?.message || error));
       }

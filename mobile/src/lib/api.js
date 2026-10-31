@@ -74,6 +74,10 @@ export const api = {
   setAvatar: (photoId) => request('/api/v1/me/avatar', { method: 'PUT', body: { photoId } }),
   removeAvatar: () => request('/api/v1/me/avatar', { method: 'DELETE' }),
 
+  notifications: () => request('/api/v1/notifications'),
+  markNotificationsRead: (ids) =>
+    request('/api/v1/notifications', { method: 'POST', body: ids ? { ids } : { all: true } }),
+
   // Guidelines, privacy policy, photography notice, welcome-screen covers.
   content: () => request('/api/v1/content', { token: null }),
 

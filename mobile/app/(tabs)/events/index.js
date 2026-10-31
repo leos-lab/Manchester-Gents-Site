@@ -8,6 +8,7 @@ import { EmptyState } from '../../../src/components/EmptyState';
 import { Button } from '../../../src/components/Button';
 import { colors, radius, space, MAX_CONTENT_WIDTH, WIDE_BREAKPOINT } from '../../../src/theme';
 import { useGutter } from '../../../src/lib/layout';
+import { NotificationToolbar } from '../../../src/components/NotificationBell';
 
 const SCOPES = [
   { key: 'upcoming', label: 'Upcoming' },
@@ -50,50 +51,53 @@ export default function Events() {
   const gutter = useGutter(space.lg);
 
   return (
-    <FlatList
-      key={columns}
-      style={styles.list}
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[styles.container, gutter, { maxWidth: wide ? MAX_CONTENT_WIDTH * 1.6 : MAX_CONTENT_WIDTH }]}
-      data={events || []}
-      numColumns={columns}
-      columnWrapperStyle={columns > 1 ? styles.columns : undefined}
-      keyExtractor={(e) => e.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.gold} />}
-      ListHeaderComponent={
-        <View style={styles.segment} accessibilityRole="tablist">
-          {SCOPES.map((s) => (
-            <Pressable
-              key={s.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: scope === s.key }}
-              onPress={() => setScope(s.key)}
-              style={[styles.segmentItem, scope === s.key && styles.segmentActive]}
-            >
-              <Text style={[styles.segmentText, scope === s.key && styles.segmentTextActive]}>{s.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-      }
-      renderItem={({ item, index }) => (
-        <Rise index={Math.min(index, 6)} style={columns > 1 ? styles.cell : styles.single}>
-          <EventCard event={item} compact={scope === 'past'} onPress={() => router.push(`/event/${item.id}`)} />
-        </Rise>
-      )}
-      ListEmptyComponent={
-        error ? (
-          <EmptyState symbol="wifi.exclamationmark" title="Can’t load events" message={error}>
-            <Button title="Try again" variant="secondary" onPress={refresh} />
-          </EmptyState>
-        ) : events ? (
-          <EmptyState
-            symbol="calendar"
-            title={scope === 'upcoming' ? 'Next social coming soon' : 'No past events yet'}
-            message={scope === 'upcoming' ? 'We’ll send a notification when the next one is announced.' : undefined}
-          />
-        ) : null
-      }
-    />
+    <>
+      <NotificationToolbar />
+      <FlatList
+        key={columns}
+        style={styles.list}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.container, gutter, { maxWidth: wide ? MAX_CONTENT_WIDTH * 1.6 : MAX_CONTENT_WIDTH }]}
+        data={events || []}
+        numColumns={columns}
+        columnWrapperStyle={columns > 1 ? styles.columns : undefined}
+        keyExtractor={(e) => e.id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.gold} />}
+        ListHeaderComponent={
+          <View style={styles.segment} accessibilityRole="tablist">
+            {SCOPES.map((s) => (
+              <Pressable
+                key={s.key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: scope === s.key }}
+                onPress={() => setScope(s.key)}
+                style={[styles.segmentItem, scope === s.key && styles.segmentActive]}
+              >
+                <Text style={[styles.segmentText, scope === s.key && styles.segmentTextActive]}>{s.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        }
+        renderItem={({ item, index }) => (
+          <Rise index={Math.min(index, 6)} style={columns > 1 ? styles.cell : styles.single}>
+            <EventCard event={item} compact={scope === 'past'} onPress={() => router.push(`/event/${item.id}`)} />
+          </Rise>
+        )}
+        ListEmptyComponent={
+          error ? (
+            <EmptyState symbol="wifi.exclamationmark" title="Can’t load events" message={error}>
+              <Button title="Try again" variant="secondary" onPress={refresh} />
+            </EmptyState>
+          ) : events ? (
+            <EmptyState
+              symbol="calendar"
+              title={scope === 'upcoming' ? 'Next social coming soon' : 'No past events yet'}
+              message={scope === 'upcoming' ? 'We’ll send a notification when the next one is announced.' : undefined}
+            />
+          ) : null
+        }
+      />
+    </>
   );
 }
 

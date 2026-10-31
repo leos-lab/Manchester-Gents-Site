@@ -14,6 +14,7 @@ import { Chip } from '../../../src/components/Chip';
 import { Icon } from '../../../src/components/Icon';
 import { Placeholder, PressableScale, Rise } from '../../../src/components/Motion';
 import { colors, fonts, radius, space, MAX_CONTENT_WIDTH } from '../../../src/theme';
+import { NotificationToolbar } from '../../../src/components/NotificationBell';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -89,6 +90,7 @@ export default function Home() {
   return (
     <>
       <Stack.Screen options={{ title: 'Home', headerLargeTitle: false, headerTitle: '' }} />
+      <NotificationToolbar />
       <ScrollView
         style={styles.screen}
         contentInsetAdjustmentBehavior="automatic"
@@ -302,7 +304,7 @@ function Mosaic({ photos, width, onPress }) {
   const [first, ...rest] = photos;
   return (
     <PressableScale onPress={onPress} style={[styles.mosaic, { height: big }]} accessibilityRole="button" accessibilityLabel="Open the gallery">
-      <BackupImage uri={first.thumb} backupUri={first.backupThumb} style={{ width: big, height: big }} contentFit="cover" transition={250} />
+      <BackupImage uri={first.medium} backupUri={first.backupMedium} style={{ width: big, height: big }} contentFit="cover" transition={250} />
       <View style={[styles.mosaicColumn, { gap }]}>
         {rest.slice(0, 2).map((p) => (
           <BackupImage key={p.id} uri={p.thumb} backupUri={p.backupThumb} style={{ width: small, height: small }} contentFit="cover" transition={250} />

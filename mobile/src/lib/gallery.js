@@ -14,10 +14,12 @@ function galleryPath(g) {
 // and sharing only). Pinstripe's own sizes are WebP; its 400px thumb suits the
 // grid, while ImgBB's thumb is a tiny crop, so its medium size is used.
 function urls(a) {
-  if (!a) return { thumb: null, full: null, original: null };
+  if (!a) return { thumb: null, medium: null, full: null, original: null };
   const local = a.provider === 'local';
   return {
     thumb: (local ? a.thumbUrl : a.mediumUrl) || a.displayUrl || a.thumbUrl || a.url,
+    // 1080px: for big tiles and while the full-size photo loads.
+    medium: a.mediumUrl || a.displayUrl || a.url,
     full: (local ? a.displayUrl : null) || a.url || a.displayUrl || a.mediumUrl,
     original: a.url || a.displayUrl || a.mediumUrl
   };
@@ -31,6 +33,8 @@ function normalise(photo) {
   return {
     id: String(photo.id),
     thumb: main.thumb,
+    medium: main.medium,
+    backupMedium: backup.medium,
     full: main.full,
     original: main.original,
     backupOriginal: backup.original,
@@ -109,4 +113,14 @@ export async function savePhotoToLibrary(photo) {
     return download(photo.backupOriginal);
   });
   await MediaLibrary.saveToLibraryAsync(file.uri);
+}
+
+// The photos the full-screen viewer (app/photos.js) pages through, set by the
+// screen that opens it.
+let viewerSession = { photos: [], index: 0 };
+export function openViewerSession(photos, index) {
+  viewerSession = { photos, index };
+}
+export function getViewerSession() {
+  return viewerSession;
 }

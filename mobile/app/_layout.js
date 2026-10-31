@@ -66,6 +66,11 @@ function Navigator() {
         <Stack.Screen name="delete-account" options={{ ...sheetOptions, title: 'Delete account' }} />
         <Stack.Screen name="new-message" options={{ ...sheetOptions, title: 'New message', sheetAllowedDetents: [0.6, 1] }} />
         <Stack.Screen name="whats-new" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+        <Stack.Screen
+          name="photos"
+          options={{ presentation: 'fullScreenModal', title: '', headerTransparent: true, contentStyle: { backgroundColor: '#000' } }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />

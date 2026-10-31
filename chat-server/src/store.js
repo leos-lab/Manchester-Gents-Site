@@ -407,6 +407,21 @@ export function createStore(pool) {
       return rows;
     },
 
+    // Copies to the members' in-app notification inbox (as the website does).
+    async saveNotifications(userIds, { title, body, path }) {
+      if (!userIds.length) return;
+      await pool.query(
+        `INSERT INTO "Notification" ("id", "userId", "title", "body", "path")
+         SELECT 'n' || md5(random()::text || u), u, $2, $3, $4 FROM unnest($1::text[]) u`,
+        [userIds, title, body, path]
+      );
+    },
+
+    async adminIds() {
+      const { rows } = await pool.query(`SELECT "id" FROM "User" WHERE "role" = 'ADMIN'`);
+      return rows.map((r) => r.id);
+    },
+
     async deletePushTokens(tokens) {
       if (!tokens.length) return;
       await pool.query(`DELETE FROM "PushToken" WHERE "token" = ANY($1::text[])`, [tokens]);

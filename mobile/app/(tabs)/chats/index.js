@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { useChat } from '../../../src/context/ChatContext';
 import { Avatar } from '../../../src/components/Avatar';
@@ -10,6 +10,7 @@ import { Icon } from '../../../src/components/Icon';
 import { messageTime } from '../../../src/lib/format';
 import { colors, fonts, radius, space, MAX_CONTENT_WIDTH } from '../../../src/theme';
 import { useGutter } from '../../../src/lib/layout';
+import { NotificationToolbar } from '../../../src/components/NotificationBell';
 
 // Folders: event chats move to Archived 48 hours after the event (they're
 // read-only by then); Active is everything else; Unread is anything waiting.
@@ -36,74 +37,81 @@ export default function Chats() {
   const gutter = useGutter();
 
   return (
-    <FlatList
-      style={styles.list}
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[styles.container, gutter]}
-      data={shown}
-      keyExtractor={(r) => r.id}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setRefreshing(true);
-            await refreshRooms();
-            setRefreshing(false);
-          }}
-          tintColor={colors.gold}
-        />
-      }
-      ListHeaderComponent={
-        <>
-          {configured && status !== 'ready' && status !== 'idle' ? (
-            <Text style={styles.status}>{status === 'connecting' ? 'Connecting…' : 'Offline. Reconnecting…'}</Text>
-          ) : null}
-          <View style={styles.folders} accessibilityRole="tablist">
-            {FOLDERS.map((f) => (
-              <Pressable
-                key={f.key}
-                onPress={() => setFolder(f.key)}
-                style={[styles.folder, folder === f.key && styles.folderActive]}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: folder === f.key }}
-              >
-                <Text style={[styles.folderText, folder === f.key && styles.folderTextActive]}>
-                  {f.label}
-                  {f.key !== 'active' && counts[f.key] ? ` ${counts[f.key]}` : ''}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </>
-      }
-      ListFooterComponent={
-        rooms.length ? (
-          <Text style={styles.footer}>
-            Looking for the group chat from a past social? Event chats are archived automatically 48 hours after the event.
-            You’ll find their history in Archived.
-          </Text>
-        ) : null
-      }
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      renderItem={({ item }) => <RoomRow room={item} onPress={() => router.push(`/chat/${item.id}`)} />}
-      ListEmptyComponent={
-        rooms.length ? (
-          <Text style={styles.emptyFolder}>
-            {folder === 'unread' ? 'You’re all caught up.' : folder === 'archived' ? 'No archived chats yet.' : 'No active chats.'}
-          </Text>
-        ) : !configured ? (
-          <EmptyState symbol="bubble.left.and.bubble.right" title="Chat isn’t set up" message="The chat server address is missing from the app’s settings." />
-        ) : status === 'ready' ? (
-          <EmptyState
-            symbol="bubble.left.and.bubble.right"
-            title="No chats yet"
-            message="Reserve a spot at an event to join its group chat, or message any member."
-          >
-            <Button title="New message" variant="secondary" onPress={() => router.push('/new-message')} />
-          </EmptyState>
-        ) : null
-      }
-    />
+    <>
+      <NotificationToolbar>
+        <Stack.Toolbar.Button icon="square.and.pencil" onPress={() => router.push('/new-message')} tintColor={colors.gold}>
+          New message
+        </Stack.Toolbar.Button>
+      </NotificationToolbar>
+      <FlatList
+        style={styles.list}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.container, gutter]}
+        data={shown}
+        keyExtractor={(r) => r.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await refreshRooms();
+              setRefreshing(false);
+            }}
+            tintColor={colors.gold}
+          />
+        }
+        ListHeaderComponent={
+          <>
+            {configured && status !== 'ready' && status !== 'idle' ? (
+              <Text style={styles.status}>{status === 'connecting' ? 'Connecting…' : 'Offline. Reconnecting…'}</Text>
+            ) : null}
+            <View style={styles.folders} accessibilityRole="tablist">
+              {FOLDERS.map((f) => (
+                <Pressable
+                  key={f.key}
+                  onPress={() => setFolder(f.key)}
+                  style={[styles.folder, folder === f.key && styles.folderActive]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: folder === f.key }}
+                >
+                  <Text style={[styles.folderText, folder === f.key && styles.folderTextActive]}>
+                    {f.label}
+                    {f.key !== 'active' && counts[f.key] ? ` ${counts[f.key]}` : ''}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        }
+        ListFooterComponent={
+          rooms.length ? (
+            <Text style={styles.footer}>
+              Looking for the group chat from a past social? Event chats are archived automatically 48 hours after the event.
+              You’ll find their history in Archived.
+            </Text>
+          ) : null
+        }
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        renderItem={({ item }) => <RoomRow room={item} onPress={() => router.push(`/chat/${item.id}`)} />}
+        ListEmptyComponent={
+          rooms.length ? (
+            <Text style={styles.emptyFolder}>
+              {folder === 'unread' ? 'You’re all caught up.' : folder === 'archived' ? 'No archived chats yet.' : 'No active chats.'}
+            </Text>
+          ) : !configured ? (
+            <EmptyState symbol="bubble.left.and.bubble.right" title="Chat isn’t set up" message="The chat server address is missing from the app’s settings." />
+          ) : status === 'ready' ? (
+            <EmptyState
+              symbol="bubble.left.and.bubble.right"
+              title="No chats yet"
+              message="Reserve a spot at an event to join its group chat, or message any member."
+            >
+              <Button title="New message" variant="secondary" onPress={() => router.push('/new-message')} />
+            </EmptyState>
+          ) : null
+        }
+      />
+    </>
   );
 }
 

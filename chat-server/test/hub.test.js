@@ -237,6 +237,7 @@ test('reports alert admins without quoting the message', async () => {
   assert.equal(alert.msg.body, 'Reason: rude');
   assert.ok(!JSON.stringify(alert.msg).includes('something private'));
   assert.equal(alert.msg.data.path, '/admin/reports');
+  assert.equal(await sql(`SELECT count(*) FROM "Notification" WHERE "userId" = 'admin' AND "path" = '/admin/reports'`), '1');
 });
 
 test('community chat: every member, listed first, no push except announcements', async () => {

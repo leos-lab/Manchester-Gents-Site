@@ -76,6 +76,7 @@ model User {
   // public avatar (or none), so it isn't shown again.
   avatarPromptDoneAt      DateTime?
   announcementsMade       Announcement[]
+  notifications           Notification[]
   chatReportsFiled        ChatReport[]         @relation("ChatReportReporter")
   blocking                UserBlock[]          @relation("UserBlockBlocker")
   blockedBy               UserBlock[]          @relation("UserBlockBlocked")
@@ -287,4 +288,19 @@ model Announcement {
   createdAt   DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// The app's notification inbox: a copy of each push the website sends (and
+// the chat server's report alerts), so members can see them later.
+model Notification {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String
+  body      String
+  path      String? // app screen to open, e.g. /event/<id>
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }

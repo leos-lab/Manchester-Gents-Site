@@ -11,6 +11,7 @@ import { Chip } from '../../../src/components/Chip';
 import { Content } from '../../../src/components/Content';
 import { Stat, openInstagram } from '../../../src/components/ProfileBits';
 import { colors, fonts, radius, space } from '../../../src/theme';
+import { NotificationToolbar } from '../../../src/components/NotificationBell';
 
 export default function Profile() {
   const router = useRouter();
@@ -96,64 +97,67 @@ export default function Profile() {
   if (!user) return <View style={styles.screen} />;
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentInsetAdjustmentBehavior="automatic"
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setRefreshing(true);
-            await refreshMe().catch(() => {});
-            setRefreshing(false);
-          }}
-          tintColor={colors.gold}
-        />
-      }
-    >
-      <Content style={styles.content}>
-        <Pressable onPress={changeAvatar} disabled={uploading} accessibilityRole="button" accessibilityLabel="Change profile photo" style={styles.avatarWrap}>
-          <Avatar name={user.name} uri={user.avatarUrl} size={120} ring />
-          <Text style={styles.avatarHint}>{uploading ? 'Uploading…' : user.avatarUrl ? 'Change photo' : 'Add a photo'}</Text>
-        </Pressable>
+    <>
+      <NotificationToolbar />
+      <ScrollView
+        style={styles.screen}
+        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await refreshMe().catch(() => {});
+              setRefreshing(false);
+            }}
+            tintColor={colors.gold}
+          />
+        }
+      >
+        <Content style={styles.content}>
+          <Pressable onPress={changeAvatar} disabled={uploading} accessibilityRole="button" accessibilityLabel="Change profile photo" style={styles.avatarWrap}>
+            <Avatar name={user.name} uri={user.avatarUrl} size={120} ring />
+            <Text style={styles.avatarHint}>{uploading ? 'Uploading…' : user.avatarUrl ? 'Change photo' : 'Add a photo'}</Text>
+          </Pressable>
 
-        <Text style={styles.name}>{user.name}</Text>
-        {user.instagram ? (
-          <Chip label={`@${user.instagram.handle}`} symbol="instagram" style={{ alignSelf: 'center' }} onPress={() => openInstagram(user.instagram)} />
-        ) : null}
+          <Text style={styles.name}>{user.name}</Text>
+          {user.instagram ? (
+            <Chip label={`@${user.instagram.handle}`} symbol="instagram" style={{ alignSelf: 'center' }} onPress={() => openInstagram(user.instagram)} />
+          ) : null}
 
-        <View style={styles.stats}>
-          <Stat value={user.eventsAttended ?? 0} label={user.eventsAttended === 1 ? 'Event attended' : 'Events attended'} />
-          <View style={styles.divider} />
-          <Stat value={user.memberSince ? memberSince(user.memberSince) : '—'} label="Member since" small />
-        </View>
-
-        {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
-
-        {user.termsAgreed === false ? (
-          <View style={styles.notice}>
-            <Text style={styles.noticeText}>Please review and accept the community guidelines before you can reserve spots.</Text>
-            <Button title="Review guidelines" onPress={acceptTerms} />
+          <View style={styles.stats}>
+            <Stat value={user.eventsAttended ?? 0} label={user.eventsAttended === 1 ? 'Event attended' : 'Events attended'} />
+            <View style={styles.divider} />
+            <Stat value={user.memberSince ? memberSince(user.memberSince) : '—'} label="Member since" small />
           </View>
-        ) : null}
 
-        <View style={styles.group}>
-          <Row label="Edit profile" onPress={() => router.push('/edit-profile')} />
-          {user.isAdmin ? <Row label="Admin dashboard" onPress={() => router.push('/admin')} /> : null}
-        </View>
+          {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
 
-        <View style={styles.group}>
-          <Row label="Community guidelines" onPress={() => router.push('/info/guidelines')} />
-          <Row label="Photography notice" onPress={() => router.push('/info/photography')} />
-          <Row label="Privacy policy" onPress={() => router.push('/info/privacy')} />
-        </View>
+          {user.termsAgreed === false ? (
+            <View style={styles.notice}>
+              <Text style={styles.noticeText}>Please review and accept the community guidelines before you can reserve spots.</Text>
+              <Button title="Review guidelines" onPress={acceptTerms} />
+            </View>
+          ) : null}
 
-        <View style={styles.group}>
-          <Button title="Sign out" variant="secondary" onPress={confirmSignOut} />
-          <Button title="Delete account" variant="ghost" onPress={() => router.push('/delete-account')} />
-        </View>
-      </Content>
-    </ScrollView>
+          <View style={styles.group}>
+            <Row label="Edit profile" onPress={() => router.push('/edit-profile')} />
+            {user.isAdmin ? <Row label="Admin dashboard" onPress={() => router.push('/admin')} /> : null}
+          </View>
+
+          <View style={styles.group}>
+            <Row label="Community guidelines" onPress={() => router.push('/info/guidelines')} />
+            <Row label="Photography notice" onPress={() => router.push('/info/photography')} />
+            <Row label="Privacy policy" onPress={() => router.push('/info/privacy')} />
+          </View>
+
+          <View style={styles.group}>
+            <Button title="Sign out" variant="secondary" onPress={confirmSignOut} />
+            <Button title="Delete account" variant="ghost" onPress={() => router.push('/delete-account')} />
+          </View>
+        </Content>
+      </ScrollView>
+    </>
   );
 }
 

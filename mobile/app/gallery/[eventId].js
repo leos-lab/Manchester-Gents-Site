@@ -3,22 +3,21 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Modal,
+  PixelRatio,
   Platform,
   Pressable,
   RefreshControl,
-  Share,
   StyleSheet,
   Text,
   View,
   useWindowDimensions
 } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/lib/api';
-import { loadPhotos, savePhotoToLibrary, uploadPhotos } from '../../src/lib/gallery';
+import { loadPhotos, openViewerSession, savePhotoToLibrary, uploadPhotos } from '../../src/lib/gallery';
 import { EmptyState } from '../../src/components/EmptyState';
 import { Button } from '../../src/components/Button';
 import { Glass } from '../../src/components/Glass';
@@ -43,7 +42,7 @@ export default function Gallery() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [viewerIndex, setViewerIndex] = useState(null);
+  const router = useRouter();
   const [pending, setPending] = useState(null); // picked photos awaiting a name
   // Select mode (long-press a photo, or "Select"): save several or all.
   const [selecting, setSelecting] = useState(false);
@@ -54,6 +53,8 @@ export default function Gallery() {
   const columns = width >= WIDE_BREAKPOINT ? 5 : 3;
   // Leave room for the Duo's folded-state rail (see src/lib/layout.js).
   const tile = Math.floor((width - insets.left - insets.right - GAP * (columns - 1)) / columns);
+  // The 400px thumb is too soft for tiles drawn larger than that in pixels.
+  const sharp = tile * PixelRatio.get() > 420;
 
   const loadFirst = useCallback(async () => {
     try {
@@ -242,7 +243,11 @@ export default function Gallery() {
         ListHeaderComponent={total ? <Text style={styles.count}>{total} photos</Text> : null}
         renderItem={({ item, index }) => (
           <Pressable
-            onPress={() => (selecting ? toggle(item) : setViewerIndex(index))}
+            onPress={() => {
+              if (selecting) return toggle(item);
+              openViewerSession(photos, index);
+              router.push('/photos');
+            }}
             onLongPress={() => (selecting ? toggle(item) : startSelecting(item))}
             delayLongPress={300}
             accessibilityRole="imagebutton"
@@ -250,7 +255,14 @@ export default function Gallery() {
             accessibilityLabel={`Photo ${index + 1}${item.uploaderName ? ` by ${item.uploaderName}` : ''}`}
             accessibilityHint={selecting ? 'Double-tap to select or deselect' : 'Hold to select photos to save'}
           >
-            <BackupImage uri={item.thumb} backupUri={item.backupThumb} style={{ width: tile, height: tile }} contentFit="cover" recyclingKey={item.id} transition={120} />
+            <BackupImage
+              uri={sharp ? item.medium : item.thumb}
+              backupUri={sharp ? item.backupMedium : item.backupThumb}
+              style={{ width: tile, height: tile }}
+              contentFit="cover"
+              recyclingKey={item.id}
+              transition={120}
+            />
             {selecting ? (
               <View style={[StyleSheet.absoluteFill, selected.has(item.id) && styles.tileSelected]}>
                 <View style={[styles.check, selected.has(item.id) && styles.checkOn]}>
@@ -297,81 +309,8 @@ export default function Gallery() {
           )}
         </Glass>
       ) : null}
-      <Viewer photos={photos} index={viewerIndex} onClose={() => setViewerIndex(null)} />
       <UploaderPrompt visible={Boolean(pending)} count={pending?.length || 0} user={user} onUpload={upload} onCancel={() => setPending(null)} />
     </>
-  );
-}
-
-function Viewer({ photos, index, onClose }) {
-  const { width, height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const [current, setCurrent] = useState(index ?? 0);
-  const [saving, setSaving] = useState(false);
-  const listRef = useRef(null);
-
-  useEffect(() => {
-    if (index !== null) setCurrent(index);
-  }, [index]);
-
-  const photo = photos[current];
-
-  const save = async () => {
-    if (!photo) return;
-    setSaving(true);
-    try {
-      await savePhotoToLibrary(photo);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      Alert.alert('Saved to Photos');
-    } catch (e) {
-      Alert.alert('Couldn’t save', e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal visible={index !== null} animationType="fade" onRequestClose={onClose} supportedOrientations={['portrait', 'landscape']} statusBarTranslucent>
-      <View style={styles.viewer}>
-        {index !== null ? (
-          <FlatList
-            ref={listRef}
-            horizontal
-            pagingEnabled
-            data={photos}
-            initialScrollIndex={index}
-            getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-            keyExtractor={(p) => p.id}
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => setCurrent(Math.round(e.nativeEvent.contentOffset.x / width))}
-            renderItem={({ item }) => (
-              <Pressable onPress={onClose} style={{ width, height }} accessibilityLabel="Close photo">
-                <BackupImage uri={item.full} backupUri={item.backupFull} placeholder={{ uri: item.thumb }} style={{ width, height }} contentFit="contain" transition={150} />
-              </Pressable>
-            )}
-          />
-        ) : null}
-        <Glass style={[styles.viewerBar, { top: insets.top + space.sm, left: insets.left + space.md, right: insets.right + space.md }]}>
-          <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
-            <Text style={styles.viewerAction}>Done</Text>
-          </Pressable>
-          <Text style={styles.viewerCount}>{photos.length ? `${current + 1} of ${photos.length}` : ''}</Text>
-          <View style={styles.viewerButtons}>
-            <Pressable onPress={() => photo && Share.share({ url: photo.original, message: Platform.OS === 'android' ? photo.original : undefined })} hitSlop={10} accessibilityRole="button" accessibilityLabel="Share photo">
-              <Text style={styles.viewerAction}>Share</Text>
-            </Pressable>
-            <Pressable onPress={save} disabled={saving} hitSlop={10} accessibilityRole="button" accessibilityLabel="Save to Photos">
-              <Text style={styles.viewerAction}>{saving ? 'Saving…' : 'Save'}</Text>
-            </Pressable>
-          </View>
-        </Glass>
-        {photo?.uploaderName ? (
-          <Glass style={[styles.caption, { bottom: insets.bottom + space.lg }]}>
-            <Text style={styles.captionText}>Shared by {photo.uploaderName}</Text>
-          </Glass>
-        ) : null}
-      </View>
-    </Modal>
   );
 }
 
@@ -407,23 +346,5 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.navy },
   count: { color: colors.textMuted, fontSize: 13, padding: space.md },
   more: { marginVertical: space.xl },
-  headerAction: { color: colors.gold, fontWeight: '600' },
-  viewer: { flex: 1, backgroundColor: '#000' },
-  viewerBar: {
-    position: 'absolute',
-    left: space.md,
-    right: space.md,
-    borderRadius: 22,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    overflow: 'hidden'
-  },
-  viewerButtons: { flexDirection: 'row', gap: space.lg },
-  viewerAction: { color: colors.gold, fontSize: 16, fontWeight: '600' },
-  viewerCount: { color: colors.text, fontSize: 15 },
-  caption: { position: 'absolute', alignSelf: 'center', borderRadius: 18, paddingHorizontal: space.lg, paddingVertical: space.sm, overflow: 'hidden' },
-  captionText: { color: colors.text, fontSize: 14 }
+  headerAction: { color: colors.gold, fontWeight: '600' }
 });
