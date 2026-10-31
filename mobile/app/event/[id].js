@@ -2,12 +2,10 @@ import { useCallback, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import * as Calendar from 'expo-calendar';
-import * as Haptics from 'expo-haptics';
+// The add-to-calendar sheet lives in the legacy API since SDK 58.
+import * as Calendar from 'expo-calendar/legacy';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/lib/api';
-import { loadContent } from '../../src/lib/content';
-import { useAuth } from '../../src/context/AuthContext';
 import { eventWhen } from '../../src/lib/format';
 import { Avatar } from '../../src/components/Avatar';
 import { Button } from '../../src/components/Button';
@@ -23,7 +21,6 @@ export default function EventDetail() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { user, refreshMe } = useAuth();
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -51,44 +48,11 @@ export default function EventDetail() {
   const full = event?.spotsLeft === 0 && !going;
   const closed = event?.signupDeadline && new Date(event.signupDeadline) < new Date();
 
-  // When admins switch the photography notice on, members accept it (and any
-  // later update to it) before reserving, as on the website.
-  const confirmPhotoNotice = async () => {
-    const { photographyNotice: notice } = await loadContent();
-    const agreedAt = user?.photoNoticeAgreedAt ? new Date(user.photoNoticeAgreedAt) : null;
-    const current = agreedAt && (!notice.updatedAt || agreedAt >= new Date(notice.updatedAt));
-    if (!notice.required || current) return true;
-    const accepted = await new Promise((resolve) =>
-      Alert.alert(notice.title, notice.paragraphs.join('\n\n'), [
-        { text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
-        { text: 'I understand', onPress: () => resolve(true) }
-      ])
-    );
-    if (accepted) {
-      await api.updateMe({ photoNoticeAgreed: true });
-      await refreshMe().catch(() => {});
-    }
-    return accepted;
-  };
-
-  const rsvp = async () => {
-    try {
-      if (!(await confirmPhotoNotice())) return;
-    } catch (e) {
-      Alert.alert('Couldn’t reserve your spot', e.message);
-      return;
-    }
-    setBusy(true);
-    try {
-      await api.rsvp(id, requests.trim());
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      setShowRequests(false);
-      await load();
-    } catch (e) {
-      Alert.alert('Couldn’t reserve your spot', e.message);
-    } finally {
-      setBusy(false);
-    }
+  // Reserving goes through a reminder of the guidelines (and the photography
+  // notice when it's on), where they confirm. The screen reloads on return.
+  const rsvp = () => {
+    setShowRequests(false);
+    router.push({ pathname: '/rsvp', params: { id, requests } });
   };
 
   const cancel = () =>

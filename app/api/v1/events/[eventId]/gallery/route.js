@@ -1,14 +1,17 @@
 import prisma from '@/lib/prisma';
 import { v1, ApiError } from '@/lib/apiV1';
 import { getDisplayName } from '@/lib/displayName';
-import { getPinstripeEventSlug, PINSTRIPE_SITE_SLUG } from '@/lib/pinstripe';
+import { getPinstripeAssetsSlug, getPinstripeEventSlug, PINSTRIPE_SITE_SLUG } from '@/lib/pinstripe';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // Tells the app which Pinstripe gallery belongs to an event. The app then lists
 // photos and uploads straight to Pinstripe, exactly as the website does.
-export const GET = v1(async ({ params, user }) => {
+// ?assets=1 (admins only): the event's private "Event assets" gallery instead.
+export const GET = v1(async ({ request, params, user }) => {
+  const assets = new URL(request.url).searchParams.get('assets') === '1';
+  if (assets && user.role !== 'ADMIN') throw new ApiError('Only admins can open event assets.', 403);
   const apiBase = (process.env.NEXT_PUBLIC_PINSTRIPE_API_URL || '').replace(/\/+$/, '');
   if (!apiBase) throw new ApiError('Photo gallery is not configured.', 503);
   const [event, me] = await Promise.all([
@@ -27,8 +30,9 @@ export const GET = v1(async ({ params, user }) => {
     gallery: {
       apiBase,
       siteSlug: PINSTRIPE_SITE_SLUG,
-      eventSlug: getPinstripeEventSlug(event),
-      eventTitle: event.title,
+      eventSlug: assets ? getPinstripeAssetsSlug(event) : getPinstripeEventSlug(event),
+      eventTitle: assets ? `${event.title} · Event assets` : event.title,
+      assets,
       eventDate: event.startTime.toISOString().slice(0, 10),
       // Pre-filled in the app instead of asking "who is uploading?" each time.
       uploaderName: `${getDisplayName(me || {})}${handle}`.trim(),

@@ -16,6 +16,7 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-rou
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import { COMPATIBLE_PHOTOS } from '../src/lib/filePart';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useChat } from '../../src/context/ChatContext';
@@ -195,7 +196,7 @@ export default function ChatRoom() {
 
   // Photos go up through the website first (stored privately), then send.
   const sendPhoto = async (source) => {
-    const options = { mediaTypes: ['images'], quality: 0.8 };
+    const options = { mediaTypes: ['images'], quality: 0.8, ...COMPATIBLE_PHOTOS };
     if (source === 'camera' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) return;
     const result =
       source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);

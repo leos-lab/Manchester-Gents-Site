@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { COMPATIBLE_PHOTOS } from '../../src/lib/filePart';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../src/context/AuthContext';
 import { api, uploadToPinstripe } from '../../../src/lib/api';
@@ -26,7 +27,7 @@ export default function Profile() {
   );
 
   const pickAvatar = async (source) => {
-    const options = { mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.85 };
+    const options = { mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.85, ...COMPATIBLE_PHOTOS };
     if (source === 'camera') {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) return;

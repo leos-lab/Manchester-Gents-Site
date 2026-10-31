@@ -44,21 +44,24 @@ export default function AdminEvent() {
   const togglePublished = () =>
     run(() => api.admin.updateEvent(event.id, { published: !event.published }), 'Couldn’t update the event');
 
-  // Cover: pick one of the event's gallery photos, or remove it.
+  // Cover: pick a photo from Event assets (admin-only) or the gallery, or remove it.
   const changeCover = async () => {
-    let photos = [];
-    try {
-      const { gallery } = await api.gallery(event.id);
-      photos = (await loadPhotos(gallery, 1)).photos.slice(0, 8);
-    } catch {
-      // No gallery yet.
-    }
+    const newest = async (assets) => {
+      try {
+        const { gallery } = await api.gallery(event.id, { assets });
+        return (await loadPhotos(gallery, 1)).photos.slice(0, assets ? 6 : 4);
+      } catch {
+        return []; // No gallery yet.
+      }
+    };
+    const [assetPhotos, galleryPhotos] = await Promise.all([newest(true), newest(false)]);
     const choices = [
-      ...photos.map((p, i) => ({ label: `Gallery photo ${i + 1}`, url: p.full || p.url || p.thumb })),
+      ...assetPhotos.map((p, i) => ({ label: `Event assets photo ${i + 1}`, url: p.full || p.url || p.thumb })),
+      ...galleryPhotos.map((p, i) => ({ label: `Gallery photo ${i + 1}`, url: p.full || p.url || p.thumb })),
       ...(event.coverImageUrl ? [{ label: 'Remove cover', url: null, destructive: true }] : [])
     ];
     if (!choices.length) {
-      Alert.alert('No photos yet', 'Upload photos to this event’s gallery first, then choose one as the cover.');
+      Alert.alert('No photos yet', 'Add the cover to Event assets first, then choose it here.');
       return;
     }
     const pick = (i) => i != null && choices[i] && run(() => api.admin.setCover(event.id, choices[i].url), 'Couldn’t change the cover');
@@ -70,7 +73,7 @@ export default function AdminEvent() {
           cancelButtonIndex: labels.length - 1,
           destructiveButtonIndex: choices.findIndex((c) => c.destructive),
           title: 'Cover photo',
-          message: 'Newest gallery photos first.',
+          message: 'Newest first: Event assets, then the gallery.',
           userInterfaceStyle: 'dark'
         },
         pick
@@ -161,6 +164,9 @@ export default function AdminEvent() {
           </View>
           <View style={styles.actions}>
             <Button title="Cover photo" variant="secondary" style={styles.flex} onPress={changeCover} />
+            <Button title="Event assets" variant="secondary" style={styles.flex} onPress={() => router.push(`/gallery/${event.id}?assets=1`)} />
+          </View>
+          <View style={styles.actions}>
             <Button title="Add guests" style={styles.flex} onPress={() => router.push(`/admin/add-guests?eventId=${event.id}`)} />
           </View>
 

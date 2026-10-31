@@ -218,7 +218,9 @@ export default function EventPhotosClient({
   eventId,
   eventTitle,
   eventDate,
-  eventPageHref
+  eventPageHref,
+  // The admin-only Event assets gallery: admin tools show without admin mode.
+  assetsMode = false
 }) {
   const { adminMode } = useAdminMode();
   const { data: session, status: sessionStatus } = useSession();
@@ -261,7 +263,8 @@ export default function EventPhotosClient({
   const canGoPrev = selectedIndex > 0;
   const canGoNext = selectedIndex >= 0 && selectedIndex < photos.length - 1;
   const hasMore = photos.length < total;
-  const showAdminActions = adminMode && sessionStatus === 'authenticated' && session?.user?.role === 'ADMIN';
+  const showAdminActions =
+    (adminMode || assetsMode) && sessionStatus === 'authenticated' && session?.user?.role === 'ADMIN';
 
   useEffect(() => {
     const storedName = window.localStorage.getItem('pinstripeUploaderName') || '';

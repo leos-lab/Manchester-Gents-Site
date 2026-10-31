@@ -13,6 +13,7 @@ import {
   useWindowDimensions
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { COMPATIBLE_PHOTOS } from '../src/lib/filePart';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,7 +31,9 @@ import { useAuth } from '../../src/context/AuthContext';
 const GAP = 2;
 
 export default function Gallery() {
-  const { eventId } = useLocalSearchParams();
+  // ?assets=1: the admin-only "Event assets" gallery (cover, promo material).
+  const { eventId, assets: assetsParam } = useLocalSearchParams();
+  const assets = assetsParam === '1';
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [gallery, setGallery] = useState(null);
@@ -58,7 +61,7 @@ export default function Gallery() {
 
   const loadFirst = useCallback(async () => {
     try {
-      const { gallery: g } = await api.gallery(eventId);
+      const { gallery: g } = await api.gallery(eventId, { assets });
       setGallery(g);
       const result = await loadPhotos(g, 1);
       setPhotos(result.photos);
@@ -71,7 +74,7 @@ export default function Gallery() {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, assets]);
 
   useEffect(() => {
     loadFirst();
@@ -172,18 +175,19 @@ export default function Gallery() {
       allowsMultipleSelection: true,
       selectionLimit: 30,
       quality: 0.9,
-      exif: false
+      exif: false,
+      ...COMPATIBLE_PHOTOS
     });
     if (result.canceled || !result.assets?.length) return;
     setPending(result.assets); // ask who to credit first (UploaderPrompt)
   };
 
   const upload = async (uploaderName) => {
-    const assets = pending;
+    const picked = pending;
     setPending(null);
     setUploading(true);
     try {
-      const outcome = await uploadPhotos(gallery, assets, undefined, uploaderName);
+      const outcome = await uploadPhotos(gallery, picked, undefined, uploaderName);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       if (outcome.failed?.length) {
         Alert.alert('Some photos didn’t upload', `${outcome.succeeded.length} added, ${outcome.failed.length} failed.`);
@@ -200,7 +204,7 @@ export default function Gallery() {
     <>
       <Stack.Screen
         options={{
-          title: gallery?.eventTitle || 'Photos',
+          title: assets ? 'Event assets' : gallery?.eventTitle || 'Photos',
           headerRight: gallery
             ? () =>
                 selecting ? (
@@ -281,7 +285,15 @@ export default function Gallery() {
               <Button title="Try again" variant="secondary" onPress={loadFirst} />
             </EmptyState>
           ) : (
-            <EmptyState symbol="camera" title="No photos yet" message="Got some from the night? Add them for everyone.">
+            <EmptyState
+              symbol="camera"
+              title="No photos yet"
+              message={
+                assets
+                  ? 'Only admins see this. Add the cover photo and promo material here; none of it goes in the members’ gallery.'
+                  : 'Got some from the night? Add them for everyone.'
+              }
+            >
               <Button title="Add photos" onPress={addPhotos} loading={uploading} />
             </EmptyState>
           )

@@ -68,6 +68,7 @@ function Navigator() {
         <Stack.Screen name="whats-new" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="new-group" options={{ ...sheetOptions, title: 'New group' }} />
+        <Stack.Screen name="rsvp" options={{ ...sheetOptions, title: 'Before you RSVP' }} />
         <Stack.Screen name="chat-info" options={{ title: '' }} />
         <Stack.Screen
           name="photos"

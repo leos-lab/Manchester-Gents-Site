@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { api } from '../../../src/lib/api';
@@ -113,9 +113,17 @@ export default function EventForm() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    // In a form sheet, KeyboardAvoidingView mis-measures and leaves the sheet
+    // blank; the scroll view makes room for the keyboard itself.
+    <>
       <Stack.Screen options={{ title: id ? 'Edit event' : 'New event' }} />
-      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.content, gutter]}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <Field label="Title" value={form.title} onChangeText={setTitle} placeholder="Lodge Social: January" />
         <Field
           label="Web address"
@@ -154,7 +162,7 @@ export default function EventForm() {
 
         <Button title={id ? 'Save changes' : 'Create event'} onPress={save} loading={busy} />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </>
   );
 }
 

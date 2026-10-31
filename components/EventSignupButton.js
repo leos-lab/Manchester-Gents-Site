@@ -332,7 +332,7 @@ export default function EventSignupButton({
             {step === 3 && (
               <>
                 <p className="step-copy">
-                  Ready to reserve your place? Once confirmed, we will add you to the attendees’ Instagram group chat. Please check your DMs or the Requests tab. If it doesn’t appear, use the link below — and if you are in the Instagram in-app browser, tap the three dots and open in an external browser.
+                  Ready to reserve your place? Once confirmed, you’ll join this event’s chat in the MCR Gents app and under Chats on the website, where you can meet the other attendees.
                 </p>
                 <div className="chat-preview">
                   <span className="section-eyebrow">Attendee chat</span>

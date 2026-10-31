@@ -60,7 +60,7 @@ export const api = {
   rsvp: (id, specialRequests) =>
     request(`/api/v1/events/${enc(id)}/rsvp`, { method: 'POST', body: { specialRequests: specialRequests || null } }),
   cancelRsvp: (id) => request(`/api/v1/events/${enc(id)}/rsvp`, { method: 'DELETE' }),
-  gallery: (id) => request(`/api/v1/events/${enc(id)}/gallery`),
+  gallery: (id, { assets = false } = {}) => request(`/api/v1/events/${enc(id)}/gallery${assets ? '?assets=1' : ''}`),
 
   member: (id) => request(`/api/v1/members/${enc(id)}`),
   searchMembers: (q) => request(`/api/v1/members?q=${enc(q)}`),

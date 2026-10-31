@@ -16,6 +16,9 @@ export default function ClientAdminControls({ isAdmin, slug }) {
       <Link href={`/events/${slug}/admin`} className={styles.adminManageLink}>
         Manage event →
       </Link>
+      <Link href={`/events/${slug}/assets`} className={styles.adminManageLink}>
+        Event assets →
+      </Link>
     </div>
   );
 }

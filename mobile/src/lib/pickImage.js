@@ -1,4 +1,5 @@
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { COMPATIBLE_PHOTOS } from './filePart';
 import * as ImagePicker from 'expo-image-picker';
 
 // Asks "camera or library?", then returns the picked image asset (or null).
@@ -19,7 +20,7 @@ export async function pickImage({ title, message, aspect = [1, 1] } = {}) {
     }
   });
   if (!source) return null;
-  const options = { mediaTypes: ['images'], allowsEditing: true, aspect, quality: 0.85 };
+  const options = { mediaTypes: ['images'], allowsEditing: true, aspect, quality: 0.85, ...COMPATIBLE_PHOTOS };
   if (source === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) return null;

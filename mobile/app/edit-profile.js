@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { useAuth } from '../src/context/AuthContext';
@@ -84,8 +84,16 @@ export default function EditProfile() {
   const photoSource = photo ? { uri: photo.uri } : privateImage(user?.referencePhotoUrl);
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} keyboardShouldPersistTaps="handled">
+    // In a form sheet, KeyboardAvoidingView mis-measures and leaves the sheet
+    // blank; the scroll view makes room for the keyboard itself.
+    <>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.content, gutter]}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <SectionTitle>About you</SectionTitle>
         <View style={styles.row}>
           <Field style={styles.flex} label="First name" value={form.firstName} onChangeText={set('firstName')} maxLength={60} />
@@ -115,7 +123,7 @@ export default function EditProfile() {
 
         <Button title="Save" onPress={save} loading={busy} disabled={uploading} />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
