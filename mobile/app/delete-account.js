@@ -4,9 +4,11 @@ import { useAuth } from '../src/context/AuthContext';
 import { Button } from '../src/components/Button';
 import { colors, radius, space } from '../src/theme';
 import { useGutter } from '../src/lib/layout';
+import { useKeyboardDone } from '../src/components/KeyboardDone';
 
 // In-app account deletion (required by the App Store).
 export default function DeleteAccount() {
+  const keyboard = useKeyboardDone();
   const { deleteAccount } = useAuth();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -36,6 +38,7 @@ export default function DeleteAccount() {
         chats without your name.
       </Text>
       <TextInput
+          {...keyboard.inputProps}
         style={styles.input}
         placeholder="Your password"
         placeholderTextColor={colors.textFaint}
@@ -44,6 +47,7 @@ export default function DeleteAccount() {
         onChangeText={setPassword}
         textContentType="password"
       />
+        {keyboard.bar}
       <Button title="Delete my account" variant="danger" onPress={confirm} disabled={!password} loading={busy} />
     </ScrollView>
   );

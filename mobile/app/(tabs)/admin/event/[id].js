@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { ActionSheetIOS, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { api, privateImage } from '../../../../src/lib/api';
-import { loadPhotos } from '../../../../src/lib/gallery';
 import { useLoader } from '../../../../src/lib/useLoader';
 import { eventWhen } from '../../../../src/lib/format';
 import { Avatar } from '../../../../src/components/Avatar';
@@ -44,44 +43,9 @@ export default function AdminEvent() {
   const togglePublished = () =>
     run(() => api.admin.updateEvent(event.id, { published: !event.published }), 'Couldn’t update the event');
 
-  // Cover: pick a photo from Event assets (admin-only) or the gallery, or remove it.
-  const changeCover = async () => {
-    const newest = async (assets) => {
-      try {
-        const { gallery } = await api.gallery(event.id, { assets });
-        return (await loadPhotos(gallery, 1)).photos.slice(0, assets ? 6 : 4);
-      } catch {
-        return []; // No gallery yet.
-      }
-    };
-    const [assetPhotos, galleryPhotos] = await Promise.all([newest(true), newest(false)]);
-    const choices = [
-      ...assetPhotos.map((p, i) => ({ label: `Event assets photo ${i + 1}`, url: p.full || p.url || p.thumb })),
-      ...galleryPhotos.map((p, i) => ({ label: `Gallery photo ${i + 1}`, url: p.full || p.url || p.thumb })),
-      ...(event.coverImageUrl ? [{ label: 'Remove cover', url: null, destructive: true }] : [])
-    ];
-    if (!choices.length) {
-      Alert.alert('No photos yet', 'Add the cover to Event assets first, then choose it here.');
-      return;
-    }
-    const pick = (i) => i != null && choices[i] && run(() => api.admin.setCover(event.id, choices[i].url), 'Couldn’t change the cover');
-    if (Platform.OS === 'ios') {
-      const labels = [...choices.map((c) => c.label), 'Cancel'];
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: labels,
-          cancelButtonIndex: labels.length - 1,
-          destructiveButtonIndex: choices.findIndex((c) => c.destructive),
-          title: 'Cover photo',
-          message: 'Newest first: Event assets, then the gallery.',
-          userInterfaceStyle: 'dark'
-        },
-        pick
-      );
-    } else {
-      Alert.alert('Cover photo', undefined, [...choices.map((c, i) => ({ text: c.label, onPress: () => pick(i) })), { text: 'Cancel', style: 'cancel' }]);
-    }
-  };
+  // Cover: a photo picker of Event assets and the gallery (reloads on return).
+  const changeCover = () =>
+    router.push({ pathname: '/admin/cover', params: { eventId: event.id, current: event.coverImageUrl || '' } });
 
   const removeGuest = (a) =>
     Alert.alert(`Remove ${a.member.name}?`, 'They’ll be taken off the guest list and out of the event chat.', [

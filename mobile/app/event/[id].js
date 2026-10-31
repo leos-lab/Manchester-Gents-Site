@@ -15,8 +15,10 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { Icon } from '../../src/components/Icon';
 import { colors, fonts, radius, space, WIDE_BREAKPOINT } from '../../src/theme';
+import { useKeyboardDone } from '../../src/components/KeyboardDone';
 
 export default function EventDetail() {
+  const keyboard = useKeyboardDone();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -160,6 +162,7 @@ export default function EventDetail() {
                 <>
                   {showRequests ? (
                     <TextInput
+                        {...keyboard.inputProps}
                       style={styles.input}
                       placeholder="Anything we should know? (optional)"
                       placeholderTextColor={colors.textFaint}
@@ -169,6 +172,7 @@ export default function EventDetail() {
                       maxLength={500}
                     />
                   ) : null}
+                  {keyboard.bar}
                   <Button title="Reserve my spot" onPress={rsvp} loading={busy} />
                   {!showRequests ? (
                     <Button title="Add a note for the hosts" variant="ghost" onPress={() => setShowRequests(true)} />

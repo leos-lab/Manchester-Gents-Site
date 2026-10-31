@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert, FlatList, Platform, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useRef, useState } from 'react';
+import { Alert, FlatList, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { getViewerSession, savePhotoToLibrary } from '../src/lib/gallery';
@@ -15,6 +15,7 @@ export default function PhotoViewer() {
   const [{ photos, index }] = useState(getViewerSession);
   const [current, setCurrent] = useState(index);
   const [saving, setSaving] = useState(false);
+  const [zoomed, setZoomed] = useState(false); // while zoomed in, swiping pans the photo
   const photo = photos[current];
 
   const save = async () => {
@@ -75,6 +76,7 @@ export default function PhotoViewer() {
         key={`page-${Math.round(width)}`}
         horizontal
         pagingEnabled
+        scrollEnabled={!zoomed}
         data={photos}
         initialScrollIndex={current}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
@@ -83,18 +85,67 @@ export default function PhotoViewer() {
         contentInsetAdjustmentBehavior="never"
         onMomentumScrollEnd={(e) => setCurrent(Math.round(e.nativeEvent.contentOffset.x / width))}
         renderItem={({ item }) => (
-          <BackupImage
-            uri={item.full}
-            backupUri={item.backupFull}
-            placeholder={{ uri: item.medium }}
-            style={{ width, height }}
-            contentFit="contain"
-            transition={150}
-            accessibilityLabel={item.uploaderName ? `Photo shared by ${item.uploaderName}` : 'Photo'}
-          />
+          <ZoomablePage width={width} height={height} onZoomChange={setZoomed}>
+            <BackupImage
+              uri={item.full}
+              backupUri={item.backupFull}
+              placeholder={{ uri: item.medium }}
+              style={{ width, height }}
+              contentFit="contain"
+              transition={150}
+              accessibilityLabel={item.uploaderName ? `Photo shared by ${item.uploaderName}` : 'Photo'}
+            />
+          </ZoomablePage>
         )}
       />
     </View>
+  );
+}
+
+// Pinch to zoom (up to 4x) with iOS's own zooming scroll view; double-tap
+// zooms in on that spot, or back out.
+function ZoomablePage({ width, height, onZoomChange, children }) {
+  const ref = useRef(null);
+  const scale = useRef(1);
+  const lastTap = useRef(0);
+
+  const onDoubleTap = (e) => {
+    const now = Date.now();
+    if (now - lastTap.current > 280) {
+      lastTap.current = now;
+      return;
+    }
+    lastTap.current = 0;
+    const zoomIn = scale.current <= 1.01;
+    const { locationX: x, locationY: y } = e.nativeEvent;
+    const w = zoomIn ? width / 2.5 : width;
+    const h = zoomIn ? height / 2.5 : height;
+    ref.current?.scrollResponderZoomTo?.({ x: zoomIn ? x - w / 2 : 0, y: zoomIn ? y - h / 2 : 0, width: w, height: h, animated: true });
+  };
+
+  return (
+    <ScrollView
+      ref={ref}
+      style={{ width, height }}
+      contentContainerStyle={{ width, height }}
+      maximumZoomScale={4}
+      minimumZoomScale={1}
+      bouncesZoom
+      centerContent
+      showsHorizontalScrollIndicator={false}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="never"
+      scrollEventThrottle={32}
+      onScroll={(e) => {
+        const next = e.nativeEvent.zoomScale ?? 1;
+        if ((next > 1.01) !== (scale.current > 1.01)) onZoomChange(next > 1.01);
+        scale.current = next;
+      }}
+    >
+      <Pressable onPress={onDoubleTap} accessible={false}>
+        {children}
+      </Pressable>
+    </ScrollView>
   );
 }
 

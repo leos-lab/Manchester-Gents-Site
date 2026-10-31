@@ -1,8 +1,10 @@
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { colors, radius, space } from '../theme';
+import { useKeyboardDone } from './KeyboardDone';
 
 // Labelled text field used by the join, profile and admin forms.
 export function Field({ label, hint, error, style, inputStyle, ...input }) {
+  const keyboard = useKeyboardDone();
   return (
     <View style={[styles.field, style]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -10,8 +12,10 @@ export function Field({ label, hint, error, style, inputStyle, ...input }) {
         style={[styles.input, input.multiline && styles.multiline, error && styles.inputError, inputStyle]}
         placeholderTextColor={colors.textFaint}
         accessibilityLabel={label}
+        {...keyboard.inputProps}
         {...input}
       />
+      {keyboard.bar}
       {error ? <Text style={styles.error}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );

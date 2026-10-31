@@ -6,8 +6,10 @@ import { useAuth } from '../src/context/AuthContext';
 import { Button } from '../src/components/Button';
 import { Content } from '../src/components/Content';
 import { colors, fonts, radius, space } from '../src/theme';
+import { useKeyboardDone } from '../src/components/KeyboardDone';
 
 export default function SignIn() {
+  const keyboard = useKeyboardDone();
   const router = useRouter();
   const { signIn } = useAuth();
   const [identifier, setIdentifier] = useState('');
@@ -41,6 +43,7 @@ export default function SignIn() {
 
           <View style={styles.form}>
             <TextInput
+                {...keyboard.inputProps}
               style={styles.input}
               placeholder="Email or Instagram handle"
               placeholderTextColor={colors.textFaint}
@@ -53,7 +56,9 @@ export default function SignIn() {
               onChangeText={setIdentifier}
               returnKeyType="next"
             />
+              {keyboard.bar}
             <TextInput
+                {...keyboard.inputProps}
               style={styles.input}
               placeholder="Password"
               placeholderTextColor={colors.textFaint}

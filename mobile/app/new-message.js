@@ -6,9 +6,11 @@ import { Avatar } from '../src/components/Avatar';
 import { Icon } from '../src/components/Icon';
 import { colors, radius, space } from '../src/theme';
 import { useGutter } from '../src/lib/layout';
+import { useKeyboardDone } from '../src/components/KeyboardDone';
 
 // Find any member to message.
 export default function NewMessage() {
+  const keyboard = useKeyboardDone();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -55,6 +57,7 @@ export default function NewMessage() {
       ListHeaderComponent={
         <View style={styles.header}>
           <TextInput
+              {...keyboard.inputProps}
             style={styles.search}
             placeholder="Search by name or @instagram"
             placeholderTextColor={colors.textFaint}
@@ -67,6 +70,7 @@ export default function NewMessage() {
             clearButtonMode="while-editing"
             accessibilityLabel="Search members"
           />
+            {keyboard.bar}
           <Pressable
             onPress={() => {
               router.back();

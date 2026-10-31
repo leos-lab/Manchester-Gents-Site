@@ -9,10 +9,12 @@ import { Button } from '../../../src/components/Button';
 import { Field, ToggleRow } from '../../../src/components/Form';
 import { ListRow } from '../../../src/components/ListGroup';
 import { colors, radius, space } from '../../../src/theme';
+import { useKeyboardDone } from '../../../src/components/KeyboardDone';
 
 // Member directory with search, placeholders, and adding a placeholder
 // (someone who came along before joining, recorded by Instagram handle).
 export default function AdminMembers() {
+  const keyboard = useKeyboardDone();
   const router = useRouter();
   const gutter = useGutter(space.lg);
   const [q, setQ] = useState('');
@@ -69,6 +71,7 @@ export default function AdminMembers() {
       ListHeaderComponent={
         <View style={styles.header}>
           <TextInput
+              {...keyboard.inputProps}
             style={styles.search}
             placeholder="Search name, @handle or email"
             placeholderTextColor={colors.textFaint}
@@ -78,6 +81,7 @@ export default function AdminMembers() {
             autoCorrect={false}
             clearButtonMode="while-editing"
           />
+            {keyboard.bar}
           <ToggleRow title="Include placeholders" value={placeholders} onValueChange={setPlaceholders} />
           {adding ? (
             <View style={styles.addForm}>

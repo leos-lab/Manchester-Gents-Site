@@ -12,6 +12,7 @@ export default function AdminStack() {
       <Stack.Screen name="members" options={{ title: 'Members' }} />
       <Stack.Screen name="member/[id]" options={{ title: '' }} />
       <Stack.Screen name="add-guests" options={{ ...sheetOptions, title: 'Add guests' }} />
+      <Stack.Screen name="cover" options={{ ...sheetOptions, title: 'Cover photo' }} />
       <Stack.Screen name="announce" options={{ title: 'Announcement' }} />
       <Stack.Screen name="reports" options={{ title: 'Chat reports' }} />
       <Stack.Screen name="reminders" options={{ title: 'RSVP reminders' }} />
