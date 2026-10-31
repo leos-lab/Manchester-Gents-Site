@@ -5,6 +5,13 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+  # UAT copy on the uat database (chat-uat.<your domain> in the tunnel, service
+  # http://chat-uat:8080). Starts only with COMPOSE_PROFILES=uat in .env.
+  chat-uat:
+    build: .
+    restart: unless-stopped
+    env_file: .env.uat
+    profiles: [uat]
   tunnel:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped

@@ -14,6 +14,16 @@
       "distribution": "internal",
       "env": { "APP_VARIANT": "development" }
     },
+    "uat": {
+      "extends": "base",
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "APP_VARIANT": "uat",
+        "EXPO_PUBLIC_API_URL": "https://uat.manchestergents.com",
+        "EXPO_PUBLIC_CHAT_URL": "wss://chat-uat.manchestergents.com/ws"
+      }
+    },
     "preview": {
       "extends": "base",
       "distribution": "internal"
@@ -24,6 +34,7 @@
     }
   },
   "submit": {
+    "uat": {},
     "production": {}
   }
 }

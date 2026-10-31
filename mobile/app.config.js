@@ -2,23 +2,30 @@
 // Set EXPO_PUBLIC_API_URL / EXPO_PUBLIC_CHAT_URL in .env (see .env.example).
 const fs = require('fs');
 
-const IS_DEV = process.env.APP_VARIANT === 'development';
+// APP_VARIANT: "development" (local dev client), "uat" (TestFlight / Play
+// testing, talks to uat.manchestergents.com) or unset for the store app. Each
+// installs side by side under its own bundle id; all are called MCR Gents, and
+// the UAT build has a UAT badge on its icon.
+const VARIANT = process.env.APP_VARIANT;
+const IS_DEV = VARIANT === 'development';
+const IS_UAT = VARIANT === 'uat';
+const BUNDLE_ID = IS_DEV ? 'com.manchestergents.app.dev' : IS_UAT ? 'com.manchestergents.app.uat' : 'com.manchestergents.app';
 // Android push needs Firebase's google-services.json (download from Firebase).
 const GOOGLE_SERVICES = process.env.GOOGLE_SERVICES_JSON || './google-services.json';
 
 module.exports = ({ config }) => ({
   ...config,
-  name: IS_DEV ? 'MCR Dev' : 'MCR Gents', // short enough not to truncate on the home screen
+  name: 'MCR Gents', // short enough not to truncate on the home screen
   slug: 'manchester-gents',
   scheme: 'mcrgents',
   version: '1.0.0',
   orientation: 'default', // iOS 27 apps are resizable; layouts adapt (incl. iPhone Duo)
-  icon: './assets/images/icon.png',
+  icon: IS_UAT ? './assets/images/icon-uat.png' : './assets/images/icon.png',
   userInterfaceStyle: 'dark',
   backgroundColor: '#1c2837',
   newArchEnabled: true,
   ios: {
-    bundleIdentifier: IS_DEV ? 'com.manchestergents.app.dev' : 'com.manchestergents.app',
+    bundleIdentifier: BUNDLE_ID,
     supportsTablet: true,
     appleTeamId: process.env.APPLE_TEAM_ID,
     infoPlist: {
@@ -32,9 +39,9 @@ module.exports = ({ config }) => ({
     associatedDomains: ['applinks:manchestergents.com']
   },
   android: {
-    package: IS_DEV ? 'com.manchestergents.app.dev' : 'com.manchestergents.app',
+    package: BUNDLE_ID,
     adaptiveIcon: {
-      foregroundImage: './assets/images/adaptive-icon.png',
+      foregroundImage: IS_UAT ? './assets/images/adaptive-icon-uat.png' : './assets/images/adaptive-icon.png',
       backgroundColor: '#1c2837'
     },
     edgeToEdgeEnabled: true,
@@ -81,8 +88,8 @@ module.exports = ({ config }) => ({
     typedRoutes: false
   },
   extra: {
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://manchestergents.com',
-    chatUrl: process.env.EXPO_PUBLIC_CHAT_URL || null,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || (IS_UAT ? 'https://uat.manchestergents.com' : 'https://manchestergents.com'),
+    chatUrl: process.env.EXPO_PUBLIC_CHAT_URL || (IS_UAT ? 'wss://chat-uat.manchestergents.com/ws' : null),
     eas: { projectId: process.env.EAS_PROJECT_ID }
   }
 });
