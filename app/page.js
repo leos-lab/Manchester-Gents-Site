@@ -86,11 +86,7 @@ export default async function HomePage() {
               <Link href="/register" className={styles.secondary}>
                 Become a member
               </Link>
-            ) : (
-              <Link href="/chat" className={styles.secondary}>
-                Open your chats
-              </Link>
-            )}
+            ) : null}
           </div>
           {home.iosAppUrl || home.androidAppUrl ? (
             <div className={styles.apps}>
