@@ -2,16 +2,14 @@ import { useState } from 'react';
 import { Alert, FlatList, Platform, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getViewerSession, savePhotoToLibrary } from '../src/lib/gallery';
 import { BackupImage } from '../src/components/BackupImage';
-import { colors, space } from '../src/theme';
+import { colors } from '../src/theme';
 
 // Full-screen photo viewer with native toolbars: Done in the header, Share and
 // Save in the bottom toolbar. Swipe between photos.
 export default function PhotoViewer() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [{ photos, index }] = useState(getViewerSession);
   const [current, setCurrent] = useState(index);
@@ -49,6 +47,15 @@ export default function PhotoViewer() {
           Share
         </Stack.Toolbar.Button>
         <Stack.Toolbar.Spacer />
+        {/* Who shared it, in the bottom toolbar between Share and Save. */}
+        {photo?.uploaderName ? (
+          <Stack.Toolbar.View>
+            <Text style={styles.caption} numberOfLines={1}>
+              Shared by {photo.uploaderName}
+            </Text>
+          </Stack.Toolbar.View>
+        ) : null}
+        <Stack.Toolbar.Spacer />
         <Stack.Toolbar.Button icon="square.and.arrow.down" onPress={save} disabled={saving} tintColor={colors.gold}>
           {saving ? 'Saving' : 'Save to Photos'}
         </Stack.Toolbar.Button>
@@ -76,26 +83,11 @@ export default function PhotoViewer() {
           />
         )}
       />
-      {photo?.uploaderName ? (
-        <Text style={[styles.caption, { bottom: insets.bottom + 64 }]} numberOfLines={1}>
-          Shared by {photo.uploaderName}
-        </Text>
-      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
-  caption: {
-    position: 'absolute',
-    alignSelf: 'center',
-    color: colors.text,
-    fontSize: 14,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-    borderRadius: 14,
-    overflow: 'hidden'
-  }
+  caption: { color: colors.text, fontSize: 13, maxWidth: 200 }
 });
