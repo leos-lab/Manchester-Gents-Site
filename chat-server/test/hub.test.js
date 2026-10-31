@@ -8,19 +8,21 @@ import { createShimPool } from './pgShim.js';
 
 const PG = { host: process.env.PGHOST || '/home/claude/.pgtest', port: 5433, db: 'mg' };
 const SECRET = 'test-secret';
-const sql = (q) => execFileSync('psql', ['-X', '-q', '-h', PG.host, '-p', String(PG.port), '-U', 'postgres', PG.db, '-c', q]);
+const sql = (q) => execFileSync('psql', ['-X', '-q', '-A', '-t', '-h', PG.host, '-p', String(PG.port), '-U', 'postgres', PG.db, '-c', q]).toString().trim();
 
 function seed() {
-  sql(`TRUNCATE "User", "Event", "GlobalSetting" CASCADE;
+  sql(`TRUNCATE "User", "Event", "GlobalSetting", "ChatRoom" CASCADE;
     INSERT INTO "GlobalSetting" ("key","value","updatedAt") VALUES ('sessionVersion','7',now());
-    INSERT INTO "User" ("id","email","passwordHash","instagramHandle","firstName","lastName","role","updatedAt") VALUES
-      ('admin','a@x','x','manchester.gents','Leo','L','ADMIN',now()),
-      ('alex','b@x','x','alex','Alex','Smith','MEMBER',now()),
-      ('sam','c@x','x','sam','Sam',NULL,'MEMBER',now()),
-      ('outsider','d@x','x','out','Out',NULL,'MEMBER',now());
+    INSERT INTO "User" ("id","email","passwordHash","instagramHandle","firstName","lastName","shareFirstName","role","updatedAt") VALUES
+      ('admin','a@x','x','manchester.gents','Leo','L',true,'ADMIN',now()),
+      ('alex','b@x','x','alex','Alex','Smith',false,'MEMBER',now()),
+      ('sam','c@x','x','sam','Sam',NULL,false,'MEMBER',now()),
+      ('outsider','d@x','x','out','Olly',NULL,false,'MEMBER',now());
     INSERT INTO "Event" ("id","slug","title","startTime","updatedAt") VALUES ('ev1','lodge-jan','Lodge Social: January','2027-01-20 19:00',now());
     INSERT INTO "EventSignup" ("id","userId","eventId") VALUES ('s1','alex','ev1'),('s2','sam','ev1');
-    INSERT INTO "PushToken" ("id","userId","token","platform","updatedAt") VALUES ('p1','sam','ExponentPushToken[sam]','ios',now());`);
+    INSERT INTO "PushToken" ("id","userId","token","platform","updatedAt") VALUES
+      ('p1','sam','ExponentPushToken[sam]','ios',now()),
+      ('p2','outsider','ExponentPushToken[olly]','android',now());`);
 }
 
 function fakeConn() {
@@ -32,14 +34,15 @@ async function setup() {
   seed();
   const pushes = [];
   const store = createStore(createShimPool(PG));
-  const hub = new ChatHub({ store, secret: SECRET, sendPush: async (targets, msg) => pushes.push({ targets, msg }), log: { error() {} } });
+  const hub = new ChatHub({ store, secret: SECRET, sendPush: async (targets, msg) => pushes.push({ targets, msg }), log: { error: (...a) => { throw new Error(a.join(' ')); } } });
   const connect = async (userId, sv = '7') => {
     const c = fakeConn();
     hub.attach(c);
     await hub.handle(c, JSON.stringify({ type: 'auth', token: signChatToken({ sub: userId, sv }, SECRET, 60) }));
     return c;
   };
-  return { hub, store, pushes, connect };
+  const say = (c, msg) => hub.handle(c, JSON.stringify(msg));
+  return { hub, store, pushes, connect, say };
 }
 
 test('tokens: valid, tampered and expired', () => {
@@ -52,91 +55,131 @@ test('tokens: valid, tampered and expired', () => {
 
 test('auth rejects an old session version', async () => {
   const { connect } = await setup();
-  const c = await connect('alex', '6');
-  assert.equal(c.last('error').code, 'bad_token');
+  assert.equal((await connect('alex', '6')).last('error').code, 'bad_token');
 });
 
-test('RSVPed members chat, outsiders are refused, offline members get a push', async () => {
-  const { hub, connect, pushes } = await setup();
+test('event chat: RSVPed members only, offline members get a push, unread counts', async () => {
+  const { connect, say, pushes } = await setup();
   const alex = await connect('alex');
   assert.equal(alex.last('ready').user.name, 'Alex');
   const outsider = await connect('outsider');
 
-  await hub.handle(outsider, JSON.stringify({ type: 'join', eventId: 'ev1' }));
+  await say(outsider, { type: 'join', eventId: 'ev1' });
   assert.equal(outsider.last('error').code, 'forbidden');
 
-  await hub.handle(alex, JSON.stringify({ type: 'join', eventId: 'ev1' }));
-  assert.equal(alex.last('joined').canPost, true);
+  await say(alex, { type: 'join', eventId: 'ev1' });
+  const joined = alex.last('joined');
+  assert.equal(joined.kind, 'EVENT');
+  assert.equal(joined.title, 'Lodge Social: January');
+  const roomId = joined.roomId;
 
-  await hub.handle(alex, JSON.stringify({ type: 'send', eventId: 'ev1', clientId: 'c1', body: 'Evening all' }));
-  const sent = alex.last('sent').message;
-  assert.equal(sent.body, 'Evening all');
-  assert.equal(sent.sender.name, 'Alex');
-
-  // Retried send with the same clientId is not duplicated.
-  await hub.handle(alex, JSON.stringify({ type: 'send', eventId: 'ev1', clientId: 'c1', body: 'Evening all' }));
-  assert.equal(pushes.length, 1);
+  await say(alex, { type: 'send', roomId, clientId: 'c1', body: 'Evening all' });
+  assert.equal(alex.last('sent').message.sender.name, 'Alex');
+  await say(alex, { type: 'send', roomId, clientId: 'c1', body: 'Evening all' }); // retry
+  assert.equal(pushes.length, 1, 'retry is not duplicated');
   assert.deepEqual(pushes[0].targets.map((t) => t.userId), ['sam']);
-  assert.match(pushes[0].msg.body, /^Alex: Evening all$/);
+  assert.equal(pushes[0].msg.body, 'Alex: Evening all');
 
-  // Sam joins and sees history; live messages arrive.
   const sam = await connect('sam');
-  await hub.handle(sam, JSON.stringify({ type: 'join', eventId: 'ev1' }));
+  await say(sam, { type: 'join', roomId });
   assert.equal(sam.last('joined').messages.length, 1);
-  await hub.handle(alex, JSON.stringify({ type: 'send', eventId: 'ev1', clientId: 'c2', body: 'See you there' }));
+  await say(alex, { type: 'send', roomId, clientId: 'c2', body: 'See you there' });
   assert.equal(sam.last('message').message.body, 'See you there');
   assert.equal(pushes.length, 1, 'no push to someone already in the room');
 
-  await hub.handle(sam, JSON.stringify({ type: 'rooms' }));
+  await say(sam, { type: 'rooms' });
   assert.equal(sam.last('rooms').rooms[0].unread, 2);
-  await hub.handle(sam, JSON.stringify({ type: 'read', eventId: 'ev1' }));
-  await hub.handle(sam, JSON.stringify({ type: 'rooms' }));
+  await say(sam, { type: 'read', roomId });
+  await say(sam, { type: 'rooms' });
   assert.equal(sam.last('rooms').rooms[0].unread, 0);
 });
 
-test('block hides messages, report is stored, cancelling an RSVP removes access', async () => {
-  const { hub, connect, store } = await setup();
+test('DMs: anyone can message anyone, private from admins, block stops it', async () => {
+  const { connect, say, pushes } = await setup();
+  const alex = await connect('alex');
+  const admin = await connect('admin');
+
+  // Olly hasn't been to an event with Alex; DMs are open to all members.
+  await say(alex, { type: 'dm', userId: 'outsider' });
+  const dm = alex.last('joined');
+  assert.equal(dm.kind, 'DIRECT');
+  assert.equal(dm.otherUserId, 'outsider');
+  await say(alex, { type: 'send', roomId: dm.roomId, clientId: 'd1', body: 'Fancy a pint before the social?' });
+  assert.equal(pushes.at(-1).msg.title, 'Alex');
+  assert.equal(pushes.at(-1).msg.body, 'Fancy a pint before the social?');
+  assert.deepEqual(pushes.at(-1).targets.map((t) => t.userId), ['outsider']);
+
+  // Same pair -> same room, from either side.
+  const olly = await connect('outsider');
+  await say(olly, { type: 'dm', userId: 'alex' });
+  assert.equal(olly.last('joined').roomId, dm.roomId);
+  await say(olly, { type: 'rooms' });
+  const listed = olly.last('rooms').rooms.find((r) => r.kind === 'DIRECT');
+  assert.equal(listed.title, 'Alex');
+  assert.equal(listed.unread, 1);
+
+  // Admins can't read other people's DMs.
+  await say(admin, { type: 'join', roomId: dm.roomId });
+  assert.equal(admin.last('error').code, 'forbidden');
+
+  // Can't DM yourself.
+  await say(alex, { type: 'dm', userId: 'alex' });
+  assert.equal(alex.last('error').code, 'not_found');
+
+  // Olly blocks Alex: neither can post in the DM any more.
+  await say(olly, { type: 'block', userId: 'alex' });
+  await say(alex, { type: 'send', roomId: dm.roomId, clientId: 'd2', body: 'hello?' });
+  assert.equal(alex.last('error').code, 'forbidden');
+  await say(olly, { type: 'send', roomId: dm.roomId, clientId: 'd3', body: 'hi' });
+  assert.equal(olly.last('error').code, 'forbidden');
+});
+
+test('moderation: report, block hides messages, admin delete, RSVP cancel removes access', async () => {
+  const { hub, connect, say, store } = await setup();
   const alex = await connect('alex');
   const sam = await connect('sam');
-  for (const c of [alex, sam]) await hub.handle(c, JSON.stringify({ type: 'join', eventId: 'ev1' }));
+  for (const c of [alex, sam]) await say(c, { type: 'join', eventId: 'ev1' });
+  const roomId = alex.last('joined').roomId;
 
-  await hub.handle(alex, JSON.stringify({ type: 'send', eventId: 'ev1', clientId: 'x1', body: 'rude' }));
+  await say(alex, { type: 'send', roomId, clientId: 'x1', body: 'rude' });
   const msgId = alex.last('sent').message.id;
-  await hub.handle(sam, JSON.stringify({ type: 'report', messageId: msgId, reason: 'rude' }));
-  assert.equal(sam.last('ok').type, 'ok');
-  assert.match(sql(`SELECT count(*) FROM "ChatReport"`).toString(), /1/);
+  await say(sam, { type: 'report', messageId: msgId, reason: 'rude' });
+  assert.equal(sql(`SELECT count(*) FROM "ChatReport"`), '1');
 
-  await hub.handle(sam, JSON.stringify({ type: 'block', userId: 'alex' }));
+  await say(sam, { type: 'block', userId: 'alex' });
   const before = sam.inbox.length;
-  await hub.handle(alex, JSON.stringify({ type: 'send', eventId: 'ev1', clientId: 'x2', body: 'hello?' }));
-  assert.equal(sam.inbox.length, before, 'blocked sender is hidden');
+  await say(alex, { type: 'send', roomId, clientId: 'x2', body: 'hello?' });
+  assert.equal(sam.inbox.length, before, 'blocked sender is hidden in group chats');
 
-  // Admin deletes the reported message.
   const admin = await connect('admin');
-  await hub.handle(admin, JSON.stringify({ type: 'delete', messageId: msgId }));
+  await say(admin, { type: 'delete', messageId: msgId });
   assert.equal(alex.last('deleted').messageId, msgId);
-  const hist = await store.history('ev1');
-  assert.equal(hist.find((m) => m.id === msgId).body, null);
+  assert.equal((await store.history(roomId)).find((m) => m.id === msgId).body, null);
 
-  // Cancel RSVP -> trigger notifies -> hub removes them.
   sql(`DELETE FROM "EventSignup" WHERE "id" = 's1'`);
   await hub.onMembershipChange({ eventId: 'ev1', userId: 'alex', op: 'DELETE' });
-  assert.equal(alex.last('removed').eventId, 'ev1');
-  await hub.handle(alex, JSON.stringify({ type: 'send', eventId: 'ev1', clientId: 'x3', body: 'still here?' }));
+  assert.equal(alex.last('removed').roomId, roomId);
+  await say(alex, { type: 'send', roomId, clientId: 'x3', body: 'still here?' });
   assert.equal(alex.last('error').code, 'forbidden');
 });
 
-test('announcements: admin only, pushed even to muted members', async () => {
-  const { hub, connect, pushes } = await setup();
+test('announcements: admin only, event chats only, reach muted members', async () => {
+  const { connect, say, pushes } = await setup();
   const sam = await connect('sam');
-  await hub.handle(sam, JSON.stringify({ type: 'mute', eventId: 'ev1', muted: true }));
+  await say(sam, { type: 'join', eventId: 'ev1' });
+  const roomId = sam.last('joined').roomId;
+  await say(sam, { type: 'mute', roomId, muted: true });
+  await say(sam, { type: 'leave', roomId });
+
   const alex = await connect('alex');
-  await hub.handle(alex, JSON.stringify({ type: 'announce', eventId: 'ev1', body: 'nope' }));
+  await say(alex, { type: 'announce', roomId, body: 'nope' });
   assert.equal(alex.last('error').code, 'forbidden');
+  await say(alex, { type: 'send', roomId, clientId: 'n1', body: 'normal message' });
+  assert.equal(pushes.length, 0, 'muted member gets no push for normal messages');
 
   const admin = await connect('admin');
-  await hub.handle(admin, JSON.stringify({ type: 'announce', eventId: 'ev1', clientId: 'a1', body: 'Doors at 7pm' }));
+  await say(admin, { type: 'announce', roomId, clientId: 'a1', body: 'Doors at 7pm' });
   assert.equal(admin.last('sent').message.kind, 'ANNOUNCEMENT');
-  assert.deepEqual(pushes.at(-1).targets.map((t) => t.userId), ['sam']);
+  assert.deepEqual(pushes.at(-1).targets.map((t) => t.userId).sort(), ['sam']);
   assert.equal(pushes.at(-1).msg.title, '📣 Lodge Social: January');
 });

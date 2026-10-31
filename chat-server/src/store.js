@@ -5,8 +5,11 @@ import { randomBytes } from 'node:crypto';
 export const PAGE_SIZE = 50;
 
 export function newId() {
-  // Prisma ids are plain strings; a cuid-like id keeps them sortable-ish and short.
   return 'c' + Date.now().toString(36) + randomBytes(8).toString('hex');
+}
+
+export function directKey(a, b) {
+  return [a, b].sort().join(':');
 }
 
 const SENDER_COLUMNS = `
@@ -25,11 +28,29 @@ export function displayName(u) {
   return u.name?.trim() || u.instagramHandle || '';
 }
 
+function shapePerson(row, prefix = '') {
+  const get = (k) => row[prefix + k];
+  if (!get('Id')) return null;
+  return {
+    id: get('Id'),
+    name: displayName({
+      preferredName: get('PreferredName'),
+      firstName: get('FirstName'),
+      lastName: get('LastName'),
+      shareFirstName: get('ShareFirstName'),
+      name: get('Name'),
+      instagramHandle: get('InstagramHandle')
+    }),
+    handle: get('InstagramHandle'),
+    photoUrl: get('ProfilePhotoUrl')
+  };
+}
+
 export function shapeMessage(row) {
   const deleted = Boolean(row.deletedAt);
   return {
     id: row.id,
-    eventId: row.eventId,
+    roomId: row.roomId,
     kind: row.kind,
     body: deleted ? null : row.body,
     imageUrl: deleted ? null : row.imageUrl,
@@ -51,125 +72,214 @@ export function shapeMessage(row) {
 }
 
 export function createStore(pool) {
+  const one = async (sql, args) => (await pool.query(sql, args)).rows[0] || null;
+
   return {
     async getSessionVersion() {
-      const { rows } = await pool.query(
-        `SELECT "value" FROM "GlobalSetting" WHERE "key" = 'sessionVersion'`
-      );
-      return rows[0]?.value || '1';
+      const row = await one(`SELECT "value" FROM "GlobalSetting" WHERE "key" = 'sessionVersion'`);
+      return row?.value || '1';
     },
 
     async getUser(userId) {
-      const { rows } = await pool.query(
-        `SELECT "id", "role", "chatBannedAt", "firstName", "lastName", "preferredName",
+      return one(
+        `SELECT "id", "role", "chatBannedAt", "isPlaceholder", "firstName", "lastName", "preferredName",
                 "shareFirstName", "name", "instagramHandle", "profilePhotoUrl"
            FROM "User" WHERE "id" = $1`,
         [userId]
       );
-      return rows[0] || null;
     },
 
-    // Returns { event, canRead, canPost, signup } for a user and event.
-    async getAccess(user, eventId) {
-      const { rows } = await pool.query(
-        `SELECT e."id", e."title", e."slug", e."chatEnabled", e."chatLockedAt",
-                s."id" AS "signupId", s."status", s."chatMuted"
-           FROM "Event" e
-           LEFT JOIN "EventSignup" s ON s."eventId" = e."id" AND s."userId" = $2
-          WHERE e."id" = $1`,
-        [eventId, user.id]
+    async eventRoom(eventId) {
+      const event = await one(`SELECT "id" FROM "Event" WHERE "id" = $1`, [eventId]);
+      if (!event) return null;
+      await pool.query(
+        `INSERT INTO "ChatRoom" ("id", "kind", "eventId") VALUES ($1, 'EVENT', $2)
+         ON CONFLICT ("eventId") DO NOTHING`,
+        [newId(), eventId]
       );
-      const row = rows[0];
-      if (!row) return { event: null, canRead: false, canPost: false };
-      const isAdmin = user.role === 'ADMIN';
-      const isMember = row.status === 'CONFIRMED';
-      const canRead = isAdmin || (isMember && row.chatEnabled);
-      const canPost =
-        isAdmin || (canRead && !row.chatLockedAt && !user.chatBannedAt);
-      return { event: row, canRead, canPost, isAdmin, muted: Boolean(row.chatMuted) };
+      return one(`SELECT * FROM "ChatRoom" WHERE "eventId" = $1`, [eventId]);
     },
 
-    // Rooms a member can see, newest activity first, with unread counts.
+    async directRoom(userA, userB) {
+      const key = directKey(userA, userB);
+      await pool.query(
+        `INSERT INTO "ChatRoom" ("id", "kind", "directKey") VALUES ($1, 'DIRECT', $2)
+         ON CONFLICT ("directKey") DO NOTHING`,
+        [newId(), key]
+      );
+      const room = await one(`SELECT * FROM "ChatRoom" WHERE "directKey" = $1`, [key]);
+      await pool.query(
+        `INSERT INTO "ChatRoomMember" ("roomId", "userId") VALUES ($1, $2), ($1, $3)
+         ON CONFLICT DO NOTHING`,
+        [room.id, userA, userB]
+      );
+      return room;
+    },
+
+    async roomIdForEvent(eventId) {
+      return (await one(`SELECT "id" FROM "ChatRoom" WHERE "eventId" = $1`, [eventId]))?.id || null;
+    },
+
+    // Is either user blocking the other?
+    async blockedBetween(a, b) {
+      return Boolean(
+        await one(
+          `SELECT 1 AS x FROM "UserBlock"
+            WHERE ("blockerId" = $1 AND "blockedId" = $2) OR ("blockerId" = $2 AND "blockedId" = $1)`,
+          [a, b]
+        )
+      );
+    },
+
+    // { room, canRead, canPost, isAdmin, muted, title, otherUserId }
+    async getAccess(user, roomId) {
+      const row = await one(
+        `SELECT r.*, e."title", e."chatEnabled", e."chatLockedAt",
+                s."status" AS "signupStatus", m."muted", m."userId" AS "memberId"
+           FROM "ChatRoom" r
+           LEFT JOIN "Event" e ON e."id" = r."eventId"
+           LEFT JOIN "EventSignup" s ON s."eventId" = r."eventId" AND s."userId" = $2
+           LEFT JOIN "ChatRoomMember" m ON m."roomId" = r."id" AND m."userId" = $2
+          WHERE r."id" = $1`,
+        [roomId, user.id]
+      );
+      const denied = { room: row, canRead: false, canPost: false };
+      if (!row) return denied;
+      const isAdmin = user.role === 'ADMIN';
+      const muted = Boolean(row.muted);
+
+      if (row.kind === 'EVENT') {
+        const isMember = row.signupStatus === 'CONFIRMED';
+        const canRead = isAdmin || (isMember && row.chatEnabled);
+        const canPost = isAdmin || (canRead && !row.chatLockedAt && !user.chatBannedAt);
+        return { room: row, canRead, canPost, isAdmin, muted, title: row.title, eventId: row.eventId };
+      }
+
+      // DIRECT: only the two members; nobody else, admins included.
+      if (!row.memberId) return denied;
+      const otherUserId = row.directKey.split(':').find((id) => id !== user.id) || user.id;
+      const blocked = await this.blockedBetween(user.id, otherUserId);
+      return {
+        room: row,
+        canRead: true,
+        canPost: !blocked && !user.chatBannedAt,
+        isAdmin,
+        muted,
+        otherUserId
+      };
+    },
+
+    // Event chats the member can see plus their DMs, newest activity first.
     async listRooms(user) {
       const isAdmin = user.role === 'ADMIN';
       const { rows } = await pool.query(
-        `SELECT e."id" AS "eventId", e."title", e."slug", e."startTime", e."coverImageUrl",
-                e."chatLockedAt", s."chatMuted", s."chatLastReadAt",
-                lm."createdAt" AS "lastAt", lm."body" AS "lastBody", lm."kind" AS "lastKind",
+        `WITH visible AS (
+           SELECT r.* FROM "ChatRoom" r
+             JOIN "Event" e ON e."id" = r."eventId"
+             LEFT JOIN "EventSignup" s ON s."eventId" = e."id" AND s."userId" = $1
+            WHERE r."kind" = 'EVENT' AND e."chatEnabled" AND ($2::boolean OR s."status" = 'CONFIRMED')
+           UNION ALL
+           SELECT r.* FROM "ChatRoom" r
+             JOIN "ChatRoomMember" m ON m."roomId" = r."id" AND m."userId" = $1
+            WHERE r."kind" = 'DIRECT' AND r."lastMessageAt" IS NOT NULL
+         )
+         SELECT v."id", v."kind", v."eventId", v."lastMessageAt",
+                e."title", e."slug", e."startTime", e."coverImageUrl",
+                me."muted",
+                o."id" AS "otherId", o."firstName" AS "otherFirstName", o."lastName" AS "otherLastName",
+                o."preferredName" AS "otherPreferredName", o."shareFirstName" AS "otherShareFirstName",
+                o."name" AS "otherName", o."instagramHandle" AS "otherInstagramHandle",
+                o."profilePhotoUrl" AS "otherProfilePhotoUrl",
+                lm."body" AS "lastBody", lm."kind" AS "lastKind",
                 (SELECT count(*)::int FROM "ChatMessage" m
-                  WHERE m."eventId" = e."id" AND m."deletedAt" IS NULL
+                  WHERE m."roomId" = v."id" AND m."deletedAt" IS NULL
                     AND (m."userId" IS NULL OR m."userId" <> $1)
-                    AND m."createdAt" > COALESCE(s."chatLastReadAt", 'epoch')) AS "unread"
-           FROM "Event" e
-           LEFT JOIN "EventSignup" s ON s."eventId" = e."id" AND s."userId" = $1
+                    AND m."createdAt" > COALESCE(me."lastReadAt", 'epoch')) AS "unread"
+           FROM visible v
+           LEFT JOIN "Event" e ON e."id" = v."eventId"
+           LEFT JOIN "ChatRoomMember" me ON me."roomId" = v."id" AND me."userId" = $1
+           LEFT JOIN "User" o ON v."kind" = 'DIRECT'
+                AND o."id" = (SELECT x FROM unnest(string_to_array(v."directKey", ':')) x WHERE x <> $1 LIMIT 1)
            LEFT JOIN LATERAL (
-             SELECT m."createdAt", m."body", m."kind" FROM "ChatMessage" m
-              WHERE m."eventId" = e."id" AND m."deletedAt" IS NULL
+             SELECT m."body", m."kind" FROM "ChatMessage" m
+              WHERE m."roomId" = v."id" AND m."deletedAt" IS NULL
               ORDER BY m."createdAt" DESC LIMIT 1
            ) lm ON true
-          WHERE e."chatEnabled" = true
-            AND ($2::boolean OR s."status" = 'CONFIRMED')
-          ORDER BY COALESCE(lm."createdAt", e."startTime") DESC`,
+          ORDER BY COALESCE(v."lastMessageAt", e."startTime") DESC`,
         [user.id, isAdmin]
       );
-      return rows;
+      return rows.map((r) => ({
+        id: r.id,
+        kind: r.kind,
+        eventId: r.eventId,
+        title: r.kind === 'EVENT' ? r.title : shapePerson(r, 'other')?.name,
+        slug: r.slug,
+        startTime: r.startTime,
+        coverImageUrl: r.coverImageUrl,
+        other: r.kind === 'DIRECT' ? shapePerson(r, 'other') : null,
+        muted: Boolean(r.muted),
+        lastMessageAt: r.lastMessageAt,
+        lastBody: r.lastBody,
+        lastKind: r.lastKind,
+        unread: r.unread
+      }));
     },
 
-    async history(eventId, before, limit = PAGE_SIZE) {
+    async history(roomId, before, limit = PAGE_SIZE) {
       const { rows } = await pool.query(
         `SELECT m.*, ${SENDER_COLUMNS}
            FROM "ChatMessage" m
            LEFT JOIN "User" u ON u."id" = m."userId"
-          WHERE m."eventId" = $1 AND ($2::timestamp IS NULL OR m."createdAt" < $2)
+          WHERE m."roomId" = $1 AND ($2::timestamp IS NULL OR m."createdAt" < $2)
           ORDER BY m."createdAt" DESC
           LIMIT $3`,
-        [eventId, before || null, limit]
+        [roomId, before || null, limit]
       );
       return rows.reverse().map(shapeMessage);
     },
 
-    async insertMessage({ eventId, userId, kind = 'TEXT', body, imageUrl, replyToId, clientId }) {
-      const id = newId();
-      const { rows } = await pool.query(
-        `INSERT INTO "ChatMessage" ("id", "eventId", "userId", "kind", "body", "imageUrl", "replyToId", "clientId")
+    async insertMessage({ roomId, userId, kind = 'TEXT', body, imageUrl, replyToId, clientId }) {
+      const inserted = await one(
+        `INSERT INTO "ChatMessage" ("id", "roomId", "userId", "kind", "body", "imageUrl", "replyToId", "clientId")
          VALUES ($1, $2, $3, $4::"ChatMessageKind", $5, $6, $7, $8)
-         ON CONFLICT ("eventId", "clientId") DO NOTHING
+         ON CONFLICT ("roomId", "clientId") DO NOTHING
          RETURNING "id"`,
-        [id, eventId, userId, kind, body ?? null, imageUrl ?? null, replyToId ?? null, clientId ?? null]
+        [newId(), roomId, userId, kind, body ?? null, imageUrl ?? null, replyToId ?? null, clientId ?? null]
       );
-      // Duplicate clientId = the client retried a send that already landed.
-      const messageId = rows[0]?.id;
-      const lookup = messageId
-        ? { sql: `m."id" = $1`, args: [messageId] }
-        : { sql: `m."eventId" = $1 AND m."clientId" = $2`, args: [eventId, clientId] };
-      const full = await pool.query(
+      if (inserted) {
+        await pool.query(`UPDATE "ChatRoom" SET "lastMessageAt" = now() WHERE "id" = $1`, [roomId]);
+      }
+      // No row = the client retried a send that already landed; return the original.
+      const full = await one(
         `SELECT m.*, ${SENDER_COLUMNS} FROM "ChatMessage" m
-           LEFT JOIN "User" u ON u."id" = m."userId" WHERE ${lookup.sql}`,
-        lookup.args
+           LEFT JOIN "User" u ON u."id" = m."userId"
+          WHERE ${inserted ? `m."id" = $1` : `m."roomId" = $1 AND m."clientId" = $2`}`,
+        inserted ? [inserted.id] : [roomId, clientId]
       );
-      return { message: shapeMessage(full.rows[0]), duplicate: !messageId };
+      return { message: shapeMessage(full), duplicate: !inserted };
     },
 
     async getMessage(messageId) {
-      const { rows } = await pool.query(`SELECT * FROM "ChatMessage" WHERE "id" = $1`, [messageId]);
-      return rows[0] || null;
+      return one(`SELECT * FROM "ChatMessage" WHERE "id" = $1`, [messageId]);
     },
 
     async softDelete(messageId) {
       await pool.query(`UPDATE "ChatMessage" SET "deletedAt" = now() WHERE "id" = $1`, [messageId]);
     },
 
-    async markRead(eventId, userId) {
+    async markRead(roomId, userId) {
       await pool.query(
-        `UPDATE "EventSignup" SET "chatLastReadAt" = now() WHERE "eventId" = $1 AND "userId" = $2`,
-        [eventId, userId]
+        `INSERT INTO "ChatRoomMember" ("roomId", "userId", "lastReadAt") VALUES ($1, $2, now())
+         ON CONFLICT ("roomId", "userId") DO UPDATE SET "lastReadAt" = now()`,
+        [roomId, userId]
       );
     },
 
-    async setMuted(eventId, userId, muted) {
+    async setMuted(roomId, userId, muted) {
       await pool.query(
-        `UPDATE "EventSignup" SET "chatMuted" = $3 WHERE "eventId" = $1 AND "userId" = $2`,
-        [eventId, userId, Boolean(muted)]
+        `INSERT INTO "ChatRoomMember" ("roomId", "userId", "muted") VALUES ($1, $2, $3)
+         ON CONFLICT ("roomId", "userId") DO UPDATE SET "muted" = $3`,
+        [roomId, userId, Boolean(muted)]
       );
     },
 
@@ -203,21 +313,28 @@ export function createStore(pool) {
       return rows.map((r) => r.blockedId);
     },
 
-    // Push targets for a new message: confirmed, unmuted members (and admins for
-    // announcements are already members or will see it in-app), excluding the
-    // sender, anyone who blocked the sender, and users who are online in the room.
-    async pushTargets(eventId, senderId, { includeMuted = false, excludeUserIds = [] } = {}) {
+    // Push targets for a new message, excluding the sender, muted members (unless
+    // it's an announcement), anyone who blocked the sender, and people online in the room.
+    async pushTargets(access, senderId, { includeMuted = false, excludeUserIds = [] } = {}) {
+      // Every $n must be referenced: the pg driver rejects unused parameters.
+      const isEvent = access.room.kind === 'EVENT';
+      const recipients = isEvent
+        ? `SELECT s."userId" FROM "EventSignup" s
+            WHERE s."eventId" = $5 AND s."status" = 'CONFIRMED'`
+        : `SELECT m."userId" FROM "ChatRoomMember" m WHERE m."roomId" = $1`;
+      const args = [access.room.id, senderId, includeMuted, excludeUserIds];
+      if (isEvent) args.push(access.room.eventId);
       const { rows } = await pool.query(
         `SELECT t."token", t."userId"
-           FROM "EventSignup" s
-           JOIN "PushToken" t ON t."userId" = s."userId"
-          WHERE s."eventId" = $1 AND s."status" = 'CONFIRMED'
-            AND ($2::text IS NULL OR s."userId" <> $2)
-            AND ($3::boolean OR s."chatMuted" = false)
-            AND NOT (s."userId" = ANY($4::text[]))
+           FROM (${recipients}) r
+           JOIN "PushToken" t ON t."userId" = r."userId"
+           LEFT JOIN "ChatRoomMember" me ON me."roomId" = $1 AND me."userId" = r."userId"
+          WHERE r."userId" <> $2
+            AND ($3::boolean OR COALESCE(me."muted", false) = false)
+            AND NOT (r."userId" = ANY($4::text[]))
             AND NOT EXISTS (SELECT 1 FROM "UserBlock" b
-                             WHERE b."blockerId" = s."userId" AND b."blockedId" = $2)`,
-        [eventId, senderId, includeMuted, excludeUserIds]
+                             WHERE b."blockerId" = r."userId" AND b."blockedId" = $2)`,
+        args
       );
       return rows;
     },

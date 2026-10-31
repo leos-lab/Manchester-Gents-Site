@@ -67,6 +67,7 @@ model User {
   eventsSignedUp          EventSignup[]
   passwordResetTokens     PasswordResetToken[]
   chatMessages            ChatMessage[]
+  chatRooms               ChatRoomMember[]
   pushTokens              PushToken[]
   chatReportsFiled        ChatReport[]         @relation("ChatReportReporter")
   blocking                UserBlock[]          @relation("UserBlockBlocker")
@@ -105,7 +106,7 @@ model Event {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   attendees        EventSignup[]
-  chatMessages     ChatMessage[]
+  chatRoom         ChatRoom?
 }
 
 model EventSignup {
@@ -120,8 +121,6 @@ model EventSignup {
   groupChatAdded          Boolean      @default(false)
   actionRequiredMessageId String?
   chatValidationCode      String?      @unique
-  chatLastReadAt          DateTime?
-  chatMuted               Boolean      @default(false)
   createdAt               DateTime     @default(now())
 
   @@unique([eventId, userId])
@@ -159,13 +158,48 @@ enum ChatReportStatus {
   DISMISSED
 }
 
-// One chat room per event. Membership is not stored separately: any CONFIRMED
-// EventSignup (or an ADMIN) can read and post, so RSVPing joins the chat and
-// cancelling leaves it automatically.
+enum ChatRoomKind {
+  EVENT
+  DIRECT
+}
+
+// EVENT rooms: one per event. Who can read/post is derived from a CONFIRMED
+// EventSignup (or ADMIN), so RSVPing joins and cancelling leaves automatically.
+// DIRECT rooms: one per pair of members (directKey = sorted "userA:userB"),
+// membership stored in ChatRoomMember.
+model ChatRoom {
+  id            String           @id @default(cuid())
+  kind          ChatRoomKind
+  event         Event?           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId       String?          @unique
+  directKey     String?          @unique
+  createdAt     DateTime         @default(now())
+  lastMessageAt DateTime?
+  members       ChatRoomMember[]
+  messages      ChatMessage[]
+
+  @@index([lastMessageAt])
+}
+
+// Per-member state: read position and mute for every room kind; for DIRECT
+// rooms the row is also the membership itself.
+model ChatRoomMember {
+  room       ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  lastReadAt DateTime?
+  muted      Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@id([roomId, userId])
+  @@index([userId])
+}
+
 model ChatMessage {
   id        String          @id @default(cuid())
-  event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId   String
+  room      ChatRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId    String
   user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId    String?
   kind      ChatMessageKind @default(TEXT)
@@ -178,8 +212,8 @@ model ChatMessage {
   deletedAt DateTime?
   reports   ChatReport[]
 
-  @@unique([eventId, clientId])
-  @@index([eventId, createdAt])
+  @@unique([roomId, clientId])
+  @@index([roomId, createdAt])
 }
 
 model PushToken {

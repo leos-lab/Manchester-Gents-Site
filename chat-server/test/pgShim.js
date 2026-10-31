@@ -13,8 +13,13 @@ function literal(v) {
 export function createShimPool({ host, port, db }) {
   return {
     async query(sql, args = []) {
+      // Mirror the pg driver: every passed parameter must appear in the SQL.
+      const used = new Set([...sql.matchAll(/\$(\d+)/g)].map((m) => Number(m[1])));
+      args.forEach((_, i) => {
+        if (!used.has(i + 1)) throw new Error(`parameter $${i + 1} is never used`);
+      });
       const bound = sql.replace(/\$(\d+)/g, (_, n) => literal(args[Number(n) - 1]));
-      const returns = /^\s*SELECT/i.test(bound) || /RETURNING/i.test(bound);
+      const returns = /^\s*(SELECT|WITH)\b/i.test(bound) || /RETURNING/i.test(bound);
       const q = returns
         ? `WITH t AS (${bound}) SELECT coalesce(json_agg(t), '[]') FROM t`
         : bound;

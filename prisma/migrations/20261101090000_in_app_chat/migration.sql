@@ -3,13 +3,12 @@
 -- CreateEnum
 CREATE TYPE "ChatMessageKind" AS ENUM ('TEXT', 'IMAGE', 'ANNOUNCEMENT', 'SYSTEM');
 CREATE TYPE "ChatReportStatus" AS ENUM ('OPEN', 'ACTIONED', 'DISMISSED');
+CREATE TYPE "ChatRoomKind" AS ENUM ('EVENT', 'DIRECT');
 
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN "chatBannedAt" TIMESTAMP(3);
 ALTER TABLE "Event" ADD COLUMN "chatEnabled" BOOLEAN NOT NULL DEFAULT true,
                     ADD COLUMN "chatLockedAt" TIMESTAMP(3);
-ALTER TABLE "EventSignup" ADD COLUMN "chatLastReadAt" TIMESTAMP(3),
-                          ADD COLUMN "chatMuted" BOOLEAN NOT NULL DEFAULT false;
 
 -- One signup per member per event (chat membership is derived from it).
 -- Keep the oldest row if any duplicates slipped in historically.
@@ -21,9 +20,35 @@ WHERE a."eventId" = b."eventId"
 CREATE UNIQUE INDEX "EventSignup_eventId_userId_key" ON "EventSignup"("eventId", "userId");
 
 -- CreateTable
+CREATE TABLE "ChatRoom" (
+    "id" TEXT NOT NULL,
+    "kind" "ChatRoomKind" NOT NULL,
+    "eventId" TEXT,
+    "directKey" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastMessageAt" TIMESTAMP(3),
+    CONSTRAINT "ChatRoom_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "ChatRoom_eventId_key" ON "ChatRoom"("eventId");
+CREATE UNIQUE INDEX "ChatRoom_directKey_key" ON "ChatRoom"("directKey");
+CREATE INDEX "ChatRoom_lastMessageAt_idx" ON "ChatRoom"("lastMessageAt");
+ALTER TABLE "ChatRoom" ADD CONSTRAINT "ChatRoom_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE TABLE "ChatRoomMember" (
+    "roomId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "lastReadAt" TIMESTAMP(3),
+    "muted" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ChatRoomMember_pkey" PRIMARY KEY ("roomId", "userId")
+);
+CREATE INDEX "ChatRoomMember_userId_idx" ON "ChatRoomMember"("userId");
+ALTER TABLE "ChatRoomMember" ADD CONSTRAINT "ChatRoomMember_roomId_fkey" FOREIGN KEY ("roomId") REFERENCES "ChatRoom"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ChatRoomMember" ADD CONSTRAINT "ChatRoomMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 CREATE TABLE "ChatMessage" (
     "id" TEXT NOT NULL,
-    "eventId" TEXT NOT NULL,
+    "roomId" TEXT NOT NULL,
     "userId" TEXT,
     "kind" "ChatMessageKind" NOT NULL DEFAULT 'TEXT',
     "body" TEXT,
@@ -35,9 +60,9 @@ CREATE TABLE "ChatMessage" (
     "deletedAt" TIMESTAMP(3),
     CONSTRAINT "ChatMessage_pkey" PRIMARY KEY ("id")
 );
-CREATE UNIQUE INDEX "ChatMessage_eventId_clientId_key" ON "ChatMessage"("eventId", "clientId");
-CREATE INDEX "ChatMessage_eventId_createdAt_idx" ON "ChatMessage"("eventId", "createdAt");
-ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE UNIQUE INDEX "ChatMessage_roomId_clientId_key" ON "ChatMessage"("roomId", "clientId");
+CREATE INDEX "ChatMessage_roomId_createdAt_idx" ON "ChatMessage"("roomId", "createdAt");
+ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_roomId_fkey" FOREIGN KEY ("roomId") REFERENCES "ChatRoom"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 CREATE TABLE "PushToken" (

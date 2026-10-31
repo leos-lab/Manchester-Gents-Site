@@ -14,7 +14,7 @@ export class ChatHub {
     this.sendPush = sendPush;
     this.secret = secret;
     this.log = log;
-    this.rooms = new Map(); // eventId -> Set<conn>
+    this.rooms = new Map(); // roomId -> Set<conn>
     this.conns = new Set();
   }
 
@@ -36,8 +36,8 @@ export class ChatHub {
     this.reply(conn, req, { type: 'error', code, message });
   }
 
-  broadcast(eventId, payload, { except } = {}) {
-    for (const c of this.rooms.get(eventId) || []) {
+  broadcast(roomId, payload, { except } = {}) {
+    for (const c of this.rooms.get(roomId) || []) {
       if (c === except) continue;
       // Hide messages from people this member has blocked.
       if (payload.type === 'message' && payload.message.sender &&
@@ -46,8 +46,8 @@ export class ChatHub {
     }
   }
 
-  onlineUserIds(eventId) {
-    return [...(this.rooms.get(eventId) || [])].map((c) => c.state.user.id);
+  onlineUserIds(roomId) {
+    return [...(this.rooms.get(roomId) || [])].map((c) => c.state.user.id);
   }
 
   async handle(conn, raw) {
@@ -65,6 +65,7 @@ export class ChatHub {
       const handler = {
         rooms: this.rooms_,
         join: this.join,
+        dm: this.dm,
         leave: this.leave,
         history: this.history,
         send: this.sendMessage,
@@ -108,36 +109,53 @@ export class ChatHub {
     this.reply(conn, req, { type: 'rooms', rooms });
   }
 
+  // Open a room by roomId, or an event's chat by eventId (created on first use).
   async join(conn, req) {
-    const access = await this.store.getAccess(conn.state.user, req.eventId);
+    let roomId = req.roomId;
+    if (!roomId && req.eventId) roomId = (await this.store.eventRoom(req.eventId))?.id;
+    const access = roomId ? await this.store.getAccess(conn.state.user, roomId) : { canRead: false };
     if (!access.canRead) return this.fail(conn, req, 'forbidden', 'RSVP to join this chat.');
-    if (!this.rooms.has(req.eventId)) this.rooms.set(req.eventId, new Set());
-    this.rooms.get(req.eventId).add(conn);
-    conn.state.rooms.add(req.eventId);
-    const messages = await this.store.history(req.eventId);
+    if (!this.rooms.has(roomId)) this.rooms.set(roomId, new Set());
+    this.rooms.get(roomId).add(conn);
+    conn.state.rooms.add(roomId);
+    const messages = await this.store.history(roomId);
     this.reply(conn, req, {
       type: 'joined',
-      eventId: req.eventId,
-      title: access.event.title,
+      roomId,
+      kind: access.room.kind,
+      eventId: access.room.eventId,
+      title: access.title || null,
+      otherUserId: access.otherUserId || null,
       canPost: access.canPost,
       muted: access.muted,
       messages: this.filterBlocked(conn, messages)
     });
   }
 
+  // Start (or reopen) a DM with any member.
+  async dm(conn, req) {
+    const me = conn.state.user;
+    const other = req.userId ? await this.store.getUser(req.userId) : null;
+    if (!other || other.id === me.id || other.isPlaceholder) {
+      return this.fail(conn, req, 'not_found', 'Member not found.');
+    }
+    const room = await this.store.directRoom(me.id, other.id);
+    return this.join(conn, { ...req, roomId: room.id });
+  }
+
   leave(conn, req) {
-    this.rooms.get(req.eventId)?.delete(conn);
-    conn.state.rooms.delete(req.eventId);
-    this.reply(conn, req, { type: 'left', eventId: req.eventId });
+    this.rooms.get(req.roomId)?.delete(conn);
+    conn.state.rooms.delete(req.roomId);
+    this.reply(conn, req, { type: 'left', roomId: req.roomId });
   }
 
   async history(conn, req) {
-    const access = await this.store.getAccess(conn.state.user, req.eventId);
+    const access = await this.store.getAccess(conn.state.user, req.roomId);
     if (!access.canRead) return this.fail(conn, req, 'forbidden', 'RSVP to join this chat.');
-    const messages = await this.store.history(req.eventId, req.before);
+    const messages = await this.store.history(req.roomId, req.before);
     this.reply(conn, req, {
       type: 'history',
-      eventId: req.eventId,
+      roomId: req.roomId,
       messages: this.filterBlocked(conn, messages)
     });
   }
@@ -162,12 +180,14 @@ export class ChatHub {
     if (body.length > MAX_BODY) return this.fail(conn, req, 'too_long', `Keep it under ${MAX_BODY} characters.`);
     if (this.rateLimited(conn)) return this.fail(conn, req, 'rate_limited', 'Slow down a little.');
 
-    const access = await this.store.getAccess(user, req.eventId);
+    const access = await this.store.getAccess(user, req.roomId);
     if (!access.canPost) return this.fail(conn, req, 'forbidden', 'You can’t post in this chat.');
-    if (kind === 'ANNOUNCEMENT' && !access.isAdmin) return this.fail(conn, req, 'forbidden', 'Admins only.');
+    if (kind === 'ANNOUNCEMENT' && (!access.isAdmin || access.room.kind !== 'EVENT')) {
+      return this.fail(conn, req, 'forbidden', 'Announcements are for admins in event chats.');
+    }
 
     const { message, duplicate } = await this.store.insertMessage({
-      eventId: req.eventId,
+      roomId: req.roomId,
       userId: user.id,
       kind: kind === 'TEXT' && imageUrl ? 'IMAGE' : kind,
       body: body || null,
@@ -177,20 +197,22 @@ export class ChatHub {
     });
     this.reply(conn, req, { type: 'sent', clientId: message.clientId, message });
     if (duplicate) return;
-    this.broadcast(req.eventId, { type: 'message', message }, { except: conn });
+    this.broadcast(req.roomId, { type: 'message', message }, { except: conn });
 
     const isAnnouncement = kind === 'ANNOUNCEMENT';
-    const targets = await this.store.pushTargets(req.eventId, user.id, {
+    const targets = await this.store.pushTargets(access, user.id, {
       includeMuted: isAnnouncement,
-      excludeUserIds: this.onlineUserIds(req.eventId)
+      excludeUserIds: this.onlineUserIds(req.roomId)
     });
     if (targets.length && this.sendPush) {
       const sender = message.sender?.name || 'Manchester Gents';
+      const text = body || 'sent a photo';
+      const isDm = access.room.kind === 'DIRECT';
       this.sendPush(targets, {
-        title: isAnnouncement ? `📣 ${access.event.title}` : access.event.title,
-        body: isAnnouncement ? body : `${sender}: ${body || 'sent a photo'}`,
-        data: { eventId: req.eventId, messageId: message.id, url: `mcrgents://chat/${req.eventId}` },
-        threadId: `event-${req.eventId}`
+        title: isDm ? sender : isAnnouncement ? `📣 ${access.title}` : access.title,
+        body: isDm || isAnnouncement ? text : `${sender}: ${text}`,
+        data: { roomId: req.roomId, messageId: message.id, url: `mcrgents://chat/${req.roomId}` },
+        threadId: `room-${req.roomId}`
       }).catch((e) => this.log.error('push failed', e));
     }
   }
@@ -200,42 +222,50 @@ export class ChatHub {
   }
 
   async read(conn, req) {
-    await this.store.markRead(req.eventId, conn.state.user.id);
-    this.reply(conn, req, { type: 'read', eventId: req.eventId });
+    const access = await this.store.getAccess(conn.state.user, req.roomId);
+    if (!access.canRead) return this.fail(conn, req, 'forbidden', 'Not in this chat.');
+    await this.store.markRead(req.roomId, conn.state.user.id);
+    this.reply(conn, req, { type: 'read', roomId: req.roomId });
   }
 
   typing(conn, req) {
-    if (!conn.state.rooms.has(req.eventId)) return;
+    if (!conn.state.rooms.has(req.roomId)) return;
     const now = Date.now();
     if (now - conn.state.typingAt < TYPING_TTL_MS / 2) return;
     conn.state.typingAt = now;
     const user = conn.state.user;
     this.broadcast(
-      req.eventId,
-      { type: 'typing', eventId: req.eventId, user: { id: user.id, name: displayName(user) } },
+      req.roomId,
+      { type: 'typing', roomId: req.roomId, user: { id: user.id, name: displayName(user) } },
       { except: conn }
     );
   }
 
   async mute(conn, req) {
-    await this.store.setMuted(req.eventId, conn.state.user.id, req.muted);
-    this.reply(conn, req, { type: 'muted', eventId: req.eventId, muted: Boolean(req.muted) });
+    const access = await this.store.getAccess(conn.state.user, req.roomId);
+    if (!access.canRead) return this.fail(conn, req, 'forbidden', 'Not in this chat.');
+    await this.store.setMuted(req.roomId, conn.state.user.id, req.muted);
+    this.reply(conn, req, { type: 'muted', roomId: req.roomId, muted: Boolean(req.muted) });
   }
 
   async deleteMessage(conn, req) {
     const msg = await this.store.getMessage(req.messageId);
     if (!msg) return this.fail(conn, req, 'not_found', 'Message not found.');
     const user = conn.state.user;
-    if (msg.userId !== user.id && user.role !== 'ADMIN') return this.fail(conn, req, 'forbidden', 'Not your message.');
+    const access = await this.store.getAccess(user, msg.roomId);
+    const isOwn = msg.userId === user.id;
+    // Admins moderate event chats; DMs stay private, so only the author deletes there.
+    const canModerate = access.isAdmin && access.room?.kind === 'EVENT';
+    if (!access.canRead || (!isOwn && !canModerate)) return this.fail(conn, req, 'forbidden', 'Not your message.');
     await this.store.softDelete(msg.id);
-    this.broadcast(msg.eventId, { type: 'deleted', eventId: msg.eventId, messageId: msg.id });
+    this.broadcast(msg.roomId, { type: 'deleted', roomId: msg.roomId, messageId: msg.id });
     this.reply(conn, req, { type: 'ok' });
   }
 
   async report(conn, req) {
     const msg = await this.store.getMessage(req.messageId);
     if (!msg) return this.fail(conn, req, 'not_found', 'Message not found.');
-    const access = await this.store.getAccess(conn.state.user, msg.eventId);
+    const access = await this.store.getAccess(conn.state.user, msg.roomId);
     if (!access.canRead) return this.fail(conn, req, 'forbidden', 'Not in this chat.');
     await this.store.report(msg.id, conn.state.user.id, req.reason);
     this.reply(conn, req, { type: 'ok' });
@@ -265,10 +295,11 @@ export class ChatHub {
       this.forEachConnOf(userId, (c) => c.send({ type: 'rooms_changed' }));
       return;
     }
+    const roomId = await this.store.roomIdForEvent(eventId);
     this.forEachConnOf(userId, (c) => {
       if (c.state.user.role === 'ADMIN') return;
-      if (c.state.rooms.delete(eventId)) this.rooms.get(eventId)?.delete(c);
-      c.send({ type: 'removed', eventId });
+      if (roomId && c.state.rooms.delete(roomId)) this.rooms.get(roomId)?.delete(c);
+      c.send({ type: 'removed', roomId, eventId });
       c.send({ type: 'rooms_changed' });
     });
   }
