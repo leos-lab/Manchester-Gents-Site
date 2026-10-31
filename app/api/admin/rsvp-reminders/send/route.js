@@ -114,7 +114,9 @@ export async function POST(request) {
 
     // Members with the app get a push notification that opens the event;
     // everyone else still gets the Instagram DM.
-    if (!messageOverride?.trim() && (await hasPushToken(member.id))) {
+    // (The admin table always sends its message template; that text is for the
+    // Instagram DM, so app users get the short push version instead.)
+    if (await hasPushToken(member.id)) {
       const dateLabel = format(new Date(event.startTime), "EEE d MMM");
       const delivered = await pushToUsers([member.id], {
         title: `RSVP for ${event.title}`,
