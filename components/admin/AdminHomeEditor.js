@@ -78,6 +78,22 @@ export default function AdminHomeEditor({ initial, events, apiBase, siteSlug }) 
       </section>
 
       <section className={styles.panel}>
+        <h2>App downloads</h2>
+        <p className={styles.hint}>
+          Buttons on the home page. Use TestFlight and Google Play testing links for UAT, then the App Store and Google
+          Play links at launch. Leave a link empty to hide its button.
+        </p>
+        <label>
+          <span>iPhone (App Store or TestFlight link)</span>
+          <input value={content.iosAppUrl} onChange={set('iosAppUrl')} placeholder="https://testflight.apple.com/join/…" inputMode="url" />
+        </label>
+        <label>
+          <span>Android (Google Play or testing link)</span>
+          <input value={content.androidAppUrl} onChange={set('androidAppUrl')} placeholder="https://play.google.com/…" inputMode="url" />
+        </label>
+      </section>
+
+      <section className={styles.panel}>
         <h2>Scrolling photos</h2>
         <p className={styles.hint}>Shown to visitors who aren’t signed in, slowly scrolling under the hero. Add them below.</p>
         {content.showcase.length ? (

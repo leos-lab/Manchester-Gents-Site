@@ -18,7 +18,9 @@ const schema = z.object({
   headline: z.string().trim().min(1, 'Add a headline.').max(60),
   lede: z.string().trim().max(300),
   heroPhoto: photo.nullable(),
-  showcase: z.array(photo).max(30)
+  showcase: z.array(photo).max(30),
+  iosAppUrl: z.union([z.string().trim().url('Use a full https:// link for the iPhone app.'), z.literal('')]),
+  androidAppUrl: z.union([z.string().trim().url('Use a full https:// link for the Android app.'), z.literal('')])
 });
 
 export async function GET() {

@@ -69,6 +69,11 @@ export default async function HomePage() {
       <NavBar />
       <main>
         <HomeHero photo={heroPhoto} caption={home.heroPhoto ? home.heroCaption : null}>
+          {home.iosAppUrl || home.androidAppUrl ? (
+            <p className={styles.newApp}>
+              <span>New</span> The Manchester Gents app is now on iPhone and Android
+            </p>
+          ) : null}
           <h1 className={`heading-font ${styles.wordmark}`}>{home.headline}</h1>
           {home.lede ? <p className={styles.lede}>{home.lede}</p> : null}
           <div className={styles.actions}>
@@ -87,6 +92,27 @@ export default async function HomePage() {
               </Link>
             )}
           </div>
+          {home.iosAppUrl || home.androidAppUrl ? (
+            <div className={styles.apps}>
+              <div className={styles.appButtons}>
+                {home.iosAppUrl ? (
+                  <a href={home.iosAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
+                    Download for iPhone
+                  </a>
+                ) : null}
+                {home.androidAppUrl ? (
+                  <a href={home.androidAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
+                    Download for Android
+                  </a>
+                ) : null}
+              </div>
+              <p className={styles.appNote}>
+                Rather not download an app? Everything works here on the website too: RSVPs, event chats and messages.
+                Event group chats have moved off Instagram: join the conversation in the app or{' '}
+                <Link href="/chat">on the website</Link>.
+              </p>
+            </div>
+          ) : null}
         </HomeHero>
         {/* Photos from past socials for visitors (chosen in Admin → Home page). */}
         {!signedIn ? <PhotoMarquee photos={home.showcase} /> : null}
