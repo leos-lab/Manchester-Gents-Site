@@ -3,6 +3,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View, useWindowD
 import { useFocusEffect, useRouter } from 'expo-router';
 import { api } from '../../../src/lib/api';
 import { EventCard } from '../../../src/components/EventCard';
+import { Rise } from '../../../src/components/Motion';
 import { EmptyState } from '../../../src/components/EmptyState';
 import { Button } from '../../../src/components/Button';
 import { colors, radius, space, MAX_CONTENT_WIDTH, WIDE_BREAKPOINT } from '../../../src/theme';
@@ -74,10 +75,10 @@ export default function Events() {
           ))}
         </View>
       }
-      renderItem={({ item }) => (
-        <View style={columns > 1 ? styles.cell : styles.single}>
+      renderItem={({ item, index }) => (
+        <Rise index={Math.min(index, 6)} style={columns > 1 ? styles.cell : styles.single}>
           <EventCard event={item} compact={scope === 'past'} onPress={() => router.push(`/event/${item.id}`)} />
-        </View>
+        </Rise>
       )}
       ListEmptyComponent={
         error ? (

@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { colors, fonts, radius, space } from '../theme';
 import { eventDay } from '../lib/format';
 import { Chip } from './Chip';
+import { PressableScale } from './Motion';
 
 // Image-led card: cover photo with the date stamped on it. Events without a
 // cover get a text-only card.
@@ -19,11 +20,11 @@ export function EventCard({ event, onPress, compact = false }) {
           : null;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${event.title}, ${day.weekday} ${day.day} ${day.month}${status ? `, ${status.label}` : ''}`}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={styles.card}
     >
       {event.coverImageUrl ? (
         <>
@@ -41,7 +42,7 @@ export function EventCard({ event, onPress, compact = false }) {
           <Details event={event} status={status} style={styles.textOnlyBody} />
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -70,7 +71,6 @@ function Details({ event, status, style }) {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.card, borderRadius: radius.lg, overflow: 'hidden' },
-  pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   cover: { height: 200, justifyContent: 'flex-end' },
   coverCompact: { height: 140 },
   shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(20, 29, 41, 0.25)' },
