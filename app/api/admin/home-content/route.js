@@ -23,6 +23,7 @@ const schema = z.object({
   showcase: z.array(photo).max(30),
   iosAppUrl: z.union([z.string().trim().url('Use a full https:// link for the iPhone app.'), z.literal('')]),
   androidAppUrl: z.union([z.string().trim().url('Use a full https:// link for the Android app.'), z.literal('')]),
+  androidGroupUrl: z.union([z.string().trim().url('Use a full https:// link for the testers group.'), z.literal('')]),
   eveningPhoto: photo.nullable(),
   eveningTitle: z.string().trim().min(1, 'Add a title for the evening section.').max(60),
   eveningIntro: z.string().trim().max(400),

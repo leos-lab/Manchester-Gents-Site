@@ -68,6 +68,10 @@ export function AppFields({ content, setContent }) {
         <span>Android (Google Play or testing link)</span>
         <input value={content.androidAppUrl} onChange={set('androidAppUrl')} placeholder="https://play.google.com/…" inputMode="url" />
       </label>
+      <label>
+        <span>Android testers group (Google Group link, while testing)</span>
+        <input value={content.androidGroupUrl} onChange={set('androidGroupUrl')} placeholder="https://groups.google.com/g/…" inputMode="url" />
+      </label>
     </>
   );
 }

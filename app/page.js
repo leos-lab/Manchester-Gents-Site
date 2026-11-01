@@ -80,14 +80,14 @@ export default async function HomePage() {
     <div className={styles.apps}>
       <div className={styles.appButtons}>
         {home.iosAppUrl ? (
-          <a href={home.iosAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
+          <Link href="/get-the-app#iphone" className={styles.appButton}>
             Get the app for iPhone
-          </a>
+          </Link>
         ) : null}
         {home.androidAppUrl ? (
-          <a href={home.androidAppUrl} className={styles.appButton} target="_blank" rel="noreferrer">
+          <Link href="/get-the-app#android" className={styles.appButton}>
             Get the app for Android
-          </a>
+          </Link>
         ) : null}
         <EditButton section="apps" label="Edit app links" />
       </div>
