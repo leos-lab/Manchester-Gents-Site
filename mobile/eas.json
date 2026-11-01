@@ -20,6 +20,7 @@
     },
     "uat": {
       "extends": "base",
+      "environment": "preview",
       "distribution": "store",
       "autoIncrement": true,
       "env": {
@@ -45,6 +46,11 @@
         "ascApiKeyPath": "/Users/leoleung/.appstoreconnect/private_keys/AuthKey_D4ZX6QGKA9.p8",
         "ascApiKeyIssuerId": "27a37356-5597-4202-9488-8ed7be82de96",
         "ascApiKeyId": "D4ZX6QGKA9"
+      },
+      "android": {
+        "serviceAccountKeyPath": "/Users/leoleung/.google-play/mcr-gents-uat-play-upload.json",
+        "track": "internal",
+        "releaseStatus": "draft"
       }
     },
     "production": {}
