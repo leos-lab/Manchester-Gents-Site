@@ -1,0 +1,29 @@
+diff --git a/node_modules/react-native/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm b/node_modules/react-native/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
+--- a/node_modules/react-native/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
++++ b/node_modules/react-native/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
+@@ -315,6 +315,9 @@ - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &
+ 
+   if (newTextInputProps.inputAccessoryViewID != oldTextInputProps.inputAccessoryViewID) {
+     _backedTextInputView.inputAccessoryViewID = RCTNSStringFromString(newTextInputProps.inputAccessoryViewID);
++    if (_backedTextInputView.isFirstResponder) {
++      [_backedTextInputView reloadInputViews];
++    }
+   }
+ 
+   if (newTextInputProps.inputAccessoryViewButtonLabel != oldTextInputProps.inputAccessoryViewButtonLabel) {
+@@ -665,11 +668,11 @@ - (void)initializeReturnKeyType
+ 
+ - (void)setDefaultInputAccessoryView
+ {
+-  // InputAccessoryView component sets the inputAccessoryView when inputAccessoryViewID exists
++  // InputAccessoryView component sets the inputAccessoryView when inputAccessoryViewID exists.
++  // Patched (Manchester Gents): don't reload the keyboard on every prop update, i.e. every
++  // keystroke. It made the accessory flicker, reset the keyboard to letters and cleared
++  // secure fields. updateProps reloads only when inputAccessoryViewID changes.
+   if (_backedTextInputView.inputAccessoryViewID) {
+-    if (_backedTextInputView.isFirstResponder) {
+-      [_backedTextInputView reloadInputViews];
+-    }
+     return;
+   }
+ 

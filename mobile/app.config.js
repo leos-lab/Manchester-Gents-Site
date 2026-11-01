@@ -84,7 +84,11 @@ module.exports = ({ config }) => ({
     ],
     ['expo-calendar', { calendarPermission: 'Add Manchester Gents events to your calendar.' }],
     ['expo-location', { locationWhenInUsePermission: 'Share where you are with a member you’re messaging.' }],
-    ['expo-media-library', { savePhotosPermission: 'Save event photos to your library.', isAccessMediaLocationEnabled: false }]
+    ['expo-media-library', { savePhotosPermission: 'Save event photos to your library.', isAccessMediaLocationEnabled: false }],
+    // React Native is patched (patches/react-native+*.patch: the keyboard Done
+    // bar no longer reloads the keyboard on every keystroke), so iOS compiles it
+    // from source instead of using the prebuilt copy.
+    ['expo-build-properties', { ios: { buildReactNativeFromSource: true } }]
   ],
   experiments: {
     typedRoutes: false
