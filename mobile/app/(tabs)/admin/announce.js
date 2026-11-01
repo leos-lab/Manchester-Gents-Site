@@ -63,7 +63,7 @@ export default function Announce() {
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardDismissMode="interactive"
+      <ScrollView
         style={styles.screen}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"

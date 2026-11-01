@@ -54,7 +54,7 @@ export default function ConfirmRsvp() {
 
   if (step === 'note') {
     return (
-      <ScrollView keyboardDismissMode="interactive" style={styles.screen} contentContainerStyle={[styles.content, gutter]} contentInsetAdjustmentBehavior="never" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} contentInsetAdjustmentBehavior="never" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <Stack.Screen options={{ title: 'A note for the hosts' }} />
         <Text style={styles.lede}>Anything the hosts should know: dietary needs, accessibility, or that you’re bringing a friend to join. Optional.</Text>
         <Field label="Note for the hosts" value={note} onChangeText={setNote} multiline maxLength={500} placeholder="Optional" autoFocus />
@@ -65,7 +65,7 @@ export default function ConfirmRsvp() {
   }
 
   return (
-    <ScrollView keyboardDismissMode="interactive" style={styles.screen} contentContainerStyle={[styles.content, gutter]} contentInsetAdjustmentBehavior="never">
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} contentInsetAdjustmentBehavior="never">
       <Stack.Screen options={{ title: 'Before you RSVP' }} />
       <Text style={styles.lede}>A quick reminder of what every gent agrees to. By confirming, you agree to them for this social.</Text>
       {(content?.guidelines || []).map((g) => (

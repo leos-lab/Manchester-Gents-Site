@@ -87,7 +87,7 @@ export default function EditProfile() {
     // In a form sheet, KeyboardAvoidingView mis-measures and leaves the sheet
     // blank; the scroll view makes room for the keyboard itself.
     <>
-      <ScrollView keyboardDismissMode="interactive"
+      <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.content, gutter]}
         contentInsetAdjustmentBehavior="never"

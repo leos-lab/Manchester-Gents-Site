@@ -9,10 +9,12 @@ import { Avatar } from '../src/components/Avatar';
 import { Button } from '../src/components/Button';
 import { Icon } from '../src/components/Icon';
 import { colors, radius, space } from '../src/theme';
+import { useKeyboardDone } from '../src/components/KeyboardDone';
 
 // New group chat: a name, optionally the event it's about, and people.
 // With ?roomId= it adds people to that group instead.
 export default function NewGroup() {
+  const keyboard = useKeyboardDone();
   const { roomId } = useLocalSearchParams();
   const adding = Boolean(roomId);
   const router = useRouter();
@@ -78,7 +80,7 @@ export default function NewGroup() {
   return (
     <>
       <Stack.Screen options={{ title: adding ? 'Add people' : 'New group' }} />
-      <FlatList keyboardDismissMode="interactive"
+      <FlatList
         style={styles.screen}
         contentContainerStyle={[styles.content, gutter]}
         contentInsetAdjustmentBehavior="never"
@@ -90,6 +92,7 @@ export default function NewGroup() {
             {!adding ? (
               <>
                 <TextInput
+                    {...keyboard.inputProps}
                   style={styles.input}
                   placeholder="Group name"
                   placeholderTextColor={colors.textFaint}
@@ -98,8 +101,9 @@ export default function NewGroup() {
                   maxLength={60}
                   autoFocus
                 />
+                  {keyboard.bar}
                 <Text style={styles.label}>About an event? (optional)</Text>
-                <FlatList keyboardDismissMode="interactive"
+                <FlatList
                   horizontal
                   data={[{ id: null, title: 'General' }, ...events]}
                   keyExtractor={(e) => e.id || 'general'}
@@ -128,6 +132,7 @@ export default function NewGroup() {
               </Text>
             ) : null}
             <TextInput
+                {...keyboard.inputProps}
               style={styles.input}
               placeholder="Search members by name or @instagram"
               placeholderTextColor={colors.textFaint}

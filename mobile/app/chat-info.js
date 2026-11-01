@@ -117,7 +117,7 @@ export default function ChatInfo() {
   return (
     <>
       <Stack.Screen options={{ title: isGroup ? 'Group info' : 'Chat info' }} />
-      <ScrollView keyboardDismissMode="interactive" style={styles.screen} contentContainerStyle={[styles.content, gutter]} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} keyboardShouldPersistTaps="handled">
         <Pressable onPress={canManage ? changePhoto : undefined} disabled={!canManage || busy === 'photo'} style={styles.photoWrap} accessibilityRole={canManage ? 'button' : 'image'} accessibilityLabel={canManage ? 'Change chat picture' : 'Chat picture'}>
           {room.photoUrl ? (
             <Image source={{ uri: room.photoUrl }} style={styles.photo} contentFit="cover" transition={150} />

@@ -5,10 +5,12 @@ import { api } from '../src/lib/api';
 import { useSheetPadding } from '../src/lib/layout';
 import { Button } from '../src/components/Button';
 import { colors, radius, space } from '../src/theme';
+import { useKeyboardDone } from '../src/components/KeyboardDone';
 
 // Emails a reset link (the same one the website sends); the link opens the
 // website's reset page.
 export default function ForgotPassword() {
+  const keyboard = useKeyboardDone();
   const router = useRouter();
   const gutter = useSheetPadding(space.xl);
   const [identifier, setIdentifier] = useState('');
@@ -34,7 +36,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <ScrollView keyboardDismissMode="interactive" style={styles.screen} contentContainerStyle={[styles.content, gutter]} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, gutter]} keyboardShouldPersistTaps="handled">
       {sent ? (
         <View style={styles.done}>
           <Text style={styles.text}>
@@ -47,6 +49,7 @@ export default function ForgotPassword() {
         <>
           <Text style={styles.text}>Enter the email or Instagram handle you joined with and we’ll email you a reset link.</Text>
           <TextInput
+              {...keyboard.inputProps}
             style={styles.input}
             placeholder="Email or Instagram handle"
             placeholderTextColor={colors.textFaint}
@@ -60,6 +63,7 @@ export default function ForgotPassword() {
             onSubmitEditing={submit}
             autoFocus
           />
+            {keyboard.bar}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Button title="Email me a link" onPress={submit} loading={busy} />
         </>

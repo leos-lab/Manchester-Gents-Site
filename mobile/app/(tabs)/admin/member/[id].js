@@ -105,7 +105,7 @@ export default function AdminMember() {
   return (
     <>
       <Stack.Screen options={{ title: member.name }} />
-      <ScrollView keyboardDismissMode="interactive"
+      <ScrollView
         style={styles.screen}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
