@@ -137,8 +137,7 @@ export default function Register() {
     try {
       await signIn(form.email.trim().toLowerCase(), form.password);
     } catch (e) {
-      // Test builds only let beta testers sign in.
-      Alert.alert('Your account is ready', e.message, [{ text: 'OK', onPress: () => router.back() }]);
+      Alert.alert('Your account is ready', e.message, [{ text: 'OK', onPress: () => router.replace('/sign-in') }]);
       setBusy(false);
     }
   };

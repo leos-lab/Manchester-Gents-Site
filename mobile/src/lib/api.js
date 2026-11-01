@@ -23,7 +23,8 @@ export function setUnauthorizedHandler(handler) {
 }
 
 export async function request(path, { method = 'GET', body, form, token = authToken, signal } = {}) {
-  const headers = { Accept: 'application/json' };
+  // X-MG-Client: lets the server tell the app from the website (sign-ups).
+  const headers = { Accept: 'application/json', 'X-MG-Client': 'app' };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 

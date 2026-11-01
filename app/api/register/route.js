@@ -15,6 +15,7 @@ import {
 import { pinstripeRefId } from "@/lib/memberPhotoRef";
 import { avatarFromPhoto } from "@/lib/memberAvatar";
 import { deleteMemberPhoto } from "@/lib/pinstripeMedia";
+import { requestHost, stageFromHost } from "@/lib/stage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -80,6 +81,8 @@ export async function POST(request) {
       );
     }
 
+    const fromTestApp =
+      request.headers.get("x-mg-client") === "app" && stageFromHost(requestHost(request.headers)) !== "prod";
     const passwordHash = await hashPassword(data.password);
     const consentTimestamp = new Date();
 
@@ -123,6 +126,10 @@ export async function POST(request) {
       // They chose a profile photo (or none) while signing up: the app
       // doesn't ask again.
       avatarPromptDoneAt: data.avatarChoice ? consentTimestamp : null,
+      // On dev and UAT, joining from the test app itself counts as being in
+      // the beta (they already have the app), so they're signed straight in.
+      // Website sign-ups request access on /get-the-app.
+      betaApprovedAt: fromTestApp ? consentTimestamp : null,
       passwordHash,
       isPlaceholder: false,
     };
