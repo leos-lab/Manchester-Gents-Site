@@ -112,7 +112,7 @@ export async function savePhotoToLibrary(photo) {
     if (!photo.backupOriginal) throw error;
     return download(photo.backupOriginal);
   });
-  await MediaLibrary.saveToLibraryAsync(file.uri);
+  await MediaLibrary.Asset.create(file.uri);
 }
 
 // The photos the full-screen viewer (app/photos.js) pages through, set by the

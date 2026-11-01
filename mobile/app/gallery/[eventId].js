@@ -4,7 +4,6 @@ import {
   Alert,
   FlatList,
   PixelRatio,
-  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -221,10 +220,8 @@ export default function Gallery() {
                     <Pressable onPress={addPhotos} disabled={uploading} hitSlop={12} accessibilityRole="button" accessibilityLabel="Add photos">
                       {uploading ? (
                         <ActivityIndicator color={colors.text} />
-                      ) : Platform.OS === 'ios' ? (
-                        <Icon name="plus" size={20} color={colors.text} />
                       ) : (
-                        <Text style={styles.navButton}>Add</Text>
+                        <Icon name="plus" size={20} color={colors.text} />
                       )}
                     </Pressable>
                   </View>

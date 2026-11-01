@@ -1,4 +1,4 @@
-import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { api } from '../../../src/lib/api';
 import { useLoader } from '../../../src/lib/useLoader';
@@ -33,7 +33,7 @@ export default function AdminEvents() {
         options={{
           headerRight: () => (
             <Pressable onPress={() => router.push('/admin/event-form')} hitSlop={12} accessibilityRole="button" accessibilityLabel="Create event">
-              {Platform.OS === 'ios' ? <Icon name="plus" size={22} color={colors.gold} /> : <Text style={styles.action}>New</Text>}
+              <Icon name="plus" size={22} color={colors.gold} />
             </Pressable>
           )
         }}
@@ -54,6 +54,5 @@ export default function AdminEvents() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.navy },
-  content: { padding: space.lg, gap: space.xl, paddingBottom: 140 },
-  action: { color: colors.gold, fontWeight: '600' }
+  content: { padding: space.lg, gap: space.xl, paddingBottom: 140 }
 });

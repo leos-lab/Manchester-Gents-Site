@@ -414,15 +414,11 @@ export default function ChatRoom() {
                 <View style={styles.headerButtons}>
                   {!isDm ? (
                     <Pressable onPress={openInfo} hitSlop={12} accessibilityRole="button" accessibilityLabel="Chat info and members">
-                      {Platform.OS === 'ios' ? <Icon name="info.circle" size={21} color={colors.gold} /> : <Text style={styles.headerAction}>Info</Text>}
+                      <Icon name="info.circle" size={21} color={colors.gold} />
                     </Pressable>
                   ) : null}
                   <Pressable onPress={toggleMute} hitSlop={12} accessibilityRole="button" accessibilityLabel={room.muted ? 'Unmute notifications' : 'Mute notifications'}>
-                    {Platform.OS === 'ios' ? (
-                      <Icon name={room.muted ? 'bell.slash' : 'bell'} size={20} color={colors.gold} />
-                    ) : (
-                      <Text style={styles.headerAction}>{room.muted ? 'Unmute' : 'Mute'}</Text>
-                    )}
+                    <Icon name={room.muted ? 'bell.slash' : 'bell'} size={20} color={colors.gold} />
                   </Pressable>
                 </View>
               )
@@ -505,10 +501,8 @@ export default function ChatRoom() {
                 >
                   {attaching ? (
                     <ActivityIndicator color={colors.gold} />
-                  ) : Platform.OS === 'ios' ? (
-                    <Icon name="plus.circle.fill" size={24} color={colors.gold} />
                   ) : (
-                    <Text style={styles.announceText}>+</Text>
+                    <Icon name="plus.circle.fill" size={24} color={colors.gold} />
                   )}
                 </Pressable>
                 {client?.user?.isAdmin && room.kind !== 'DIRECT' ? (
@@ -519,11 +513,7 @@ export default function ChatRoom() {
                     accessibilityState={{ checked: announce }}
                     accessibilityLabel="Send as announcement"
                   >
-                    {Platform.OS === 'ios' ? (
-                      <Icon name="megaphone.fill" size={16} color={announce ? colors.navy : colors.gold} />
-                    ) : (
-                      <Text style={[styles.announceText, announce && { color: colors.navy }]}>📣</Text>
-                    )}
+                    <Icon name="megaphone.fill" size={16} color={announce ? colors.navy : colors.gold} />
                   </Pressable>
                 ) : null}
                 <TextInput
@@ -543,11 +533,7 @@ export default function ChatRoom() {
                   accessibilityRole="button"
                   accessibilityLabel={announce ? 'Send announcement' : 'Send message'}
                 >
-                  {Platform.OS === 'ios' ? (
-                    <Icon name="arrow.up" size={18} color={colors.navy} />
-                  ) : (
-                    <Text style={styles.sendText}>Send</Text>
-                  )}
+                  <Icon name="arrow.up" size={18} color={colors.navy} />
                 </Pressable>
               </Glass>
             ) : room.closed ? (
@@ -575,7 +561,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { flex: 1 },
   listContent: { paddingVertical: space.md, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
-  flipped: { transform: [{ scaleY: -1 }] },
+  // Undo the inverted list's flip (Android flips both axes, iOS just vertically).
+  flipped: { transform: Platform.OS === 'android' ? [{ scale: -1 }] : [{ scaleY: -1 }] },
   older: { marginVertical: space.lg },
   day: { color: colors.textFaint, fontSize: 12, fontWeight: '600', textAlign: 'center', marginVertical: space.md },
   composerWrap: { paddingHorizontal: space.md, paddingTop: space.xs, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
@@ -592,10 +579,8 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: colors.text, fontSize: 16, maxHeight: 140, paddingTop: 9, paddingBottom: 9 },
   sendButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
   sendDisabled: { opacity: 0.4 },
-  sendText: { color: colors.navy, fontWeight: '700', fontSize: 12 },
   announceToggle: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 1 },
   announceOn: { backgroundColor: colors.gold },
-  announceText: { fontSize: 16 },
   typing: { color: colors.textMuted, fontSize: 13, marginLeft: space.md, marginBottom: 4 },
   offline: { color: colors.gold, fontSize: 13, textAlign: 'center', marginBottom: 6 },
   attachButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', marginBottom: 1 },
@@ -618,7 +603,6 @@ const styles = StyleSheet.create({
   },
   regardingText: { color: colors.navy, fontSize: 13, fontWeight: '700', flexShrink: 1 },
   readOnly: { color: colors.textMuted, textAlign: 'center', paddingVertical: space.md },
-  headerAction: { color: colors.gold, fontWeight: '600' },
   dmHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm, maxWidth: 240 },
   dmHeaderName: { color: colors.text, fontSize: 17, fontWeight: '600' }
 });

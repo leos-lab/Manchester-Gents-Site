@@ -1,17 +1,20 @@
 import { useRef, useState } from 'react';
 import { Alert, FlatList, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { getViewerSession, savePhotoToLibrary } from '../src/lib/gallery';
 import { BackupImage } from '../src/components/BackupImage';
 import { Glass } from '../src/components/Glass';
-import { colors } from '../src/theme';
+import { Icon } from '../src/components/Icon';
+import { colors, space } from '../src/theme';
 
 // Full-screen photo viewer with native toolbars: Done in the header, Share and
 // Save in the bottom toolbar. Swipe between photos.
 export default function PhotoViewer() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [{ photos, index }] = useState(getViewerSession);
   const [current, setCurrent] = useState(index);
   const [saving, setSaving] = useState(false);
@@ -46,28 +49,32 @@ export default function PhotoViewer() {
               <Text style={styles.count}>{photos.length ? `${current + 1} of ${photos.length}` : ''}</Text>
               {photo?.uploaderName ? (
                 <Text style={styles.credit} numberOfLines={1}>
-                  Shared by {photo.uploaderName}
+                  {photo.uploaderName}
                 </Text>
               ) : null}
             </Glass>
           )
         }}
       />
-      {/* Top right: the secondary toolbar (on the folded iPhone Duo's rail). */}
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button onPress={() => router.back()} tintColor={colors.gold} variant="done">
-          Done
-        </Stack.Toolbar.Button>
-      </Stack.Toolbar>
-      <Stack.Toolbar placement="bottom">
-        <Stack.Toolbar.Button icon="square.and.arrow.up" onPress={share} tintColor={colors.gold}>
-          Share
-        </Stack.Toolbar.Button>
-        <Stack.Toolbar.Spacer />
-        <Stack.Toolbar.Button icon="square.and.arrow.down" onPress={save} disabled={saving} tintColor={colors.gold}>
-          {saving ? 'Saving' : 'Save to Photos'}
-        </Stack.Toolbar.Button>
-      </Stack.Toolbar>
+      {Platform.OS === 'ios' ? (
+        <>
+          {/* Top right: the secondary toolbar (on the folded iPhone Duo's rail). */}
+          <Stack.Toolbar placement="right">
+            <Stack.Toolbar.Button onPress={() => router.back()} tintColor={colors.gold} variant="done">
+              Done
+            </Stack.Toolbar.Button>
+          </Stack.Toolbar>
+          <Stack.Toolbar placement="bottom">
+            <Stack.Toolbar.Button icon="square.and.arrow.up" onPress={share} tintColor={colors.gold}>
+              Share
+            </Stack.Toolbar.Button>
+            <Stack.Toolbar.Spacer />
+            <Stack.Toolbar.Button icon="square.and.arrow.down" onPress={save} disabled={saving} tintColor={colors.gold}>
+              {saving ? 'Saving' : 'Save to Photos'}
+            </Stack.Toolbar.Button>
+          </Stack.Toolbar>
+        </>
+      ) : null}
 
       {/* Folding or unfolding (or rotating) changes the page width, which would
           leave the list part-way between photos. Rebuild it at the new width,
@@ -98,6 +105,20 @@ export default function PhotoViewer() {
           </ZoomablePage>
         )}
       />
+      {/* Android's toolbar can't show SF Symbols, so Share and Save sit in a
+          plain bar over the bottom of the photo (back closes the viewer). */}
+      {Platform.OS === 'android' ? (
+        <View style={[styles.androidBar, { paddingBottom: insets.bottom + space.md }]}>
+          <Pressable onPress={share} hitSlop={12} accessibilityRole="button" style={styles.androidButton}>
+            <Icon name="square.and.arrow.up" size={20} color={colors.gold} />
+            <Text style={styles.androidAction}>Share</Text>
+          </Pressable>
+          <Pressable onPress={save} disabled={saving} hitSlop={12} accessibilityRole="button" style={styles.androidButton}>
+            <Icon name="square.and.arrow.down" size={20} color={colors.gold} />
+            <Text style={styles.androidAction}>{saving ? 'Saving' : 'Save to Photos'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -153,5 +174,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
   title: { alignItems: 'center', maxWidth: 260, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, overflow: 'hidden' },
   count: { color: colors.text, fontSize: 17, fontWeight: '600' },
-  credit: { color: colors.textMuted, fontSize: 12 }
+  credit: { color: colors.textMuted, fontSize: 12 },
+  androidBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: space.xl, paddingTop: space.md, backgroundColor: 'rgba(0, 0, 0, 0.55)' },
+  androidButton: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  androidAction: { color: colors.gold, fontSize: 16, fontWeight: '600' }
 });

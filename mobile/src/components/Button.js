@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  label: { fontSize: 17, fontWeight: '600' },
+  label: { fontSize: 17, fontWeight: '600', textAlign: 'center' },
   pressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.5 }
 });

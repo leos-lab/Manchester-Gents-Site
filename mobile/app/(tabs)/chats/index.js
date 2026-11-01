@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { useChat } from '../../../src/context/ChatContext';
 import { Avatar } from '../../../src/components/Avatar';
@@ -38,11 +38,7 @@ export default function Chats() {
 
   return (
     <>
-      <NotificationToolbar>
-        <Stack.Toolbar.Button icon="square.and.pencil" onPress={() => router.push('/new-message')} tintColor={colors.gold}>
-          New message
-        </Stack.Toolbar.Button>
-      </NotificationToolbar>
+      <NotificationToolbar actions={[{ icon: 'square.and.pencil', label: 'New message', onPress: () => router.push('/new-message') }]} />
       <FlatList
         style={styles.list}
         contentInsetAdjustmentBehavior="automatic"
