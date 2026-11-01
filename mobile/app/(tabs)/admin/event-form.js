@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { api } from '../../../src/lib/api';
 import { useSheetPadding } from '../../../src/lib/layout';
-import { HeaderAction } from '../../../src/components/HeaderAction';
+import { Button } from '../../../src/components/Button';
 import { Field, SectionTitle, ToggleRow } from '../../../src/components/Form';
 import { colors, radius, space } from '../../../src/theme';
 
@@ -116,12 +116,7 @@ export default function EventForm() {
     // In a form sheet, KeyboardAvoidingView mis-measures and leaves the sheet
     // blank; the scroll view makes room for the keyboard itself.
     <>
-      <Stack.Screen
-        options={{
-          title: id ? 'Edit event' : 'New event',
-          headerRight: () => <HeaderAction title={id ? 'Save' : 'Create'} onPress={save} busy={busy} />
-        }}
-      />
+      <Stack.Screen options={{ title: id ? 'Edit event' : 'New event' }} />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.content, gutter]}
@@ -165,6 +160,7 @@ export default function EventForm() {
           onValueChange={set('published')}
         />
 
+        <Button title={id ? 'Save changes' : 'Create event'} onPress={save} loading={busy} />
       </ScrollView>
     </>
   );

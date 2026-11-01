@@ -27,7 +27,7 @@ function urls(a) {
 
 // assets[0] is served by Pinstripe itself; assets[1] (ImgBB) is the backup if
 // that can't be reached.
-function normalise(photo) {
+export function normalise(photo) {
   const main = urls(photo.assets?.[0]);
   const backup = urls(photo.assets?.[1]);
   return {

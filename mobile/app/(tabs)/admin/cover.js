@@ -3,8 +3,10 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../../src/lib/api';
-import { loadPhotos } from '../../../src/lib/gallery';
+import { loadPhotos, normalise, uploadPhotos } from '../../../src/lib/gallery';
+import { COMPATIBLE_PHOTOS } from '../../../src/lib/filePart';
 import { useSheetPadding } from '../../../src/lib/layout';
 import { Button } from '../../../src/components/Button';
 import { colors, radius, space } from '../../../src/theme';
@@ -21,6 +23,7 @@ export default function CoverPicker() {
   const gutter = useSheetPadding(space.lg);
   const [sections, setSections] = useState(null);
   const [saving, setSaving] = useState(null); // url being set
+  const [uploading, setUploading] = useState(false);
 
   // Reloads on focus, so photos just added to Event assets show up.
   useFocusEffect(
@@ -46,6 +49,26 @@ export default function CoverPicker() {
     } catch (e) {
       Alert.alert('Couldn’t change the cover', e.message);
       setSaving(null);
+    }
+  };
+
+  // A new photo from the library: into Event assets, then made the cover. All
+  // in this sheet (opening the gallery from a sheet would land behind it).
+  const uploadCover = async () => {
+    const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9, ...COMPATIBLE_PHOTOS });
+    if (picked.canceled || !picked.assets?.[0]) return;
+    setUploading(true);
+    try {
+      const { gallery } = await api.gallery(eventId, { assets: true });
+      await loadPhotos(gallery, 1); // makes sure the Event assets gallery exists
+      const outcome = await uploadPhotos(gallery, [picked.assets[0]], undefined, gallery.uploaderName);
+      const photo = outcome.succeeded?.[0] ? normalise(outcome.succeeded[0]) : null;
+      if (!photo) throw new Error(outcome.failed?.[0]?.error || 'The photo didn’t upload.');
+      await setCover(photo.full || photo.medium || photo.thumb);
+    } catch (e) {
+      Alert.alert('Couldn’t upload the cover', e.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -82,9 +105,9 @@ export default function CoverPicker() {
       ) : sections.assets.length ? (
         grid(sections.assets)
       ) : (
-        <Text style={styles.hint}>Nothing here yet. Event assets are only seen by admins: the place for the cover and promo material.</Text>
+        <Text style={styles.hint}>Nothing here yet. Upload a cover below: it’s kept in Event assets, which only admins see.</Text>
       )}
-      <Button title="Add to Event assets" variant="secondary" onPress={() => router.push(`/gallery/${eventId}?assets=1`)} />
+      <Button title="Upload a new cover" variant="secondary" onPress={uploadCover} loading={uploading} disabled={Boolean(saving)} />
 
       {sections?.gallery.length ? (
         <>
