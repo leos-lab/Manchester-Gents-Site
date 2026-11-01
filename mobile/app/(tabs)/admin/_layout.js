@@ -19,6 +19,7 @@ export default function AdminStack() {
       <Stack.Screen name="cover" options={{ ...sheetOptions, title: 'Cover photo' }} />
       <Stack.Screen name="announce" options={{ title: 'Announcement' }} />
       <Stack.Screen name="reports" options={{ title: 'Chat reports' }} />
+      <Stack.Screen name="beta" options={{ title: 'Beta testers' }} />
       <Stack.Screen name="reminders" options={{ title: 'RSVP reminders' }} />
       <Stack.Screen name="settings" options={{ title: 'Security' }} />
     </Stack>

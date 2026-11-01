@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { requestHost, stageFromHost } from './lib/stage';
 
 function parseDateToMs(value) {
   if (!value) return null;
@@ -77,7 +78,23 @@ const STATIC_PUBLIC_PATH =
 // These must bail out before any network call, or a request to one of them re-enters
 // middleware, which fetches them again, recursing exponentially.
 const INTERNAL_STATUS_PATH =
-  /^\/api\/(auth|session-version|coming-soon|photo-notice)(\/|$)/;
+  /^\/api\/(auth|session-version|coming-soon|photo-notice|beta-access)(\/|$)/;
+
+// On dev and UAT, signed-in members who aren't beta testers can still see
+// these; anything else sends them to Get the app to request access.
+const BETA_PUBLIC_PATH =
+  /^\/($|get-the-app|privacy|guidelines|login|register|forgot-password|reset-password|coming-soon|photo-notice|api\/)/;
+
+async function hasBetaAccess(req) {
+  try {
+    const res = await internalFetch(req, '/api/beta-access');
+    if (!res.ok) return true;
+    const data = await res.json();
+    return Boolean(data?.approved);
+  } catch (error) {
+    return true;
+  }
+}
 
 export async function middleware(req) {
   const { pathname, searchParams } = req.nextUrl;
@@ -143,6 +160,21 @@ export async function middleware(req) {
       }
       return NextResponse.redirect(redirectUrl);
     }
+  }
+
+  if (
+    validToken &&
+    !isAdmin &&
+    !validToken.betaApprovedAt &&
+    stageFromHost(requestHost(req.headers)) !== 'prod' &&
+    !BETA_PUBLIC_PATH.test(pathname) &&
+    !(await hasBetaAccess(req))
+  ) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = '/get-the-app';
+    redirectUrl.search = '';
+    redirectUrl.searchParams.set('beta', 'required');
+    return NextResponse.redirect(redirectUrl);
   }
 
   const isPhotoNoticePublicPath =

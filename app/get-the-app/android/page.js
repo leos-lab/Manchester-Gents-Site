@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { getHomeContent } from '@/lib/homeContent';
 import { isTestSite } from '@/lib/siteStage';
 import { FeedbackNote, Requirements, TestingNotice } from '../shared';
+import BetaSection from '../BetaSection';
 import styles from '../page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +13,8 @@ export const metadata = {
   title: 'Get the app for Android | Manchester Gents'
 };
 
-// Android: while testing, join the testers Google Group (anyone can join),
-// then opt in to the test on Google Play.
+// Android: while testing, people request to join; an admin approves them in
+// the app, which emails the testers group and Google Play testing links.
 export default async function AndroidPage() {
   const { androidAppUrl, androidGroupUrl } = await getHomeContent();
   const testing = isTestSite();
@@ -31,8 +32,8 @@ export default async function AndroidPage() {
         ) : testing ? (
           <>
             <p className={styles.intro}>
-              While the app is in testing, Google only lets signed-up testers install it.
-              {androidGroupUrl ? ' You join our testers group first, then install it from Google Play as usual.' : ''}
+              While the app is in testing, Google only lets signed-up testers install it. Ask to join below, and once we’ve
+              approved you, you install it from Google Play as usual.
             </p>
             <Requirements>
               <li>An Android phone on Android 7 or later.</li>
@@ -42,30 +43,30 @@ export default async function AndroidPage() {
               </li>
             </Requirements>
             <section className={styles.platform}>
-              <h2>Install it</h2>
+              <h2>How it works</h2>
               <ol className={styles.steps}>
-                {androidGroupUrl ? (
-                  <li>
-                    <strong>Join the testers group.</strong> Sign in with your Google account and tap <em>Join group</em>. You’re in
-                    straight away.
-                    <a href={androidGroupUrl} className={styles.secondary} target="_blank" rel="noreferrer">
-                      Join the testers group
-                    </a>
-                  </li>
-                ) : null}
                 <li>
-                  <strong>Become a tester.</strong> {androidGroupUrl ? 'Then open' : 'Open'} this link, tap{' '}
-                  <em>Become a tester</em>, then tap the link to download it on Google Play.
-                  <a href={androidAppUrl} className={styles.primary} target="_blank" rel="noreferrer">
-                    Become a tester
-                  </a>
+                  <strong>Sign in and request to join the beta</strong> below, giving the email address of your Google account.
                 </li>
                 <li>
-                  <strong>Install MCR Gents</strong> from Google Play, open it, sign in, and allow notifications so you hear about
-                  new messages and events.
+                  <strong>We approve your request</strong>, usually within a day, and email you the links.
+                </li>
+                <li>
+                  {androidGroupUrl ? (
+                    <>
+                      <strong>Join the testers group</strong>, then <strong>become a tester</strong>
+                    </>
+                  ) : (
+                    <strong>Become a tester</strong>
+                  )}{' '}
+                  with the links in the email, and install MCR Gents from Google Play.
+                </li>
+                <li>
+                  <strong>Open MCR Gents</strong>, sign in, and allow notifications so you hear about new messages and events.
                 </li>
               </ol>
             </section>
+            <BetaSection platform="ANDROID" links={{ androidAppUrl, androidGroupUrl }} />
             <section className={styles.platform}>
               <h2>Good to know</h2>
               <ul className={styles.facts}>

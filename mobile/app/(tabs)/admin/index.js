@@ -73,6 +73,12 @@ export default function AdminHome() {
           <ListRow symbol="person.2" title="Members" subtitle="Directory, details, placeholders" onPress={() => router.push('/admin/members')} />
           <ListRow symbol="bell.badge" title="RSVP reminders" subtitle="Who hasn’t RSVPed for the next event" onPress={() => router.push('/admin/reminders')} />
           <ListRow symbol="flag" title="Chat reports" subtitle="Remove messages, ban or dismiss" onPress={() => router.push('/admin/reports')} />
+          <ListRow
+            symbol="person.badge.plus"
+            title="Beta testers"
+            subtitle={data?.betaRequests ? `${data.betaRequests} waiting for approval` : 'Approve requests to test the app'}
+            onPress={() => router.push('/admin/beta')}
+          />
           <ListRow symbol="lock.shield" title="Security" subtitle="Log everyone out, coming soon, photography notice" onPress={() => router.push('/admin/settings')} />
         </ListGroup>
       </Content>

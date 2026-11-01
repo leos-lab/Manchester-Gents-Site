@@ -132,6 +132,8 @@ export const api = {
     addPlaceholders: (users) => request('/api/admin/placeholders', { method: 'POST', body: { users } }),
 
     reports: () => request('/api/v1/admin/reports'),
+    betaRequests: () => request('/api/v1/admin/beta-requests'),
+    actOnBetaRequest: (id, action) => request(`/api/v1/admin/beta-requests/${enc(id)}`, { method: 'POST', body: { action } }),
     actOnReport: (reportId, action) =>
       request(`/api/admin/chat-reports/${enc(reportId)}`, { method: 'POST', body: { action } }),
 

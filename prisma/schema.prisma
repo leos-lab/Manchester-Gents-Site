@@ -86,6 +86,10 @@ model User {
   // private reference photo (profilePhotoUrl), which stays admin/self only.
   avatarUrl               String?
   avatarPhotoId           String?
+  // Approved for the app beta: on dev and UAT, members need this (or admin)
+  // to see the signed-in site and use the app.
+  betaApprovedAt          DateTime?
+  betaRequests            BetaRequest[]
   createdAt               DateTime             @default(now())
   updatedAt               DateTime             @updatedAt
 }
@@ -321,4 +325,36 @@ model Notification {
   createdAt DateTime  @default(now())
 
   @@index([userId, createdAt])
+}
+
+// Requests to join the app's beta (TestFlight / Google Play testing), made by
+// a signed-in member on /get-the-app. The email and handle can differ from the
+// account's (e.g. an Android tester's Google address). An admin approves or
+// declines them in the app; approving flags the member and emails the install
+// steps for their phone.
+model BetaRequest {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email           String
+  instagramHandle String
+  platform        BetaPlatform
+  message         String?
+  status          BetaRequestStatus @default(PENDING)
+  createdAt       DateTime          @default(now())
+  decidedAt       DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+enum BetaPlatform {
+  IOS
+  ANDROID
+}
+
+enum BetaRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
 }

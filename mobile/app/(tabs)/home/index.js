@@ -321,6 +321,9 @@ function AdminTodo({ admin, onOpen }) {
     admin.openReports
       ? { key: 'reports', symbol: 'flag.fill', text: `${admin.openReports} chat ${admin.openReports === 1 ? 'report' : 'reports'} to review`, path: '/admin/reports', urgent: true }
       : null,
+    admin.betaRequests
+      ? { key: 'beta', symbol: 'person.badge.plus', text: `${admin.betaRequests} beta ${admin.betaRequests === 1 ? 'request' : 'requests'} to approve`, path: '/admin/beta' }
+      : null,
     admin.newMembers.length
       ? { key: 'members', symbol: 'person.badge.plus', text: `${admin.newMembers.length} new ${admin.newMembers.length === 1 ? 'member' : 'members'} in the last 2 weeks`, path: '/admin/members' }
       : null,

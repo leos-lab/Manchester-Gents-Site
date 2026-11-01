@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { getHomeContent } from '@/lib/homeContent';
 import { isTestSite } from '@/lib/siteStage';
 import { FeedbackNote, Requirements, TestingNotice } from '../shared';
+import BetaSection from '../BetaSection';
 import styles from '../page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,8 @@ export const metadata = {
 
 const TESTFLIGHT_APP = 'https://apps.apple.com/app/testflight/id899247664';
 
-// iPhone: while testing, TestFlight first, then the invite link.
+// iPhone: while testing, people request to join; an admin approves them in
+// the app, which emails the TestFlight invite.
 export default async function IosPage() {
   const { iosAppUrl } = await getHomeContent();
   const testing = isTestSite();
@@ -33,36 +35,37 @@ export default async function IosPage() {
           <>
             <p className={styles.intro}>
               While the app is in testing, it comes through <strong>TestFlight</strong>, Apple’s own app for trying apps before
-              they reach the App Store. It takes about two minutes.
+              they reach the App Store. Ask to join below, and once we’ve approved you it takes about two minutes to install.
             </p>
             <Requirements>
               <li>An iPhone on iOS 16.4 or later (Settings → General → About → iOS Version).</li>
               <li>Your Apple Account, the one you use for the App Store.</li>
               <li>
-                <strong>Open this page on your iPhone.</strong> The invite only works there, not on a computer.
+                <strong>Open the invite email on your iPhone.</strong> The invite only works there, not on a computer.
               </li>
             </Requirements>
             <section className={styles.platform}>
-              <h2>Install it</h2>
+              <h2>How it works</h2>
               <ol className={styles.steps}>
                 <li>
-                  <strong>Install TestFlight</strong> from the App Store. It’s free and made by Apple.
-                  <a href={TESTFLIGHT_APP} className={styles.secondary} target="_blank" rel="noreferrer">
-                    Get TestFlight
-                  </a>
+                  <strong>Sign in and request to join the beta</strong> below. Your details are filled in from your account.
                 </li>
                 <li>
-                  <strong>Open the invite.</strong> It opens in TestFlight: tap <em>Accept</em>, then <em>Install</em>.
-                  <a href={iosAppUrl} className={styles.primary} target="_blank" rel="noreferrer">
-                    Open the invite
-                  </a>
+                  <strong>We approve your request</strong>, usually within a day, and email you a TestFlight invite.
                 </li>
                 <li>
-                  <strong>Open MCR Gents</strong> from your home screen, sign in, and allow notifications so you hear about new
-                  messages and events.
+                  <strong>Install TestFlight</strong> from the App Store (it’s free and made by Apple), then open the invite on
+                  your iPhone and tap <em>Accept</em> and <em>Install</em>.
+                </li>
+                <li>
+                  <strong>Open MCR Gents</strong>, sign in, and allow notifications so you hear about new messages and events.
                 </li>
               </ol>
+              <a href={TESTFLIGHT_APP} className={styles.secondary} target="_blank" rel="noreferrer">
+                Get TestFlight now
+              </a>
             </section>
+            <BetaSection platform="IOS" links={{ iosAppUrl }} />
             <section className={styles.platform}>
               <h2>Good to know</h2>
               <ul className={styles.facts}>

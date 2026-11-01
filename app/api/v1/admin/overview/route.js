@@ -11,7 +11,7 @@ const NEW_MEMBER_DAYS = 14;
 export const GET = v1(
   async () => {
     const since = new Date(Date.now() - NEW_MEMBER_DAYS * 24 * 60 * 60 * 1000);
-    const [openReports, upcoming, newMembers, memberCount] = await Promise.all([
+    const [openReports, upcoming, newMembers, memberCount, betaRequests] = await Promise.all([
       prisma.chatReport.groupBy({ by: ['messageId'], where: { status: 'OPEN' } }).then((rows) => rows.length),
       prisma.event.findMany({
         where: { startTime: { gte: new Date() } },
@@ -34,11 +34,13 @@ export const GET = v1(
         take: 20,
         select: ADMIN_MEMBER_SELECT
       }),
-      prisma.user.count({ where: { isPlaceholder: false } })
+      prisma.user.count({ where: { isPlaceholder: false } }),
+      prisma.betaRequest.count({ where: { status: 'PENDING' } })
     ]);
     return {
       openReports,
       memberCount,
+      betaRequests,
       upcoming: upcoming.map(({ attendees, ...event }) => ({
         ...event,
         confirmed: attendees.filter((a) => a.status === 'CONFIRMED').length,

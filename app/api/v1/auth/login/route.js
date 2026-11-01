@@ -3,6 +3,7 @@ import { verifyPassword } from '@/lib/password';
 import { getDisplayName } from '@/lib/displayName';
 import { getSessionVersion } from '@/lib/sessionVersion';
 import { signChatToken } from '@/lib/chatToken';
+import { requestHost, stageFromHost } from '@/lib/stage';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,6 +29,15 @@ export async function POST(request) {
   const valid = user && !user.isPlaceholder && (await verifyPassword(password, user.passwordHash));
   if (!valid) {
     return Response.json({ error: 'Email, handle or password is incorrect.' }, { status: 401 });
+  }
+
+  // Dev and UAT apps are test builds: only beta testers and admins sign in.
+  const host = requestHost(request.headers);
+  if (stageFromHost(host) !== 'prod' && user.role !== 'ADMIN' && !user.betaApprovedAt) {
+    return Response.json(
+      { error: `Your account isn’t in the beta yet. Ask to join at ${host}/get-the-app, then sign in once you’re approved.` },
+      { status: 403 }
+    );
   }
 
   const sv = await getSessionVersion();
