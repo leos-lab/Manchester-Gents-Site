@@ -43,7 +43,7 @@ export default function SignIn() {
 
           <View style={styles.form}>
             <TextInput
-                {...keyboard.inputProps}
+              {...keyboard.inputProps}
               style={styles.input}
               placeholder="Email or Instagram handle"
               placeholderTextColor={colors.textFaint}
@@ -56,9 +56,9 @@ export default function SignIn() {
               onChangeText={setIdentifier}
               returnKeyType="next"
             />
-              {keyboard.bar}
+            {keyboard.bar}
             <TextInput
-                {...keyboard.inputProps}
+              {...keyboard.inputProps}
               style={styles.input}
               placeholder="Password"
               placeholderTextColor={colors.textFaint}
