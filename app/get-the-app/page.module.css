@@ -156,7 +156,7 @@
   margin: 0;
 }
 
-.notice a {
+.notice p a {
   color: var(--color-gold);
 }
 
