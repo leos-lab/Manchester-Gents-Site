@@ -86,6 +86,91 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
+/* Pick your phone. */
+.choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.4rem 1.5rem;
+  border-radius: 20px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-body);
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.choice strong {
+  color: var(--color-gold);
+  font-size: 1.3rem;
+}
+
+.choice span {
+  color: rgba(247, 244, 237, 0.75);
+  font-size: 0.95rem;
+}
+
+.choice:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-gold);
+}
+
+.back {
+  color: var(--color-gold);
+  text-decoration: none;
+  font-weight: 600;
+  width: fit-content;
+}
+
+/* Testing notice, feedback and prerequisites. */
+.notice,
+.requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.4rem 1.5rem;
+  border-radius: 20px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  line-height: 1.6;
+}
+
+.requirements {
+  border-color: rgba(255, 212, 96, 0.45);
+}
+
+.notice h2,
+.requirements h2 {
+  margin: 0;
+  color: var(--color-gold);
+  font-size: 1.15rem;
+}
+
+.notice p {
+  margin: 0;
+}
+
+.notice a {
+  color: var(--color-gold);
+}
+
+.notice ul,
+.requirements ul,
+.facts {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  line-height: 1.6;
+}
+
 .note {
   margin: 0;
   color: rgba(247, 244, 237, 0.75);

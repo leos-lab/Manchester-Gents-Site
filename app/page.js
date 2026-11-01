@@ -80,12 +80,12 @@ export default async function HomePage() {
     <div className={styles.apps}>
       <div className={styles.appButtons}>
         {home.iosAppUrl ? (
-          <Link href="/get-the-app#iphone" className={styles.appButton}>
+          <Link href="/get-the-app/ios" className={styles.appButton}>
             Get the app for iPhone
           </Link>
         ) : null}
         {home.androidAppUrl ? (
-          <Link href="/get-the-app#android" className={styles.appButton}>
+          <Link href="/get-the-app/android" className={styles.appButton}>
             Get the app for Android
           </Link>
         ) : null}
