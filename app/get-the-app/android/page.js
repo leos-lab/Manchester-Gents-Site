@@ -12,8 +12,8 @@ export const metadata = {
   title: 'Get the app for Android | Manchester Gents'
 };
 
-// Android: while testing, join the testers Google Group (we approve each
-// request), then opt in to the test on Google Play.
+// Android: while testing, join the testers Google Group (anyone can join),
+// then opt in to the test on Google Play.
 export default async function AndroidPage() {
   const { androidAppUrl, androidGroupUrl } = await getHomeContent();
   const testing = isTestSite();
@@ -40,22 +40,21 @@ export default async function AndroidPage() {
                 <strong>The same Google account</strong> for every step as the one signed in to the Play Store on your phone.
                 Testing access is tied to that account.
               </li>
-              {androidGroupUrl ? <li>A little patience: we approve each request to join by hand, usually within a day.</li> : null}
             </Requirements>
             <section className={styles.platform}>
               <h2>Install it</h2>
               <ol className={styles.steps}>
                 {androidGroupUrl ? (
                   <li>
-                    <strong>Ask to join the testers group.</strong> Sign in with your Google account and tap <em>Ask to join group</em>.
-                    Google emails you once we’ve approved you.
+                    <strong>Join the testers group.</strong> Sign in with your Google account and tap <em>Join group</em>. You’re in
+                    straight away.
                     <a href={androidGroupUrl} className={styles.secondary} target="_blank" rel="noreferrer">
                       Join the testers group
                     </a>
                   </li>
                 ) : null}
                 <li>
-                  <strong>Become a tester.</strong> {androidGroupUrl ? 'Once you’re approved, open' : 'Open'} this link, tap{' '}
+                  <strong>Become a tester.</strong> {androidGroupUrl ? 'Then open' : 'Open'} this link, tap{' '}
                   <em>Become a tester</em>, then tap the link to download it on Google Play.
                   <a href={androidAppUrl} className={styles.primary} target="_blank" rel="noreferrer">
                     Become a tester
