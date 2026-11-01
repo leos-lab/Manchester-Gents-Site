@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from './Button';
 import { colors, fonts, radius, space } from '../theme';
-import { useKeyboardDone } from './KeyboardDone';
 
 // Credits photos to someone before they're uploaded to an event gallery:
 // "Name (@handle)" for the member, or a name typed for someone else.
@@ -12,7 +11,6 @@ export function uploaderLabel(user) {
 }
 
 export function UploaderPrompt({ visible, count, user, onUpload, onCancel }) {
-  const keyboard = useKeyboardDone();
   const mine = uploaderLabel(user);
   const [someoneElse, setSomeoneElse] = useState(false);
   const [name, setName] = useState('');
@@ -35,7 +33,6 @@ export function UploaderPrompt({ visible, count, user, onUpload, onCancel }) {
             <>
               <Text style={styles.text}>Who took them? Their name is shown with the photos.</Text>
               <TextInput
-                  {...keyboard.inputProps}
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
@@ -46,7 +43,6 @@ export function UploaderPrompt({ visible, count, user, onUpload, onCancel }) {
                 returnKeyType="done"
                 onSubmitEditing={() => name.trim() && onUpload(name.trim())}
               />
-                {keyboard.bar}
               <Button title="Upload" onPress={() => onUpload(name.trim())} disabled={!name.trim()} />
               <Button title={`Upload as ${mine} instead`} variant="ghost" onPress={() => setSomeoneElse(false)} />
             </>

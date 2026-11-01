@@ -150,7 +150,7 @@ export default function Register() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.flex} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled">
+      <ScrollView keyboardDismissMode="interactive" style={styles.flex} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled">
         <Content style={styles.content}>
           <View style={styles.progress} accessibilityLabel={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}>
             {STEPS.map((s, i) => (

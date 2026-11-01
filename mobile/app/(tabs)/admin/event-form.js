@@ -117,7 +117,7 @@ export default function EventForm() {
     // blank; the scroll view makes room for the keyboard itself.
     <>
       <Stack.Screen options={{ title: id ? 'Edit event' : 'New event' }} />
-      <ScrollView
+      <ScrollView keyboardDismissMode="interactive"
         style={styles.screen}
         contentContainerStyle={[styles.content, gutter]}
         contentInsetAdjustmentBehavior="never"

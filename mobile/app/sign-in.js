@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -6,16 +6,15 @@ import { useAuth } from '../src/context/AuthContext';
 import { Button } from '../src/components/Button';
 import { Content } from '../src/components/Content';
 import { colors, fonts, radius, space } from '../src/theme';
-import { useKeyboardDone } from '../src/components/KeyboardDone';
 
 export default function SignIn() {
-  const keyboard = useKeyboardDone();
   const router = useRouter();
   const { signIn } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const passwordRef = useRef(null);
 
   const submit = async () => {
     if (!identifier.trim() || !password) {
@@ -35,7 +34,7 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView keyboardDismissMode="interactive" contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Content style={styles.content}>
           <Image source={require('../assets/images/splash-icon.png')} style={styles.logo} contentFit="contain" />
           <Text style={styles.title}>Manchester Gents</Text>
@@ -43,7 +42,6 @@ export default function SignIn() {
 
           <View style={styles.form}>
             <TextInput
-              {...keyboard.inputProps}
               style={styles.input}
               placeholder="Email or Instagram handle"
               placeholderTextColor={colors.textFaint}
@@ -55,10 +53,11 @@ export default function SignIn() {
               value={identifier}
               onChangeText={setIdentifier}
               returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
-            {keyboard.bar}
             <TextInput
-              {...keyboard.inputProps}
+              ref={passwordRef}
               style={styles.input}
               placeholder="Password"
               placeholderTextColor={colors.textFaint}

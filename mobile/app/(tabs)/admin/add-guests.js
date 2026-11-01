@@ -8,11 +8,9 @@ import { Button } from '../../../src/components/Button';
 import { Icon } from '../../../src/components/Icon';
 import { ListRow } from '../../../src/components/ListGroup';
 import { colors, radius, space } from '../../../src/theme';
-import { useKeyboardDone } from '../../../src/components/KeyboardDone';
 
 // Search members (placeholders included) and add them to an event's guest list.
 export default function AddGuests() {
-  const keyboard = useKeyboardDone();
   const { eventId } = useLocalSearchParams();
   const router = useRouter();
   const gutter = useSheetPadding(space.lg);
@@ -61,7 +59,6 @@ export default function AddGuests() {
   return (
     <View style={[styles.screen, gutter]}>
       <TextInput
-          {...keyboard.inputProps}
         style={styles.search}
         placeholder="Search name, @handle or email"
         placeholderTextColor={colors.textFaint}
@@ -71,8 +68,7 @@ export default function AddGuests() {
         autoCorrect={false}
         clearButtonMode="while-editing"
       />
-      {keyboard.bar}
-      <FlatList
+      <FlatList keyboardDismissMode="interactive"
         style={styles.list}
         data={members.filter((m) => !existing.has(m.id))}
         keyExtractor={(m) => m.id}
