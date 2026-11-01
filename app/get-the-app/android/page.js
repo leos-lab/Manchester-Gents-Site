@@ -31,7 +31,7 @@ export default async function AndroidPage() {
         ) : testing ? (
           <>
             <p className={styles.intro}>
-              While the app is in testing, Google only lets approved testers install it.
+              While the app is in testing, Google only lets signed-up testers install it.
               {androidGroupUrl ? ' You join our testers group first, then install it from Google Play as usual.' : ''}
             </p>
             <Requirements>
