@@ -364,11 +364,13 @@ export default function ChatRoom() {
   };
 
   // Newest first for the inverted list, with day dividers and sender grouping.
+  // Deleted messages just disappear.
   const rows = useMemo(() => {
+    const shown = messages.filter((m) => !m.deleted);
     const out = [];
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      const m = messages[i];
-      const prev = messages[i - 1];
+    for (let i = shown.length - 1; i >= 0; i -= 1) {
+      const m = shown[i];
+      const prev = shown[i - 1];
       const startsGroup =
         !prev ||
         prev.sender?.id !== m.sender?.id ||

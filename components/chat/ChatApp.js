@@ -311,6 +311,8 @@ export default function ChatApp({ me, initialOpen }) {
     return rooms.find((r) => r.id === open.roomId)?.title || open.title || 'Chat';
   }, [open, rooms]);
   const openOther = open?.kind === 'DIRECT' ? rooms.find((r) => r.id === open.roomId)?.other : null;
+  // Deleted messages just disappear.
+  const shown = messages.filter((m) => !m.deleted);
 
   if (!configured) {
     return (
@@ -483,15 +485,15 @@ export default function ChatApp({ me, initialOpen }) {
               </button>
             </header>
             <div className={styles.messages} ref={listRef} onScroll={(e) => e.currentTarget.scrollTop < 60 && loadOlder()}>
-              {messages.length === 0 ? (
+              {shown.length === 0 ? (
                 <p className={styles.hello}>
                   {open.kind === 'DIRECT'
                     ? 'Only the two of you can see these messages.'
                     : 'Messages here are seen by everyone going to this event.'}
                 </p>
               ) : null}
-              {messages.map((m, i) => {
-                const prev = messages[i - 1];
+              {shown.map((m, i) => {
+                const prev = shown[i - 1];
                 const mine = m.sender?.id === me.id;
                 const startsGroup =
                   !prev || prev.sender?.id !== m.sender?.id || new Date(m.createdAt) - new Date(prev.createdAt) > GROUP_GAP_MS;
