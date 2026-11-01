@@ -115,7 +115,8 @@ export const api = {
     createEvent: (fields) => request('/api/events', { method: 'POST', body: fields }),
     updateEvent: (id, fields) => request(`/api/events/${enc(id)}`, { method: 'PUT', body: fields }),
     deleteEvent: (id) => request(`/api/events/${enc(id)}`, { method: 'DELETE' }),
-    setCover: (id, coverImageUrl) => request(`/api/events/${enc(id)}/cover`, { method: 'PATCH', body: { coverImageUrl } }),
+    setCover: (id, coverImageUrl, coverFocus = null) =>
+      request(`/api/events/${enc(id)}/cover`, { method: 'PATCH', body: { coverImageUrl, coverFocus } }),
     addGuests: (id, userIds) => request(`/api/admin/events/${enc(id)}/attendees`, { method: 'POST', body: { userIds } }),
     addGuestByHandle: (id, instagramHandle) =>
       request(`/api/admin/events/${enc(id)}/attendees`, { method: 'POST', body: { instagramHandle } }),

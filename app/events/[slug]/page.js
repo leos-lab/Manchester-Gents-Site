@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import ClientAdminControls from './client-admin-controls';
 import { getGalleryHighlights } from '@/lib/galleryHighlights';
+import { coverPosition } from '@/lib/eventFields';
 import styles from './page.module.css';
 
 async function getEvent(slug) {
@@ -200,7 +201,7 @@ export default async function EventDetailPage({ params }) {
       <section className={styles.cover} aria-labelledby="event-title">
         {event.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={event.coverImageUrl} alt="" className={styles.coverImage} fetchPriority="high" />
+          <img src={event.coverImageUrl} alt="" className={styles.coverImage} fetchPriority="high" style={{ objectPosition: coverPosition(event) }} />
         ) : (
           <div className={styles.coverCloth} aria-hidden="true" />
         )}

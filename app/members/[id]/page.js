@@ -42,7 +42,7 @@ export default async function MemberPage({ params }) {
       },
       orderBy: { startTime: 'desc' },
       take: 6,
-      select: { id: true, slug: true, title: true, coverImageUrl: true }
+      select: { id: true, slug: true, title: true, coverImageUrl: true, coverFocus: true }
     })
   ]);
   const member = toPublicMember(user, { eventsAttended });

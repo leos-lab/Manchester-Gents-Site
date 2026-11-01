@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { z } from 'zod';
@@ -5,8 +6,11 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+// coverFocus: the point the 16:9 crop centres on, as percentages.
+const focusSchema = z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) });
 const coverSchema = z.object({
-  coverImageUrl: z.string().url().nullable()
+  coverImageUrl: z.string().url().nullable(),
+  coverFocus: focusSchema.nullable().optional()
 });
 
 export async function PATCH(request, { params }) {
@@ -17,11 +21,12 @@ export async function PATCH(request, { params }) {
 
   try {
     const body = await request.json();
-    const { coverImageUrl } = coverSchema.parse(body);
+    const { coverImageUrl, coverFocus } = coverSchema.parse(body);
     const event = await prisma.event.update({
       where: { id: params.eventId },
-      data: { coverImageUrl },
-      select: { id: true, coverImageUrl: true }
+      // A new cover without a focus point is centred.
+      data: { coverImageUrl, coverFocus: coverImageUrl ? coverFocus ?? Prisma.DbNull : Prisma.DbNull },
+      select: { id: true, coverImageUrl: true, coverFocus: true }
     });
 
     return Response.json({ event });

@@ -11,6 +11,7 @@ import { Chip } from '../../../../src/components/Chip';
 import { Content } from '../../../../src/components/Content';
 import { ListGroup, ListRow } from '../../../../src/components/ListGroup';
 import { colors, fonts, radius, space } from '../../../../src/theme';
+import { coverPosition } from '../../../../src/lib/cover';
 
 const STATUS = { CONFIRMED: 'Going', WAITLISTED: 'Waitlist', CANCELLED: 'Cancelled' };
 
@@ -108,7 +109,7 @@ export default function AdminEvent() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.gold} />}
       >
         <Content style={styles.content}>
-          {event.coverImageUrl ? <Image source={{ uri: event.coverImageUrl }} style={styles.cover} contentFit="cover" /> : null}
+          {event.coverImageUrl ? <Image source={{ uri: event.coverImageUrl }} style={styles.cover} contentFit="cover" contentPosition={coverPosition(event)} /> : null}
           <View style={styles.header}>
             <Text style={styles.title}>{event.title}</Text>
             <Text style={styles.meta}>

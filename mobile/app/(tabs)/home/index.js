@@ -15,6 +15,7 @@ import { Icon } from '../../../src/components/Icon';
 import { Placeholder, PressableScale, Rise } from '../../../src/components/Motion';
 import { colors, fonts, radius, space, MAX_CONTENT_WIDTH } from '../../../src/theme';
 import { NotificationToolbar } from '../../../src/components/NotificationBell';
+import { coverPosition } from '../../../src/lib/cover';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -269,7 +270,7 @@ function FeaturedCard({ event, detail, going, onPress }) {
     <PressableScale onPress={onPress} style={styles.hero} accessibilityRole="button" accessibilityLabel={`${event.title}, ${when.date}`}>
       {event.coverImageUrl ? (
         <>
-          <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
+          <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition={coverPosition(event)} transition={300} />
           <View style={styles.heroShade} />
         </>
       ) : (
@@ -284,7 +285,7 @@ function MiniEvent({ event, onPress }) {
   const day = eventDay(event.startTime);
   return (
     <PressableScale onPress={onPress} style={styles.mini} accessibilityRole="button" accessibilityLabel={`${event.title}, ${day.weekday} ${day.day} ${day.month}`}>
-      {event.coverImageUrl ? <Image source={{ uri: event.coverImageUrl }} style={styles.miniCover} contentFit="cover" transition={200} /> : null}
+      {event.coverImageUrl ? <Image source={{ uri: event.coverImageUrl }} style={styles.miniCover} contentFit="cover" contentPosition={coverPosition(event)} transition={200} /> : null}
       <View style={styles.miniBody}>
         <Text style={styles.miniDate}>
           {day.weekday} {day.day} {day.month}

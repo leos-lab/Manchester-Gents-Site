@@ -108,6 +108,8 @@ model Event {
   backgroundColor  String?
   textColor        String?
   coverImageUrl    String?
+  // Where the cover is cropped to 16:9 around: { x, y } as percentages.
+  coverFocus       Json?
   // Gallery photos admins featured (Pinstripe ids, in order): shown first.
   featuredPhotoIds String[]       @default([])
   photosOgTitle    String?

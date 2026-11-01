@@ -15,6 +15,7 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { Icon } from '../../src/components/Icon';
 import { colors, fonts, space, WIDE_BREAKPOINT } from '../../src/theme';
+import { coverPosition } from '../../src/lib/cover';
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams();
@@ -117,7 +118,7 @@ export default function EventDetail() {
       >
         {event.coverImageUrl ? (
           <View style={[styles.hero, { height: heroHeight }]}>
-            <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+            <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition={coverPosition(event)} transition={250} />
             <View style={styles.heroShade} />
             <Content style={styles.heroText}>{heading}</Content>
           </View>

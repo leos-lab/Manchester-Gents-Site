@@ -31,7 +31,7 @@ async function getHomeData(userId) {
         where: { published: true, coverImageUrl: { not: null } },
         orderBy: { startTime: 'desc' },
         take: 3,
-        select: { coverImageUrl: true }
+        select: { coverImageUrl: true, coverFocus: true }
       }),
       prisma.event.findFirst({
         where: { published: true, startTime: { lt: now } },

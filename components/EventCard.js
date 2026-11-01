@@ -1,3 +1,4 @@
+import { coverPosition } from '@/lib/eventFields';
 import Link from 'next/link';
 import clsx from 'clsx';
 import { format } from 'date-fns';
@@ -21,7 +22,7 @@ export default function EventCard({ event, variant = 'list', status }) {
       <div className={styles.photo}>
         {event.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={event.coverImageUrl} alt="" loading="lazy" decoding="async" />
+          <img src={event.coverImageUrl} alt="" loading="lazy" decoding="async" style={{ objectPosition: coverPosition(event) }} />
         ) : (
           <div className={styles.photoFallback} style={event.backgroundColor ? { background: event.backgroundColor } : undefined}>
             <span className="heading-font">MG</span>

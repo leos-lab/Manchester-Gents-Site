@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 
 // iPhone Duo: folded, iOS puts the status bar, back button and tab bar in a
 // vertical rail on one side and reserves it with an 84pt left or right safe
@@ -14,10 +15,14 @@ export function useGutter(base = 0) {
 }
 
 // Padding for a sheet's scrolling content: the side gutter plus room at the
-// bottom for the home indicator, so the last button is never against the edge.
+// bottom for the home indicator. On iOS 26 a form sheet's content is pushed
+// down by its title bar without being made shorter, so its last part sits that
+// far below the visible sheet: the bottom padding includes the title bar's
+// height to bring the last button back into view.
 export function useSheetPadding(base = 0) {
   const { left, right, bottom } = useSafeAreaInsets();
-  return { paddingLeft: base + left, paddingRight: base + right, paddingBottom: Math.max(bottom, 16) + 32 };
+  const header = useHeaderHeight();
+  return { paddingLeft: base + left, paddingRight: base + right, paddingBottom: header + Math.max(bottom, 16) + 24 };
 }
 
 // Adds the side insets to whatever horizontal padding a style already has.

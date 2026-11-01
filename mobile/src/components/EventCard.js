@@ -4,6 +4,7 @@ import { colors, fonts, radius, space } from '../theme';
 import { eventDay } from '../lib/format';
 import { Chip } from './Chip';
 import { PressableScale } from './Motion';
+import { coverPosition } from '../lib/cover';
 
 // Image-led card: cover photo with the date stamped on it. Events without a
 // cover get a text-only card.
@@ -29,7 +30,7 @@ export function EventCard({ event, onPress, compact = false }) {
       {event.coverImageUrl ? (
         <>
           <View style={[styles.cover, compact && styles.coverCompact]}>
-            <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+            <Image source={{ uri: event.coverImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition={coverPosition(event)} transition={200} />
             <View style={styles.shade} />
             <DateStamp day={day} accent={accent} style={styles.dateOnCover} />
           </View>

@@ -18,6 +18,7 @@ export const GET = v1(
         capacity: true,
         published: true,
         coverImageUrl: true,
+        coverFocus: true,
         attendees: { select: { status: true } }
       }
     });
