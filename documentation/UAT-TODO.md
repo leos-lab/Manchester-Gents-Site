@@ -6,7 +6,7 @@ Work through these in order. A ✅ means it's already done. **Tell Claude** mean
 
 ## 1. Already done ✅
 
-- ✅ uat.manchestergents.com: the UAT website on the UAT database, with real emails. All mail goes to uat@manchestergents.com.
+- ✅ uat.manchestergents.com: the UAT website on the UAT database, with real emails. Mail goes to members, from uat@manchestergents.com.
 - ✅ chat-uat.manchestergents.com: UAT chat on its own tunnel.
 - ✅ Pinstripe `manchestergents-uat`: shows the live photos. Uploads stay in UAT and live photos can't be deleted from it.
 - ✅ dev.manchestergents.com and chat-dev: the same setup for dev.
@@ -20,7 +20,7 @@ Work through these in order. A ✅ means it's already done. **Tell Claude** mean
 1. Open https://uat.manchestergents.com and sign in with your normal email and password.
 2. Send a chat message, and open the community chat.
 3. On an existing event, upload a photo. It should show on UAT but **not** on manchestergents.com.
-4. Request a password reset. The email should arrive at **uat@manchestergents.com**, with "[for your@email]" in the subject.
+4. Request a password reset. The email should arrive at your own address, from **uat@manchestergents.com**.
    - If nothing arrives, check that the uat@ mailbox exists and that the email account the site sends from (its SMTP login) is allowed to send to it.
 5. Make a list of anything that looks wrong and send it to Claude.
 
