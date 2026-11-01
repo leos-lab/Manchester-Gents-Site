@@ -12,6 +12,9 @@ import {
   claimRegistrationPhotos,
   PhotoRefError,
 } from "@/lib/memberPhotoClaims";
+import { pinstripeRefId } from "@/lib/memberPhotoRef";
+import { avatarFromPhoto } from "@/lib/memberAvatar";
+import { deleteMemberPhoto } from "@/lib/pinstripeMedia";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -91,7 +94,8 @@ export async function POST(request) {
       name: data.preferredName,
     });
 
-    const photoRefs = [data.profilePhotoUrl, data.profilePhotoOriginalUrl];
+    const avatarUpload = data.avatarChoice === "upload" ? data.avatarPhotoUrl : null;
+    const photoRefs = [data.profilePhotoUrl, data.profilePhotoOriginalUrl, avatarUpload];
     await assertRegistrationPhotos(photoRefs);
 
     const baseUserData = {
@@ -116,6 +120,9 @@ export async function POST(request) {
       termsSignedAt: consentTimestamp,
       consentUpdatedAt: consentTimestamp,
       photoNoticeAgreedAt: consentTimestamp,
+      // They chose a profile photo (or none) while signing up: the app
+      // doesn't ask again.
+      avatarPromptDoneAt: data.avatarChoice ? consentTimestamp : null,
       passwordHash,
       isPlaceholder: false,
     };
@@ -149,6 +156,14 @@ export async function POST(request) {
     await claimRegistrationPhotos(photoRefs, user.id).catch((error) =>
       console.error("Claiming registration photos failed", error)
     );
+
+    // Public profile photo, best effort: they can set it later from their profile.
+    const avatarSource = data.avatarChoice === "reference" ? data.profilePhotoUrl : avatarUpload;
+    if (avatarSource) {
+      await avatarFromPhoto(user.id, pinstripeRefId(avatarSource))
+        .then(() => avatarUpload && deleteMemberPhoto(pinstripeRefId(avatarUpload)))
+        .catch((error) => console.error("Setting the sign-up avatar failed", error));
+    }
 
     await sendMakeWebhook(
       buildMemberSignupPayload({

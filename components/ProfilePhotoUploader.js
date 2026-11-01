@@ -11,7 +11,17 @@ import { photoSrc } from '@/lib/memberPhotoRef';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-export default function ProfilePhotoUploader({ value, onChange, disabled = false, required = false }) {
+const REFERENCE_NOTE =
+  'Upload a suited photo so the admin team can recognise you when editing event imagery. We keep the original private — only the team can access it.';
+
+export default function ProfilePhotoUploader({
+  value,
+  onChange,
+  disabled = false,
+  required = false,
+  label = 'Private reference photo',
+  note = REFERENCE_NOTE
+}) {
   const [isOriginalUploading, setIsOriginalUploading] = useState(false);
   const [isCroppedUploading, setIsCroppedUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -185,7 +195,7 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
       <div className="uploader">
         <label className="upload-label">
           <span>
-            Private reference photo
+            {label}
             {required ? ' (required)' : ''}
           </span>
           <input
@@ -196,10 +206,7 @@ export default function ProfilePhotoUploader({ value, onChange, disabled = false
             aria-required={required}
           />
         </label>
-        <p className="upload-note">
-          Upload a suited photo so the admin team can recognise you when editing event imagery. We keep
-          the original private — only the team can access it.
-        </p>
+        {note ? <p className="upload-note">{note}</p> : null}
         {(isOriginalUploading || isCroppedUploading) && <p className="upload-status">Uploading…</p>}
         {error && <p className="upload-error">{error}</p>}
         {value?.croppedUrl ? (

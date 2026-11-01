@@ -11,7 +11,7 @@ import { Content } from '../src/components/Content';
 import { Field, SectionTitle, ToggleRow } from '../src/components/Form';
 import { colors, fonts, radius, space } from '../src/theme';
 
-const STEPS = ['About you', 'Staying in touch', 'Reference photo', 'Guidelines'];
+const STEPS = ['About you', 'Staying in touch', 'Reference photo', 'Profile photo', 'Guidelines'];
 const HANDLE = /^[a-z0-9_.]{2,30}$/i;
 
 // Joining in the app: the same details, private reference photo and
@@ -36,6 +36,9 @@ export default function Register() {
     phoneNumber: ''
   });
   const [photo, setPhoto] = useState(null); // { uri, ref }
+  // Public profile photo: 'reference', 'upload' (avatar) or 'none'.
+  const [avatarChoice, setAvatarChoice] = useState(null);
+  const [avatar, setAvatar] = useState(null); // { uri, ref }
   const [agreed, setAgreed] = useState({});
   const [noticeAgreed, setNoticeAgreed] = useState(false);
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
@@ -59,6 +62,8 @@ export default function Register() {
       if (form.phoneNumber.trim() && form.phoneNumber.replace(/\D/g, '').length < 7) e.phoneNumber = 'At least 7 digits.';
     }
     if (step === 2 && !photo?.ref) e.photo = 'Please add a reference photo.';
+    if (step === 3 && !avatarChoice) e.avatar = 'Choose a profile photo, or tap Not now.';
+    if (step === 3 && avatarChoice === 'upload' && !avatar?.ref) e.avatar = 'Add your profile photo, or choose another option.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -73,6 +78,24 @@ export default function Register() {
     try {
       const { url } = await api.uploadReferencePhoto(asset);
       setPhoto({ uri: asset.uri, ref: url });
+      setErrors({});
+    } catch (e) {
+      Alert.alert('Upload failed', e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Uploaded now, parked until the account exists; the server copies it to
+  // the new member's public avatar.
+  const chooseAvatar = async () => {
+    const asset = await pickImage({ title: 'Profile photo', message: 'Shown to other members on your profile and in chats.' });
+    if (!asset) return;
+    setBusy(true);
+    try {
+      const { url } = await api.uploadReferencePhoto(asset);
+      setAvatar({ uri: asset.uri, ref: url });
+      setAvatarChoice('upload');
       setErrors({});
     } catch (e) {
       Alert.alert('Upload failed', e.message);
@@ -101,12 +124,21 @@ export default function Register() {
         phoneNumber: form.phoneNumber.trim() || null,
         profilePhotoUrl: photo.ref,
         profilePhotoOriginalUrl: photo.ref,
+        avatarChoice,
+        avatarPhotoUrl: avatarChoice === 'upload' ? avatar.ref : null,
         ...Object.fromEntries(guidelines.map((g) => [g.key, true])),
         photoNoticeAgreed: true
       });
-      await signIn(form.email.trim().toLowerCase(), form.password);
     } catch (e) {
       Alert.alert('Couldn’t create your account', e.message);
+      setBusy(false);
+      return;
+    }
+    try {
+      await signIn(form.email.trim().toLowerCase(), form.password);
+    } catch (e) {
+      // Test builds only let beta testers sign in.
+      Alert.alert('Your account is ready', e.message, [{ text: 'OK', onPress: () => router.back() }]);
       setBusy(false);
     }
   };
@@ -163,13 +195,53 @@ export default function Register() {
             <>
               <Text style={styles.text}>
                 A clear photo of your face so our hosts can welcome you at the door. It’s private: only the Manchester Gents
-                team can see it. You can add a public profile photo later.
+                team can see it. Next, you choose a public profile photo.
               </Text>
               <Pressable onPress={choosePhoto} disabled={busy} style={styles.photo} accessibilityRole="button" accessibilityLabel={photo ? 'Change reference photo' : 'Add reference photo'}>
                 {photo ? <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
                 <Text style={[styles.photoLabel, photo && styles.photoLabelOnImage]}>{busy ? 'Uploading…' : photo ? 'Change photo' : 'Add photo'}</Text>
               </Pressable>
               {errors.photo ? <Text style={styles.error}>{errors.photo}</Text> : null}
+            </>
+          ) : step === 3 ? (
+            <>
+              <Text style={styles.text}>
+                Members see it on your profile and next to your messages. Your reference photo stays private unless you
+                choose to use it here. You can change it any time.
+              </Text>
+              {avatarChoice === 'reference' && photo ? (
+                <Image source={{ uri: photo.uri }} style={styles.avatar} contentFit="cover" />
+              ) : avatarChoice === 'upload' && avatar ? (
+                <Image source={{ uri: avatar.uri }} style={styles.avatar} contentFit="cover" />
+              ) : null}
+              <View style={styles.choices}>
+                <Button
+                  title="Use my reference photo"
+                  variant={avatarChoice === 'reference' ? 'primary' : 'secondary'}
+                  onPress={() => {
+                    setAvatarChoice('reference');
+                    setErrors({});
+                  }}
+                  disabled={busy}
+                />
+                <Button
+                  title={avatarChoice === 'upload' && avatar ? 'Choose another photo' : 'Upload a different photo'}
+                  variant={avatarChoice === 'upload' ? 'primary' : 'secondary'}
+                  onPress={chooseAvatar}
+                  loading={busy}
+                  disabled={busy}
+                />
+                <Button
+                  title="Not now"
+                  variant={avatarChoice === 'none' ? 'primary' : 'ghost'}
+                  onPress={() => {
+                    setAvatarChoice('none');
+                    setErrors({});
+                  }}
+                  disabled={busy}
+                />
+              </View>
+              {errors.avatar ? <Text style={styles.error}>{errors.avatar}</Text> : null}
             </>
           ) : (
             <>
@@ -209,7 +281,7 @@ export default function Register() {
               title={step === STEPS.length - 1 ? 'Join Manchester Gents' : 'Continue'}
               onPress={next}
               loading={busy && step === STEPS.length - 1}
-              disabled={(step === STEPS.length - 1 && !allAgreed) || (busy && step === 2)}
+              disabled={(step === STEPS.length - 1 && !allAgreed) || (busy && (step === 2 || step === 3))}
             />
             {step > 0 ? <Button title="Back" variant="ghost" onPress={() => setStep(step - 1)} /> : null}
           </View>
@@ -246,5 +318,7 @@ const styles = StyleSheet.create({
   },
   photoLabel: { color: colors.gold, fontWeight: '600', fontSize: 15, marginBottom: 72 },
   photoLabelOnImage: { marginBottom: 0, backgroundColor: 'rgba(20, 29, 41, 0.7)', paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, overflow: 'hidden' },
+  avatar: { width: 120, height: 120, borderRadius: 60, alignSelf: 'center', borderWidth: 2, borderColor: colors.gold },
+  choices: { gap: space.md },
   actions: { gap: space.sm, marginTop: space.md }
 });

@@ -40,6 +40,9 @@ export function RegisterForm({ redirectTo = '/' }) {
     preferredContactMethod: '',
     profilePhotoUrl: '',
     profilePhotoOriginalUrl: '',
+    // Public profile photo: 'reference', 'upload' (avatarPhotoUrl) or 'none'.
+    avatarChoice: '',
+    avatarPhotoUrl: '',
     termsConsentCulture: false,
     termsSafeSpace: false,
     termsNoHate: false,
@@ -89,6 +92,16 @@ export function RegisterForm({ redirectTo = '/' }) {
       return;
     }
 
+    if (!formState.avatarChoice) {
+      setError('Choose a profile photo, or pick “Not now”.');
+      return;
+    }
+
+    if (formState.avatarChoice === 'upload' && !formState.avatarPhotoUrl) {
+      setError('Upload your profile photo, or choose another option.');
+      return;
+    }
+
     const termsAccepted = termsChecklist.every((term) => formState[term.key]);
     if (!termsAccepted) {
       setError('Please agree to every term and condition to continue.');
@@ -113,6 +126,8 @@ export function RegisterForm({ redirectTo = '/' }) {
       phoneNumber: formState.phoneNumber.trim(),
       profilePhotoUrl: formState.profilePhotoUrl,
       profilePhotoOriginalUrl: formState.profilePhotoOriginalUrl,
+      avatarChoice: formState.avatarChoice,
+      avatarPhotoUrl: formState.avatarChoice === 'upload' ? formState.avatarPhotoUrl : null,
       termsConsentCulture: formState.termsConsentCulture,
       termsSafeSpace: formState.termsSafeSpace,
       termsNoHate: formState.termsNoHate,
@@ -271,6 +286,35 @@ export function RegisterForm({ redirectTo = '/' }) {
             }))
           }
         />
+      </div>
+      <div className="form-section">
+        <span className="section-eyebrow">Profile photo</span>
+        <p className="section-copy">
+          Members see it on your profile and next to your messages. Your reference photo stays private unless you choose to
+          use it here. You can change it any time.
+        </p>
+        <div className="radio-group">
+          <RadioPill
+            label="Use my reference photo"
+            active={formState.avatarChoice === 'reference'}
+            onClick={handleSelect('avatarChoice', 'reference')}
+          />
+          <RadioPill
+            label="Upload a different photo"
+            active={formState.avatarChoice === 'upload'}
+            onClick={handleSelect('avatarChoice', 'upload')}
+          />
+          <RadioPill label="Not now" active={formState.avatarChoice === 'none'} onClick={handleSelect('avatarChoice', 'none')} />
+        </div>
+        {formState.avatarChoice === 'upload' ? (
+          <ProfilePhotoUploader
+            required
+            label="Profile photo"
+            note="Shown to other members. A clear photo of you works best."
+            value={{ originalUrl: formState.avatarPhotoUrl, croppedUrl: formState.avatarPhotoUrl }}
+            onChange={({ croppedUrl }) => setFormState((prev) => ({ ...prev, avatarPhotoUrl: croppedUrl }))}
+          />
+        ) : null}
       </div>
       <div className="form-section">
         <span className="section-eyebrow">Terms &amp; conditions</span>
