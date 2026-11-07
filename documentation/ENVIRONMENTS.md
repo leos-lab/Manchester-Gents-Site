@@ -6,7 +6,7 @@ Three environments, each with its own database, chat server, photo site and app 
 |---|---|---|---|
 | Git branch | `dev` | `uat` | `main` |
 | Website | Vercel `mg-dev` → dev.manchestergents.com (and `next dev` on your Mac) | Vercel `mg-uat` → uat.manchestergents.com | Vercel `mg-new` → manchestergents.com |
-| Database (Neon) | branch `dev` (ep-raspy-silence) | branch `uat` (ep-autumn-surf) | branch `production` (ep-square-truth) |
+| Database (PinstripeHQ DB on the N100) | `manchester_gents_dev` | `manchester_gents_uat` | `manchester_gents_prod` |
 | Chat server (N100, `mg-chat`) | `chat-dev` service + `tunnel-dev`, chat-dev.manchestergents.com | `chat-uat` service + `tunnel-uat`, chat-uat.manchestergents.com | not set up yet (chat.manchestergents.com is kept for it) |
 | Pinstripe site | `manchestergents-dev` (parent: live) | `manchestergents-uat` (parent: live) | `manchestergents` |
 | App | `APP_VARIANT=development`, `com.manchestergents.app.dev`, DEV badge | `APP_VARIANT=uat` / EAS profile `uat`, `com.manchestergents.app.uat`, UAT badge | EAS profile `production`, `com.manchestergents.app` |
@@ -25,3 +25,4 @@ All apps are called MCR Gents and install side by side.
 - Deletes and photo changes always pass `?site=<own slug>`. Pinstripe refuses them for a photo from another site, so dev and UAT can never change live photos. Keep that query parameter on any new Pinstripe change call.
 - The UAT chat server reads `chat-server/.env.uat` on the N100. It runs because `COMPOSE_PROFILES=uat` is set in `chat-server/.env`.
 - A new website address must be added in two places. Photos: add it to `CORS_ALLOWED_ORIGINS` in `/opt/Pinstripe-API/.env` on the N100, then `docker compose up -d app`. Chat: add it to `ALLOWED_ORIGINS` in that environment's chat env file. Otherwise browsers block the requests.
+- Databases live on PinstripeHQ DB (`/opt/pinstripehq-db` on the N100, repo leos-lab/PinstripeHQ-DB), moved off Neon on 2026-11-07. Connection strings: `bin/pgdb url manchester_gents_<env>` there. Vercel uses `DATABASE_URL` (via db.pinstripehq.com:6432); migrations use `DIRECT_URL`; the chat servers use `INTERNAL_DATABASE_URL` over the `pinstripehq-db` docker network.

@@ -10,6 +10,8 @@ services:
     networks:
       default:
         aliases: [chat]
+      # PinstripeHQ DB (/opt/pinstripehq-db): database manchester_gents_dev
+      pinstripehq-db: {}
   # UAT copy on the uat database (chat-uat.<your domain> in the tunnel, service
   # http://chat-uat:8080). Starts only with COMPOSE_PROFILES=uat in .env.
   chat-uat:
@@ -17,6 +19,8 @@ services:
     restart: unless-stopped
     env_file: .env.uat
     profiles: [uat]
+    # PinstripeHQ DB (/opt/pinstripehq-db): database manchester_gents_uat
+    networks: [default, pinstripehq-db]
   # Dev's own Cloudflare tunnel (public hostnames are set in the dashboard).
   tunnel-dev:
     image: cloudflare/cloudflared:latest
@@ -44,3 +48,7 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - chat-dev
+
+networks:
+  pinstripehq-db:
+    external: true
